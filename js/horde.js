@@ -5,6 +5,9 @@ function buildHordePrompt() {
   if (c.gender === 'F') parts.push('female');
   else if (c.gender === 'M') parts.push('male');
 
+  const charAge = parseInt(c.age);
+  parts.push((charAge >= 18) ? `${charAge} years old` : 'adult, 18 years old');
+
   const lastMsgs = history
     .filter(m => (m.role === 'user' || m.role === 'assistant') && m.type !== 'image')
     .slice(-2);

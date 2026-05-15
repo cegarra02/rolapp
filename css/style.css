@@ -299,7 +299,7 @@ input[type=file]{display:none}
 .mf-chip-avatar{width:24px;height:24px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;overflow:hidden;flex-shrink:0}
 .mission-char-avatar{width:20px;height:20px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:10px;overflow:hidden;flex-shrink:0}
 /* ── QUICK INSERT BUTTONS ── */
-.quick-btns{display:flex;gap:6px;padding:4px 0 0}
+.quick-btns{display:flex;gap:6px;padding:4px 0 0;justify-content:flex-start;align-items:center}
 .qi-btn{padding:5px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:13px;font-family:monospace;cursor:pointer;transition:background .15s}
 .qi-btn:active{background:var(--accent);border-color:var(--accent);color:#fff}
 /* ── CHAT STYLE MODAL ── */
@@ -350,7 +350,7 @@ input[type=file]{display:none}
 .ref-photo-add-icon{font-size:26px;color:var(--muted);line-height:1}
 .ref-photo-placeholder{cursor:default;opacity:.35}
 /* ── IMAGE GEN BUTTON ── */
-.qi-img-btn{font-size:15px}
+.qi-img-btn{font-size:15px;font-family:inherit}
 /* ── IMAGE MESSAGES ── */
 .img-bubble{overflow:hidden;border-radius:16px;max-width:220px;line-height:0}
 .chat-gen-img{width:100%;display:block;cursor:pointer;border-radius:16px}
