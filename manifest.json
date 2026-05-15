@@ -4,7 +4,7 @@
   "description": "Crea personajes y roleplay sin límites",
   "start_url": "/rolapp/",
   "scope": "/rolapp/",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "portrait",
   "background_color": "#0d0d0f",
   "theme_color": "#0d0d0f",
