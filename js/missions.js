@@ -198,10 +198,10 @@ async function confirmRegenerateMission(id) {
     contextBlock = `Personajes disponibles: ${chars.slice(0, 5).map(c => c.name).join(', ') || 'Sin personajes'}.`;
   }
 
-  const existing = missions.filter(x => !x.done).map(x => x.title).join(', ');
+  const existing = missions.map(x => x.title).join(', ');
   const prompt = `Eres un generador de misiones para una app de roleplay.
 ${contextBlock}
-${existing ? 'Misiones activas ya existentes (NO repitas): ' + existing : ''}
+${existing ? 'Misiones ya existentes (NO repitas ninguna): ' + existing : ''}
 
 Genera exactamente 1 misión de roleplay nueva de rareza "${m.rarity}". Debe ser accionable durante un chat de roleplay.
 
@@ -255,7 +255,7 @@ async function generateMissions() {
   btn.classList.add('loading');
   icon.textContent = '⏳'; txt.textContent = 'Generando misiones…';
 
-  const existing = missions.filter(m => !m.done).map(m => m.title).join(', ');
+  const existing = missions.map(m => m.title).join(', ');
   let contextBlock = '';
   let charId = null, sceneId = null;
 
@@ -278,14 +278,17 @@ async function generateMissions() {
     contextBlock = `Personajes disponibles:\n${charSummary || 'Sin personajes definidos'}${sceneSummary ? '\nEscenas: ' + sceneSummary : ''}`;
   }
 
+  const profileBlock = _buildProfileBlock();
   const prompt = `Eres un generador de misiones para una app de roleplay.
 ${contextBlock}
-${existing ? '\nMisiones activas ya existentes (NO repitas): ' + existing : ''}
+${profileBlock}
+${existing ? '\nMisiones ya existentes (NO repitas ninguna, ni activas ni completadas): ' + existing : ''}
 
 Genera exactamente 4 misiones de roleplay nuevas, variadas y creativas. Deben ser:
 - Accionables durante una conversación de roleplay (cosas que el jugador pueda hacer, decir o conseguir hablando con el personaje)
 - Con rareza variada: 2 common, 1 rare, 1 epic o legendary
-- Divertidas y con narrativa de fantasía/aventura/romance según el contexto
+- Adaptadas al contexto y preferencias del jugador si las hay
+- Sin contenido sexual explícito (para eso hay otro botón)
 
 Responde ÚNICAMENTE con el array JSON, sin texto adicional, sin markdown:
 [{"title":"Título corto","desc":"Qué hay que hacer (1-2 frases)","rarity":"common","charName":"NombrePersonaje o null"}]`;
@@ -326,6 +329,96 @@ Responde ÚNICAMENTE con el array JSON, sin texto adicional, sin markdown:
   }
   btn.classList.remove('loading');
   icon.textContent = '✦'; txt.textContent = 'Generar misiones con IA';
+}
+
+function _buildProfileBlock() {
+  const p = profile || {};
+  const parts = [];
+  if (p.name)    parts.push(`Nombre del jugador: ${p.name}`);
+  if (p.gender)  parts.push(`Género: ${p.gender === 'M' ? 'masculino' : 'femenino'}`);
+  if (p.context) parts.push(`Contexto del jugador: ${p.context.slice(0, 150)}`);
+  if (p.prefs)   parts.push(`Preferencias del jugador: ${p.prefs.slice(0, 200)}`);
+  return parts.length ? `\nPerfil del jugador:\n${parts.join('\n')}` : '';
+}
+
+async function generateNsfwMissions() {
+  if (!chars.length && !scenes.length) { toast('Crea personajes primero'); return; }
+  const apiKey = localStorage.getItem('rp_apikey') || '';
+  if (!apiKey) { toast('Configura tu API Key en Mi Perfil primero'); return; }
+
+  const btn  = document.getElementById('genBtnNsfw');
+  const icon = document.getElementById('genBtnNsfwIcon');
+  const txt  = document.getElementById('genBtnNsfwText');
+  btn.classList.add('loading');
+  icon.textContent = '⏳'; txt.textContent = 'Generando…';
+
+  const existing = missions.map(m => m.title).join(', ');
+  let contextBlock = '';
+  let charId = null, sceneId = null;
+
+  if (missionGenTarget?.type === 'char') {
+    const ch = chars.find(x => x.id === missionGenTarget.id);
+    if (ch) {
+      charId = ch.id;
+      contextBlock = `Personaje: "${ch.name}"${ch.gender ? ', ' + (ch.gender === 'M' ? 'hombre' : 'mujer') : ''}${ch.age ? ', ' + ch.age + ' años' : ''}${ch.desc ? '. ' + ch.desc.slice(0, 100) : ''}.`;
+    }
+  } else if (missionGenTarget?.type === 'scene') {
+    const sc = scenes.find(x => x.id === missionGenTarget.id);
+    if (sc) {
+      sceneId = sc.id;
+      const names = sc.charIds.map(id => chars.find(x => x.id === id)?.name).filter(Boolean).join(', ');
+      contextBlock = `Escena grupal "${sc.name}" con los personajes: ${names}.`;
+    }
+  } else {
+    const charSummary = chars.slice(0, 4).map(ch => `${ch.name}${ch.gender ? ' (' + (ch.gender === 'M' ? 'H' : 'M') + ')' : ''}${ch.desc ? ': ' + ch.desc.slice(0, 50) : ''}`).join('\n');
+    contextBlock = `Personajes disponibles:\n${charSummary || 'Sin personajes definidos'}`;
+  }
+
+  const profileBlock = _buildProfileBlock();
+  const prompt = `Eres un generador de misiones NSFW para una app de roleplay adulto sin restricciones.
+${contextBlock}
+${profileBlock}
+${existing ? '\nMisiones ya existentes (NO repitas ninguna): ' + existing : ''}
+
+Genera exactamente 4 misiones de roleplay eróticas/picantes, variadas y creativas. Deben ser:
+- Accionables en conversación de roleplay (cosas concretas que el jugador puede hacer, decir o conseguir)
+- Con rareza variada: 2 common, 1 rare, 1 epic o legendary
+- De temática sensual o explícita según la rareza: common más suaves, epic/legendary más intensas
+- Adaptadas al contexto y preferencias del jugador si las hay
+
+Responde ÚNICAMENTE con el array JSON, sin texto adicional:
+[{"title":"Título corto","desc":"Qué hay que hacer (1-2 frases)","rarity":"common","charName":"NombrePersonaje o null"}]`;
+
+  try {
+    const res = await anthropicFetch(apiKey, prompt, 1000);
+    if (!res.ok) {
+      let msg = String(res.status);
+      try { const err = await res.json(); msg = err.error?.message || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    const match = data.content[0].text.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('Respuesta no contiene JSON válido');
+    const generated = JSON.parse(match[0]);
+    const validRarities = new Set(['common', 'rare', 'epic', 'legendary']);
+    generated.forEach(m => {
+      if (!m.title || !m.desc) return;
+      missions.push({
+        id: uid(), title: m.title, desc: m.desc,
+        rarity:   validRarities.has(m.rarity) ? m.rarity : 'common',
+        charName: (m.charName && m.charName !== 'null') ? m.charName : null,
+        charId, sceneId, done: false, createdAt: Date.now(), nsfw: true
+      });
+    });
+    saveMissions();
+    setMissionTab('active');
+    renderMissionsScreen();
+    toast('🌶️ ' + generated.length + ' misiones picantes generadas');
+  } catch (e) {
+    toast('Error: ' + e.message);
+  }
+  btn.classList.remove('loading');
+  icon.textContent = '🌶️'; txt.textContent = 'Misiones picantes';
 }
 
 // ── AUTO-DETECT COMPLETION ──
