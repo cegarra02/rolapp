@@ -279,7 +279,7 @@ async function generateMissions() {
   }
 
   const profileBlock  = _buildProfileBlock();
-  const historyBlock  = _buildRecentHistoryBlock();
+  const historyBlock  = _buildRecentHistoryBlock(_resolveHistory());
   const prompt = `Eres un generador de misiones para una app de roleplay.
 ${contextBlock}
 ${profileBlock}
@@ -334,14 +334,27 @@ Responde ÚNICAMENTE con el array JSON, sin texto adicional, sin markdown:
   icon.textContent = '✦'; txt.textContent = 'Generar misiones con IA';
 }
 
-function _buildRecentHistoryBlock() {
-  if (!history || !history.length) return '';
-  const recent = history.slice(-12);
+function _buildRecentHistoryBlock(hist) {
+  if (!hist || !hist.length) return '';
+  const recent = hist.slice(-12);
   const lines = recent.map(m => {
     const who = m.role === 'user' ? 'Jugador' : (m.speaker || 'Personaje');
     return `${who}: ${m.content.replace(/<[^>]+>/g, '').slice(0, 180)}`;
   }).join('\n');
-  return `\nConversación reciente (últimos mensajes, para contexto):\n${lines}`;
+  return `\nConversación reciente (últimos mensajes, para contexto — no generes misiones para cosas que ya ocurrieron):\n${lines}`;
+}
+
+function _resolveHistory() {
+  if (missionGenTarget?.type === 'char') {
+    const ch = chars.find(x => x.id === missionGenTarget.id);
+    return ch?.history || [];
+  }
+  if (missionGenTarget?.type === 'scene') {
+    const sc = scenes.find(x => x.id === missionGenTarget.id);
+    return sc?.history || [];
+  }
+  // No hay target específico: usa el chat actual si hay uno abierto
+  return history || [];
 }
 
 function _buildProfileBlock() {
@@ -388,7 +401,7 @@ async function generateNsfwMissions() {
   }
 
   const profileBlock = _buildProfileBlock();
-  const historyBlock = _buildRecentHistoryBlock();
+  const historyBlock = _buildRecentHistoryBlock(_resolveHistory());
   const prompt = `Eres un generador de misiones NSFW para una app de roleplay adulto sin restricciones.
 ${contextBlock}
 ${profileBlock}
