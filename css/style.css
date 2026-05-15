@@ -350,8 +350,7 @@ input[type=file]{display:none}
 .ref-photo-add-icon{font-size:26px;color:var(--muted);line-height:1}
 .ref-photo-placeholder{cursor:default;opacity:.35}
 /* ── IMAGE GEN BUTTON ── */
-.img-gen-btn{width:40px;height:40px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
-.img-gen-btn:active{background:var(--surface3)}
+.qi-img-btn{margin-left:auto;font-size:15px}
 /* ── IMAGE MESSAGES ── */
 .img-bubble{overflow:hidden;border-radius:16px;max-width:220px;line-height:0}
 .chat-gen-img{width:100%;display:block;cursor:pointer;border-radius:16px}

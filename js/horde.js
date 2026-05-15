@@ -84,6 +84,7 @@ async function doGenerateChatImage() {
       params: { width: 512, height: 768, steps: 30, sampler_name: 'k_euler_a', cfg_scale: 7 },
       nsfw: true,
       censor_nsfw: false,
+      r2: false,
       models: ['AlbedoBase XL (SDXL)']
     };
 
@@ -106,11 +107,12 @@ async function doGenerateChatImage() {
 
     const { id } = await res.json();
     const imgB64 = await pollHordeJob(id);
+    const mime = imgB64.startsWith('/9j/') ? 'image/jpeg' : 'image/png';
 
     history[loadIdx] = {
       role: 'assistant',
       type: 'image',
-      content: 'data:image/webp;base64,' + imgB64,
+      content: `data:${mime};base64,${imgB64}`,
       ts: Date.now()
     };
     currentChar.history = history; save();
