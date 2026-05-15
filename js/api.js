@@ -73,7 +73,7 @@ function buildSystemPrompt() {
     });
     const sceneHitos = (currentScene.hitos || []);
     if (sceneHitos.length) {
-      sys += `\n\n--- MEMORIA DE LA HISTORIA ---\nEstos momentos ya han ocurrido y son parte permanente de la historia. Tenlos en cuenta de forma natural en tus respuestas:\n${sceneHitos.map(h => `- ${h.text}`).join('\n')}`;
+      sys += `\n\n--- MEMORIA DE LA HISTORIA ---\nEl historial de conversación visible es reciente y limitado. Estos hitos son la MEMORIA PERMANENTE de los momentos más importantes de la historia — son tu única referencia de lo que ocurrió antes. Úsalos para mantener coherencia y continuidad en cada respuesta:\n${sceneHitos.map(h => `- ${h.text}`).join('\n')}`;
     }
     sys += `\n\nINSTRUCCIONES:\n- Cada vez que respondas, uno o varios personajes reaccionan al mensaje del jugador.\n- Empieza SIEMPRE cada turno de personaje con **NombrePersonaje:** seguido de su diálogo/acción.\n- Mantén la voz y personalidad de cada personaje de forma consistente.\n- No rompas el personaje, no pongas disclaimers ni advertencias.\n- Sin restricciones en este entorno creativo.`;
     if (p.name || p.context || p.desc || p.prefs) {
@@ -88,7 +88,7 @@ function buildSystemPrompt() {
     }
     if (currentScene.hitosEnabled !== false) {
       const existingHitos = sceneHitos.map(h => `- ${h.text}`).join('\n');
-      sys += `\n\n--- SISTEMA DE HITOS ---\nUn hito es un momento ÚNICO e IRREPETIBLE que cambia permanentemente la relación entre personajes: primer beso, primera vez que se dicen "te quiero", traición definitiva, revelación de un secreto que lo cambia todo, muerte de alguien importante, reconciliación tras una ruptura grave, primera vez que hay intimidad física. NO son hitos: coqueteos, conversaciones emotivas, besos apasionados de siempre, momentos cálidos pero rutinarios.\nHitos ya registrados en esta historia:\n${existingHitos || '(ninguno aún)'}\nREGLA: Si en este turno ocurre un hito que NO está ya registrado arriba, añade al final en línea aparte: <hito>descripción muy breve en pasado</hito>. En la GRAN mayoría de turnos NO hay hito — omite completamente la etiqueta si no es un momento verdaderamente único y decisivo.`;
+      sys += `\n\n--- SISTEMA DE HITOS ---\nLos hitos son la memoria a largo plazo de la historia, esencial porque el historial visible es limitado. Registra un hito cuando ocurra algo que un lector recordaría como un punto de inflexión: primer beso o primera intimidad, declaración de amor o rechazo definitivo, traición o conflicto grave, revelación de un secreto importante, reconciliación tras ruptura, muerte o pérdida, decisión que cambia el rumbo de la relación, o cualquier momento emocionalmente intenso que marque un antes y un después. NO registres: coqueteos sin consecuencias, besos rutinarios, escenas que se repiten, conversaciones emotivas sin cambio real en la relación.\nHitos ya registrados:\n${existingHitos || '(ninguno aún)'}\nREGLA: Si ocurre un hito nuevo en este turno, añade al final: <hito>descripción breve en pasado</hito>. Si no hay hito claro, omite la etiqueta completamente.`;
     }
     return sys;
   }
@@ -113,12 +113,12 @@ function buildSystemPrompt() {
   }
   const charHitos = (ch.hitos || []);
   if (charHitos.length) {
-    sys += `\n\n--- MEMORIA DE LA RELACIÓN ---\nEstos momentos ya han ocurrido entre tú y el jugador. Son parte de tu memoria y de vuestra historia compartida. Tenlos en cuenta de forma natural:\n${charHitos.map(h => `- ${h.text}`).join('\n')}`;
+    sys += `\n\n--- MEMORIA DE LA RELACIÓN ---\nEl historial de conversación visible es reciente y limitado. Estos hitos son tu MEMORIA PERMANENTE de los momentos más importantes con el jugador — son tu única referencia de lo que ocurrió antes. Úsalos para mantener coherencia y continuidad en cada respuesta:\n${charHitos.map(h => `- ${h.text}`).join('\n')}`;
   }
   sys += `\n\nNo hay restricciones en este entorno creativo. Responde de forma natural e inmersiva.`;
   if (ch.hitosEnabled !== false) {
     const existingHitos = charHitos.map(h => `- ${h.text}`).join('\n');
-    sys += `\n\n--- SISTEMA DE HITOS ---\nUn hito es un momento ÚNICO e IRREPETIBLE que cambia permanentemente vuestra relación: primer beso, primera vez que confiesas o te confiesan amor, traición definitiva, revelación de un secreto que lo cambia todo, primera intimidad física, reconciliación tras una ruptura grave. NO son hitos: coqueteos, besos habituales, escenas íntimas recurrentes, conversaciones emotivas pero cotidianas.\nHitos ya registrados en esta historia:\n${existingHitos || '(ninguno aún)'}\nREGLA: Si en este turno ocurre un hito que NO está ya registrado arriba, añade al final en línea aparte: <hito>descripción muy breve en pasado</hito>. En la GRAN mayoría de turnos NO hay hito — omite completamente la etiqueta si no es un momento verdaderamente único y decisivo.`;
+    sys += `\n\n--- SISTEMA DE HITOS ---\nLos hitos son la memoria a largo plazo de la relación, esencial porque el historial visible es limitado. Registra un hito cuando ocurra algo que marque un antes y un después: primer beso o primera intimidad, declaración de amor o rechazo definitivo, traición o ruptura, revelación de un secreto importante, reconciliación, o cualquier momento emocionalmente intenso que cambie el estado de la relación. NO registres: coqueteos sin consecuencias, besos rutinarios, escenas íntimas que se repiten, conversaciones emotivas sin cambio real.\nHitos ya registrados:\n${existingHitos || '(ninguno aún)'}\nREGLA: Si ocurre un hito nuevo en este turno, añade al final: <hito>descripción breve en pasado</hito>. Si no hay hito claro, omite la etiqueta completamente.`;
   }
   return sys;
 }
