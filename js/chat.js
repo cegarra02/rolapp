@@ -447,10 +447,15 @@ function initChatSwipe() {
   screen.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - swipeStartX;
     const dy = e.changedTouches[0].clientY - swipeStartY;
-    if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 50) {
-      const wrap = document.getElementById('chatContentWrap');
-      if (dx < 0 && !isSwiped) { isSwiped = true; wrap.classList.add('swiped'); document.getElementById('swipeHint').style.display = 'none'; }
-      else if (dx > 0 && isSwiped) { isSwiped = false; wrap.classList.remove('swiped'); }
+    const wrap = document.getElementById('chatContentWrap');
+    // Si ya está swiped, cualquier toque lo restaura
+    if (isSwiped) {
+      isSwiped = false; wrap.classList.remove('swiped');
+      return;
+    }
+    // Umbral más alto (90px, ratio 2:1) para evitar disparos accidentales al scrollear
+    if (Math.abs(dx) > Math.abs(dy) * 2 && Math.abs(dx) > 90) {
+      if (dx < 0) { isSwiped = true; wrap.classList.add('swiped'); document.getElementById('swipeHint').style.display = 'none'; }
     }
   }, {passive: true});
 }
