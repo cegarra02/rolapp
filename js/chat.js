@@ -13,20 +13,6 @@ function renderMessages() {
   }
   const style = (currentScene || currentChar)?.chatStyle || {};
   container.innerHTML = history.map((m, i) => {
-    if (m.role === 'image-loading') {
-      return `<div class="msg-wrap bot" id="msgwrap-${i}">
-        <div class="bubble img-loading-bubble">
-          <div class="img-loading-spinner"></div>
-          <span>Generando imagen…</span>
-        </div>
-      </div>`;
-    }
-    if (m.type === 'image') {
-      return `<div class="msg-wrap bot" id="msgwrap-${i}">
-        <div class="img-bubble"><img src="${m.content}" class="chat-gen-img" onclick="openImgOptions(${i})" alt="Imagen generada"></div>
-        <div class="bubble-time">${fmtTime(m.ts)}</div>
-      </div>`;
-    }
     const isUser = m.role === 'user';
     let inlineStyle = '';
     const op = style.bubbleOpacity;
@@ -322,7 +308,7 @@ function resetChatStyle() {
 function openChat(id) {
   const c = chars.find(x => x.id === id); if (!c) return;
   currentScene = null; currentChar = c;
-  history = (c.history || []).filter(m => m.role !== 'image-loading');
+  history = c.history || [];
   document.getElementById('chatName').textContent = c.name;
   const metaParts = [];
   if (c.age) metaParts.push(c.age + ' años');
@@ -435,36 +421,6 @@ function saveKey() {
   const k = document.getElementById('keyInp').value.trim();
   localStorage.setItem('rp_apikey', k);
   closeModal(); toast('API Key guardada ✓');
-}
-
-// ── IMAGE MESSAGE OPTIONS ──
-function openImgOptions(idx) {
-  openModal('Imagen generada', [
-    { label: '🔍 Ver en pantalla completa', action: `closeModal();openFullImg(${idx})` },
-    { label: '💾 Guardar en dispositivo',   action: `downloadImg(${idx})` },
-    { label: '🗑 Eliminar',                 action: `confirmDeleteImg(${idx})`, danger: true },
-    { label: 'Cancelar',                    action: 'closeModal()' }
-  ]);
-}
-
-function downloadImg(idx) {
-  const m = history[idx];
-  if (!m || m.type !== 'image') return;
-  const ext = m.content.startsWith('data:image/jpeg') ? 'jpg' : 'png';
-  const a = document.createElement('a');
-  a.href = m.content;
-  a.download = `rolapp-${Date.now()}.${ext}`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  toast('Imagen guardada ✓');
-}
-
-function confirmDeleteImg(idx) {
-  history.splice(idx, 1);
-  saveHistory();
-  closeModal();
-  renderMessages();
 }
 
 function initChatSwipe() {

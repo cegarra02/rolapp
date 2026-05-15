@@ -29,9 +29,6 @@ let editSceneId = null;
 let pickedCharIds = [];
 let currentScene = null;
 
-let tempRefPhotos = [];
-let tempActiveRefPhoto = 0;
-
 let swipeStartX = 0, swipeStartY = 0, isSwiped = false;
 
 let activeMissionTab = 'active';

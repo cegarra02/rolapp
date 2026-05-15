@@ -13,8 +13,7 @@ function loadProfileFields() {
   document.getElementById('profileDesc').value    = p.desc    || '';
   document.getElementById('profileContext').value = p.context || '';
   document.getElementById('profilePrefs').value   = p.prefs   || '';
-  document.getElementById('profileApiKey').value  = localStorage.getItem('rp_apikey')    || '';
-  document.getElementById('profileHordeKey').value = localStorage.getItem('rp_horde_key') || '';
+  document.getElementById('profileApiKey').value  = localStorage.getItem('rp_apikey') || '';
 }
 
 function toggleApiKeyVisibility() {
@@ -24,12 +23,6 @@ function toggleApiKeyVisibility() {
   else { inp.type = 'password'; btn.textContent = '👁'; }
 }
 
-function toggleHordeKeyVisibility() {
-  const inp = document.getElementById('profileHordeKey');
-  const btn = document.getElementById('hordeKeyToggle');
-  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
-  else { inp.type = 'password'; btn.textContent = '👁'; }
-}
 
 
 async function testApiKey() {
@@ -55,8 +48,6 @@ async function testApiKey() {
 function saveProfile() {
   const apiKey = document.getElementById('profileApiKey').value.trim();
   if (apiKey) localStorage.setItem('rp_apikey', apiKey);
-  const hordeKey = document.getElementById('profileHordeKey').value.trim();
-  localStorage.setItem('rp_horde_key', hordeKey);
   profile = {
     name:    document.getElementById('profileName').value.trim(),
     gender:  profile._tempGender || null,

@@ -109,7 +109,7 @@ function buildMessages(newText) {
   const msgs = [];
   const chatHistory = history.slice(0, -1);
   for (const m of chatHistory) {
-    if ((m.role === 'assistant' || m.role === 'user') && m.type !== 'image') {
+    if (m.role === 'assistant' || m.role === 'user') {
       let content = m.content;
       if (currentScene && m.role === 'assistant' && m.speaker) content = `**${m.speaker}:** ${m.content}`;
       // Merge consecutive assistant messages (Anthropic API requires alternating roles)

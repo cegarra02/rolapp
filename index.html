@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Roleplay AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=30">
+<link rel="stylesheet" href="css/style.css?v=31">
 <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -52,11 +52,6 @@
     </div>
     <input type="file" id="avatarFileInner" accept="image/*" onchange="loadPhoto(this,'avatar')" style="display:none">
     <input type="file" id="bgFileInner" accept="image/*" onchange="loadPhoto(this,'bg')" style="display:none">
-
-    <!-- Ref Photos -->
-    <div class="section-label">Fotos de referencia <span class="section-label-sub">· para generar imágenes con IA (máx. 4)</span></div>
-    <div class="ref-photos-grid" id="refPhotosGrid"></div>
-    <input type="file" id="refPhotoFile" accept="image/*" onchange="loadRefPhoto(this)" style="display:none">
 
     <!-- Name -->
     <div class="section-label">Nombre del personaje</div>
@@ -215,7 +210,6 @@
         <button class="qi-btn" onclick="qi_asterisk()">**</button>
         <button class="qi-btn" onclick="qi_quote()">""</button>
         <button class="qi-btn" onclick="qi_paren()">()</button>
-        <button class="qi-btn qi-img-btn" onclick="generateChatImage()" title="Generar imagen">🎨</button>
       </div>
       <div class="chat-input-row">
         <textarea class="chat-inp" id="chatInp" placeholder="Escribe algo…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
@@ -501,34 +495,24 @@
     <div style="font-size:11px;color:var(--muted);margin:-10px 0 10px 4px">Obtén tu key en console.anthropic.com · Se guarda solo en tu dispositivo</div>
     <button onclick="testApiKey()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer;margin-bottom:16px" id="testKeyBtn">🔌 Probar conexión</button>
 
-    <!-- AI Horde Key -->
-    <div class="section-label">AI Horde API Key</div>
-    <div class="field-card" style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:18px">🎨</span>
-      <input class="field-inp" id="profileHordeKey" type="password" placeholder="Opcional — para generar imágenes" style="flex:1">
-      <button onclick="toggleHordeKeyVisibility()" id="hordeKeyToggle" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;flex-shrink:0">👁</button>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin:-10px 0 16px 4px">Obtén tu key en aihorde.net · Gratis con registro</div>
-
     <button class="btn-primary" onclick="saveProfile()">Guardar mi perfil</button>
     <div style="height:20px"></div>
   </div>
 </div>
 
-<script src="js/state.js?v=30"></script>
-<script src="js/utils.js?v=30"></script>
-<script src="js/ui.js?v=30"></script>
-<script src="js/sliders.js?v=30"></script>
-<script src="js/api.js?v=30"></script>
-<script src="js/cropper.js?v=30"></script>
-<script src="js/chars.js?v=30"></script>
-<script src="js/profile.js?v=30"></script>
-<script src="js/scenes.js?v=30"></script>
-<script src="js/inbox.js?v=30"></script>
-<script src="js/missions.js?v=30"></script>
-<script src="js/horde.js?v=30"></script>
-<script src="js/chat.js?v=30"></script>
-<script src="js/main.js?v=30"></script>
+<script src="js/state.js?v=31"></script>
+<script src="js/utils.js?v=31"></script>
+<script src="js/ui.js?v=31"></script>
+<script src="js/sliders.js?v=31"></script>
+<script src="js/api.js?v=31"></script>
+<script src="js/cropper.js?v=31"></script>
+<script src="js/chars.js?v=31"></script>
+<script src="js/profile.js?v=31"></script>
+<script src="js/scenes.js?v=31"></script>
+<script src="js/inbox.js?v=31"></script>
+<script src="js/missions.js?v=31"></script>
+<script src="js/chat.js?v=31"></script>
+<script src="js/main.js?v=31"></script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });

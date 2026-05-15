@@ -30,7 +30,6 @@ function pickGender(g) {
 
 function openCreate() {
   editId = null; tempBg = null; tempGender = null;
-  tempRefPhotos = []; tempActiveRefPhoto = 0;
   ['M','F'].forEach(x => document.getElementById('gender'+x)?.classList.remove('active'));
   document.getElementById('editTitle').textContent = 'Nuevo personaje';
   document.getElementById('deleteBtn').style.display = 'none';
@@ -44,15 +43,12 @@ function openCreate() {
   ['charCpName', 'charCpDesc', 'charCpContext', 'charCpPrefs'].forEach(id => {
     const e = document.getElementById(id); if (e) e.value = '';
   });
-  renderRefPhotos();
   showScreen('editScreen', true);
 }
 
 function openEdit(id) {
   const c = chars.find(x => x.id === id); if (!c) return;
   editId = id; tempBg = c.bg || null; tempGender = c.gender || null;
-  tempRefPhotos = [...(c.refPhotos || [])];
-  tempActiveRefPhoto = c.activeRefPhoto ?? 0;
   ['M','F'].forEach(x => document.getElementById('gender'+x)?.classList.toggle('active', tempGender === x));
   document.getElementById('editTitle').textContent = 'Editar personaje';
   document.getElementById('deleteBtn').style.display = 'block';
@@ -75,7 +71,6 @@ function openEdit(id) {
     document.getElementById('charCpContext').value = p.context || '';
     document.getElementById('charCpPrefs').value   = p.prefs   || '';
   }
-  renderRefPhotos();
   showScreen('editScreen', true);
 }
 
@@ -137,8 +132,6 @@ function saveChar() {
       context: document.getElementById('charCpContext').value.trim(),
       prefs:   document.getElementById('charCpPrefs').value.trim()
     } : null,
-    refPhotos:       [...tempRefPhotos],
-    activeRefPhoto:  tempActiveRefPhoto,
     history: []
   };
   if (editId) {
@@ -167,58 +160,3 @@ function confirmDelete(id) {
   save(); closeModal(); goHome(); toast('Personaje eliminado');
 }
 
-// ── REF PHOTOS ──
-function renderRefPhotos() {
-  const grid = document.getElementById('refPhotosGrid');
-  if (!grid) return;
-  const slots = [];
-  for (let i = 0; i < 4; i++) {
-    const photo = tempRefPhotos[i];
-    if (photo) {
-      const isActive = i === tempActiveRefPhoto;
-      slots.push(`
-        <div class="ref-photo-slot${isActive ? ' rp-active' : ''}" onclick="setActiveRefPhoto(${i})">
-          <img src="${photo}" alt="">
-          ${isActive ? '<div class="ref-photo-star">★</div>' : ''}
-          <div class="ref-photo-del" onclick="event.stopPropagation();removeRefPhoto(${i})">✕</div>
-        </div>`);
-    } else if (i === tempRefPhotos.length) {
-      slots.push(`<div class="ref-photo-slot ref-photo-add-slot" onclick="triggerRefPhotoUpload()"><div class="ref-photo-add-icon">+</div></div>`);
-    } else {
-      slots.push(`<div class="ref-photo-slot ref-photo-placeholder"></div>`);
-    }
-  }
-  grid.innerHTML = slots.join('');
-}
-
-function triggerRefPhotoUpload() {
-  if (tempRefPhotos.length >= 4) return;
-  document.getElementById('refPhotoFile').click();
-}
-
-function loadRefPhoto(inp) {
-  const file = inp.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async e => {
-    const compressed = await compressImage(e.target.result, 512);
-    tempRefPhotos.push(compressed);
-    if (tempRefPhotos.length === 1) tempActiveRefPhoto = 0;
-    renderRefPhotos();
-  };
-  reader.readAsDataURL(file);
-  inp.value = '';
-}
-
-function setActiveRefPhoto(idx) {
-  if (!tempRefPhotos[idx]) return;
-  tempActiveRefPhoto = idx;
-  renderRefPhotos();
-}
-
-function removeRefPhoto(idx) {
-  tempRefPhotos.splice(idx, 1);
-  if (tempActiveRefPhoto >= tempRefPhotos.length) {
-    tempActiveRefPhoto = Math.max(0, tempRefPhotos.length - 1);
-  }
-  renderRefPhotos();
-}

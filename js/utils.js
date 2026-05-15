@@ -8,22 +8,6 @@ function formatMsg(txt) {
     .replace(/"([^"\n]{1,300})"/g, '<strong>"$1"</strong>');
 }
 function fmtTime(ts) { const d = new Date(ts); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); }
-function compressImage(dataUrl, maxPx) {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(c.toDataURL('image/jpeg', 0.82));
-    };
-    img.src = dataUrl;
-  });
-}
-
 function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
