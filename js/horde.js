@@ -130,7 +130,10 @@ function openFullImg(idx) {
   if (!m || m.type !== 'image') return;
   const overlay = document.createElement('div');
   overlay.className = 'full-img-overlay';
-  overlay.innerHTML = `<img src="${m.content}" alt="Imagen generada">`;
+  overlay.innerHTML = `
+    <img src="${m.content}" alt="Imagen generada">
+    <button class="full-img-dl-btn" onclick="event.stopPropagation();downloadImg(${idx});document.querySelector('.full-img-overlay').remove()" title="Guardar">💾 Guardar</button>
+  `;
   overlay.onclick = () => overlay.remove();
   document.body.appendChild(overlay);
 }
