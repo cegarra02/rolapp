@@ -438,4 +438,30 @@ function saveKey() {
   closeModal(); toast('API Key guardada ✓');
 }
 
-function initChatSwipe() {}
+function initChatSwipe() {
+  const screen = document.getElementById('chat');
+  let gestureBlocked = false;
+  screen.addEventListener('touchstart', e => {
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+    gestureBlocked = false;
+  }, {passive: true});
+  screen.addEventListener('touchmove', e => {
+    if (isSwiped) return;
+    const dx = e.touches[0].clientX - swipeStartX;
+    const dy = e.touches[0].clientY - swipeStartY;
+    if (Math.abs(dy) > Math.abs(dx)) gestureBlocked = true;
+  }, {passive: true});
+  screen.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - swipeStartX;
+    const wrap = document.getElementById('chatContentWrap');
+    if (isSwiped) {
+      isSwiped = false; wrap.classList.remove('swiped');
+      return;
+    }
+    if (!gestureBlocked && dx < -90) {
+      isSwiped = true; wrap.classList.add('swiped');
+      document.getElementById('swipeHint').style.display = 'none';
+    }
+  }, {passive: true});
+}
