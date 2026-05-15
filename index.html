@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -17,15 +17,15 @@
 <!-- HOME -->
 <div class="screen active" id="home">
   <div class="hdr">
-    <div class="home-logo">âœ¦</div>
+    <div class="home-logo">✦</div>
     <div>
       <div class="hdr-title">Roleplay AI</div>
-      <div class="hdr-sub">Sin lÃ­mites, tus reglas</div>
+      <div class="hdr-sub">Sin límites, tus reglas</div>
     </div>
   </div>
   <div class="search-wrap">
-    <span class="search-icon">ðŸ”</span>
-    <input class="search-inp" id="searchInp" placeholder="Buscar personajesâ€¦" oninput="renderChars()">
+    <span class="search-icon">🔍</span>
+    <input class="search-inp" id="searchInp" placeholder="Buscar personajes…" oninput="renderChars()">
   </div>
   <div class="chars-list" id="charsList"></div>
   <button class="fab" onclick="openCreate()" style="font-size:32px;line-height:1;padding-bottom:2px">+</button>
@@ -34,9 +34,9 @@
 <!-- CREATE / EDIT -->
 <div class="screen" id="editScreen">
   <div class="hdr">
-    <button class="icon-btn" onclick="goHome()">â†</button>
+    <button class="icon-btn" onclick="goHome()">←</button>
     <div class="hdr-title" id="editTitle">Nuevo personaje</div>
-    <button class="icon-btn" id="saveBtn" onclick="saveChar()">âœ“</button>
+    <button class="icon-btn" id="saveBtn" onclick="saveChar()">✓</button>
   </div>
   <div class="edit-scroll">
     <!-- Photos -->
@@ -44,8 +44,8 @@
     <div class="photo-row" style="justify-content:center">
       <div style="width:60%">
         <div class="photo-slot" id="bgSlot" onclick="triggerFile('bgFile')" style="aspect-ratio:3/4">
-          <div class="photo-slot-icon">ðŸ–¼ï¸</div>
-          <div class="overlay">âœŽ</div>
+          <div class="photo-slot-icon">🖼️</div>
+          <div class="overlay">✎</div>
         </div>
         <div class="photo-slot-label">Fondo del chat</div>
       </div>
@@ -56,20 +56,20 @@
     <!-- Name -->
     <div class="section-label">Nombre del personaje</div>
     <div class="field-card">
-      <input class="field-inp" id="charName" placeholder="Ej: Serafina, Viktor, Kiraâ€¦" maxlength="40">
+      <input class="field-inp" id="charName" placeholder="Ej: Serafina, Viktor, Kira…" maxlength="40">
     </div>
 
     <!-- Tags -->
-    <div class="section-label">Etiqueta / GÃ©nero</div>
+    <div class="section-label">Etiqueta / Género</div>
     <div class="field-card">
-      <input class="field-inp" id="charTag" placeholder="Ej: FantasÃ­a, RomÃ¡ntico, Aventuraâ€¦" maxlength="30">
+      <input class="field-inp" id="charTag" placeholder="Ej: Fantasía, Romántico, Aventura…" maxlength="30">
     </div>
 
     <!-- Gender -->
     <div class="section-label">Sexo del personaje</div>
     <div class="gender-pick">
-      <button class="gender-btn" id="genderM" onclick="pickGender('M')">â™‚ Masculino</button>
-      <button class="gender-btn" id="genderF" onclick="pickGender('F')">â™€ Femenino</button>
+      <button class="gender-btn" id="genderM" onclick="pickGender('M')">♂ Masculino</button>
+      <button class="gender-btn" id="genderF" onclick="pickGender('F')">♀ Femenino</button>
     </div>
 
     <!-- Age + Shoe size -->
@@ -89,15 +89,15 @@
     </div>
 
     <!-- Description -->
-    <div class="section-label">DescripciÃ³n breve</div>
+    <div class="section-label">Descripción breve</div>
     <div class="field-card">
-      <textarea class="field-inp big" id="charDesc" placeholder="Â¿CÃ³mo es este personaje? Apariencia, personalidad, vozâ€¦" maxlength="200"></textarea>
+      <textarea class="field-inp big" id="charDesc" placeholder="¿Cómo es este personaje? Apariencia, personalidad, voz…" maxlength="200"></textarea>
     </div>
 
     <!-- Context -->
     <div class="section-label">Contexto / Instrucciones (prompt del sistema)</div>
     <div class="field-card">
-      <textarea class="field-inp context" id="charContext" placeholder="Describe aquÃ­ cÃ³mo debe comportarse el personaje, su mundo, restricciones, objetivos, tonoâ€¦ Sin lÃ­mites creativos."></textarea>
+      <textarea class="field-inp context" id="charContext" placeholder="Describe aquí cómo debe comportarse el personaje, su mundo, restricciones, objetivos, tono… Sin límites creativos."></textarea>
     </div>
 
     <!-- Personality sliders -->
@@ -105,18 +105,18 @@
     <div class="field-card">
 
       <div class="slider-block">
-        <div class="slider-title"><span>ðŸ˜¶</span> Timidez</div>
+        <div class="slider-title"><span>😶</span> Timidez</div>
         <div class="slider-row">
           <input type="range" class="pers-slider" id="slTimid" min="1" max="10" value="5"
             style="background:linear-gradient(to right,var(--accent) 0%,var(--border) 0%)"
             oninput="updateSlider(this,'valTimid')">
           <div class="slider-val" id="valTimid">5</div>
         </div>
-        <div class="slider-labels"><span class="slider-label">Muy tÃ­mido</span><span class="slider-label right">Muy seguro</span></div>
+        <div class="slider-labels"><span class="slider-label">Muy tímido</span><span class="slider-label right">Muy seguro</span></div>
       </div>
 
       <div class="slider-block">
-        <div class="slider-title"><span>â¤ï¸</span> Apertura romÃ¡ntica</div>
+        <div class="slider-title"><span>❤️</span> Apertura romántica</div>
         <div class="slider-row">
           <input type="range" class="pers-slider" id="slRomantic" min="1" max="10" value="5"
             style="background:linear-gradient(to right,var(--accent) 0%,var(--border) 0%)"
@@ -127,25 +127,25 @@
       </div>
 
       <div class="slider-block">
-        <div class="slider-title"><span>ðŸ”¥</span> Ritmo de escalada</div>
+        <div class="slider-title"><span>🔥</span> Ritmo de escalada</div>
         <div class="slider-row">
           <input type="range" class="pers-slider" id="slPace" min="1" max="10" value="4"
             style="background:linear-gradient(to right,var(--accent) 0%,var(--border) 0%)"
             oninput="updateSlider(this,'valPace')">
           <div class="slider-val" id="valPace">4</div>
         </div>
-        <div class="slider-labels"><span class="slider-label">Muy lento</span><span class="slider-label right">Muy rÃ¡pido</span></div>
+        <div class="slider-labels"><span class="slider-label">Muy lento</span><span class="slider-label right">Muy rápido</span></div>
       </div>
 
       <div class="slider-block" style="margin-bottom:0">
-        <div class="slider-title"><span>ðŸŒ¶ï¸</span> Nivel NSFW mÃ¡ximo</div>
+        <div class="slider-title"><span>🌶️</span> Nivel NSFW máximo</div>
         <div class="slider-row">
           <input type="range" class="pers-slider" id="slNsfw" min="1" max="10" value="7"
             style="background:linear-gradient(to right,var(--accent) 0%,var(--border) 0%)"
             oninput="updateSlider(this,'valNsfw')">
           <div class="slider-val" id="valNsfw">7</div>
         </div>
-        <div class="slider-labels"><span class="slider-label">Solo insinuaciones</span><span class="slider-label right">ExplÃ­cito total</span></div>
+        <div class="slider-labels"><span class="slider-label">Solo insinuaciones</span><span class="slider-label right">Explícito total</span></div>
       </div>
 
     </div>
@@ -153,7 +153,7 @@
     <!-- Greeting -->
     <div class="section-label">Mensaje de bienvenida</div>
     <div class="field-card">
-      <textarea class="field-inp big" id="charGreeting" placeholder="El primer mensaje que enviarÃ¡ el personajeâ€¦" maxlength="400"></textarea>
+      <textarea class="field-inp big" id="charGreeting" placeholder="El primer mensaje que enviará el personaje…" maxlength="400"></textarea>
     </div>
 
     <!-- Custom player profile -->
@@ -171,12 +171,12 @@
       <div id="charCustomProfileFields" style="display:none" class="custom-profile-fields">
         <div class="section-label" style="margin-top:4px">Tu nombre en este chat</div>
         <input class="field-inp" id="charCpName" placeholder="Nombre del jugador" maxlength="40" style="margin-bottom:10px">
-        <div class="section-label">Tu descripciÃ³n</div>
-        <textarea class="field-inp big" id="charCpDesc" placeholder="Aspecto, personalidadâ€¦" maxlength="300" style="margin-bottom:10px"></textarea>
+        <div class="section-label">Tu descripción</div>
+        <textarea class="field-inp big" id="charCpDesc" placeholder="Aspecto, personalidad…" maxlength="300" style="margin-bottom:10px"></textarea>
         <div class="section-label">Contexto del jugador</div>
-        <textarea class="field-inp context" id="charCpContext" placeholder="QuÃ© sabe el personaje sobre tiâ€¦" style="margin-bottom:10px"></textarea>
+        <textarea class="field-inp context" id="charCpContext" placeholder="Qué sabe el personaje sobre ti…" style="margin-bottom:10px"></textarea>
         <div class="section-label">Preferencias</div>
-        <textarea class="field-inp big" id="charCpPrefs" placeholder="GÃ©neros, lÃ­mites, idiomaâ€¦" maxlength="400"></textarea>
+        <textarea class="field-inp big" id="charCpPrefs" placeholder="Géneros, límites, idioma…" maxlength="400"></textarea>
       </div>
     </div>
 
@@ -192,17 +192,17 @@
   <div class="chat-bg-overlay"></div>
   <div class="chat-content-wrap" id="chatContentWrap">
     <div class="chat-hdr">
-      <button class="icon-btn" onclick="goHome()" style="background:rgba(30,30,36,.8)">â†</button>
+      <button class="icon-btn" onclick="goHome()" style="background:rgba(30,30,36,.8)">←</button>
       <div class="chat-hdr-info">
         <div class="chat-hdr-name" id="chatName"></div>
         <div class="chat-hdr-meta" id="chatMeta"></div>
       </div>
       <button class="chat-missions-btn" id="chatMissionsBtn" onclick="openChatMissions()">
-        <span class="cmb-icon">âš”ï¸</span>
+        <span class="cmb-icon">⚔️</span>
         <span class="cmb-label">Misiones</span>
         <span class="cmb-badge" id="chatMissionsBadge" style="display:none"></span>
       </button>
-      <button class="icon-btn" onclick="openChatMenu()" style="background:rgba(30,30,36,.8)">â‹®</button>
+      <button class="icon-btn" onclick="openChatMenu()" style="background:rgba(30,30,36,.8)">⋮</button>
     </div>
     <div class="messages" id="messages"></div>
     <div class="chat-input-wrap">
@@ -212,12 +212,12 @@
         <button class="qi-btn" onclick="qi_paren()">()</button>
       </div>
       <div class="chat-input-row">
-        <textarea class="chat-inp" id="chatInp" placeholder="Escribe algoâ€¦" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-        <button class="send-btn" onclick="sendMessage()">âž¤</button>
+        <textarea class="chat-inp" id="chatInp" placeholder="Escribe algo…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">➤</button>
       </div>
     </div>
   </div>
-  <div class="swipe-hint" id="swipeHint">â† desliza</div>
+  <div class="swipe-hint" id="swipeHint">← desliza</div>
 </div>
 
 <!-- IMAGE CROPPER -->
@@ -225,7 +225,7 @@
   <div class="cropper-topbar">
     <div>
       <div class="cropper-topbar-title" id="cropperTitle">Ajustar imagen</div>
-      <div class="cropper-topbar-sub" id="cropperSubtitle">Arrastra Â· pellizca para zoom</div>
+      <div class="cropper-topbar-sub" id="cropperSubtitle">Arrastra · pellizca para zoom</div>
     </div>
   </div>
   <div class="cropper-preview-wrap" id="cropperViewport">
@@ -233,13 +233,13 @@
   </div>
   <div class="cropper-controls">
     <div class="zoom-row">
-      <div class="zoom-btn" onclick="cropZoom(-1)">âˆ’</div>
+      <div class="zoom-btn" onclick="cropZoom(-1)">−</div>
       <input type="range" class="zoom-slider" id="zoomSlider" min="1" max="400" step="1" value="100" oninput="onZoomSlider(this.value)">
       <div class="zoom-btn" onclick="cropZoom(1)">+</div>
     </div>
     <div class="cropper-btns">
       <button class="cropper-cancel" onclick="closeCropper()">Cancelar</button>
-      <button class="cropper-ok" onclick="confirmCrop()">âœ“ Usar imagen</button>
+      <button class="cropper-ok" onclick="confirmCrop()">✓ Usar imagen</button>
     </div>
   </div>
 </div>
@@ -247,7 +247,7 @@
 <!-- CHATS SCREEN -->
 <div class="screen" id="chatsScreen">
   <div class="hdr">
-    <div class="home-logo" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">ðŸ’¬</div>
+    <div class="home-logo" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">💬</div>
     <div>
       <div class="hdr-title">Chats</div>
       <div class="hdr-sub">Tus conversaciones</div>
@@ -259,7 +259,7 @@
 <!-- SCENES SCREEN -->
 <div class="screen" id="scenesScreen">
   <div class="hdr">
-    <div class="home-logo" style="background:linear-gradient(135deg,#f59e0b,#d97706)">âš¡</div>
+    <div class="home-logo" style="background:linear-gradient(135deg,#f59e0b,#d97706)">⚡</div>
     <div>
       <div class="hdr-title">Escenas</div>
       <div class="hdr-sub">Roleplay grupal</div>
@@ -272,27 +272,27 @@
 <!-- SCENE CREATE -->
 <div class="screen" id="sceneScreen">
   <div class="hdr">
-    <button class="icon-btn" onclick="goHome()">â†</button>
+    <button class="icon-btn" onclick="goHome()">←</button>
     <div class="hdr-title" id="sceneTitle">Nueva escena grupal</div>
-    <button class="icon-btn" onclick="saveScene()">âœ“</button>
+    <button class="icon-btn" onclick="saveScene()">✓</button>
   </div>
   <div class="edit-scroll">
     <div class="section-label">Nombre de la escena</div>
     <div class="field-card">
-      <input class="field-inp" id="sceneName" placeholder="Ej: La taberna, El apartamentoâ€¦" maxlength="40">
+      <input class="field-inp" id="sceneName" placeholder="Ej: La taberna, El apartamento…" maxlength="40">
     </div>
 
-    <div class="section-label">Selecciona personajes (mÃ­n. 2)</div>
+    <div class="section-label">Selecciona personajes (mín. 2)</div>
     <div class="scene-chars-grid" id="sceneCharsPicker"></div>
 
     <div class="section-label">Contexto de la escena</div>
     <div class="field-card">
-      <textarea class="field-inp context" id="sceneContext" placeholder="Describe el escenario, quÃ© estÃ¡ pasando, el tono de la escenaâ€¦ Todos los personajes lo compartirÃ¡n."></textarea>
+      <textarea class="field-inp context" id="sceneContext" placeholder="Describe el escenario, qué está pasando, el tono de la escena… Todos los personajes lo compartirán."></textarea>
     </div>
 
     <div class="section-label">Mensaje inicial (opcional)</div>
     <div class="field-card">
-      <textarea class="field-inp big" id="sceneGreeting" placeholder="El primer mensaje que arranca la escenaâ€¦" maxlength="500"></textarea>
+      <textarea class="field-inp big" id="sceneGreeting" placeholder="El primer mensaje que arranca la escena…" maxlength="500"></textarea>
     </div>
 
     <!-- Custom player profile -->
@@ -310,12 +310,12 @@
       <div id="sceneCustomProfileFields" style="display:none" class="custom-profile-fields">
         <div class="section-label" style="margin-top:4px">Tu nombre en esta escena</div>
         <input class="field-inp" id="sceneCpName" placeholder="Nombre del jugador" maxlength="40" style="margin-bottom:10px">
-        <div class="section-label">Tu descripciÃ³n</div>
-        <textarea class="field-inp big" id="sceneCpDesc" placeholder="Aspecto, personalidadâ€¦" maxlength="300" style="margin-bottom:10px"></textarea>
+        <div class="section-label">Tu descripción</div>
+        <textarea class="field-inp big" id="sceneCpDesc" placeholder="Aspecto, personalidad…" maxlength="300" style="margin-bottom:10px"></textarea>
         <div class="section-label">Contexto del jugador</div>
-        <textarea class="field-inp context" id="sceneCpContext" placeholder="QuÃ© saben los personajes sobre tiâ€¦" style="margin-bottom:10px"></textarea>
+        <textarea class="field-inp context" id="sceneCpContext" placeholder="Qué saben los personajes sobre ti…" style="margin-bottom:10px"></textarea>
         <div class="section-label">Preferencias</div>
-        <textarea class="field-inp big" id="sceneCpPrefs" placeholder="GÃ©neros, lÃ­mites, idiomaâ€¦" maxlength="400"></textarea>
+        <textarea class="field-inp big" id="sceneCpPrefs" placeholder="Géneros, límites, idioma…" maxlength="400"></textarea>
       </div>
     </div>
 
@@ -340,23 +340,23 @@
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav" id="bottomNav">
   <div class="nav-tab active" id="tabChars" onclick="switchTab('chars')">
-    <div class="nav-icon">ðŸŽ­</div>
+    <div class="nav-icon">🎭</div>
     <div class="nav-label">Personajes</div>
   </div>
   <div class="nav-tab" id="tabScenes" onclick="switchTab('scenes')">
-    <div class="nav-icon">âš¡</div>
+    <div class="nav-icon">⚡</div>
     <div class="nav-label">Escenas</div>
   </div>
   <div class="nav-tab" id="tabChats" onclick="switchTab('chats')">
-    <div class="nav-icon">ðŸ’¬</div>
+    <div class="nav-icon">💬</div>
     <div class="nav-label">Chat</div>
   </div>
   <div class="nav-tab" id="tabMissions" onclick="switchTab('missions')">
-    <div class="nav-icon">âš”ï¸</div>
+    <div class="nav-icon">⚔️</div>
     <div class="nav-label">Misiones</div>
   </div>
   <div class="nav-tab" id="tabProfile" onclick="switchTab('profile')">
-    <div class="nav-icon">ðŸ‘¤</div>
+    <div class="nav-icon">👤</div>
     <div class="nav-label">Mi Perfil</div>
   </div>
 </nav>
@@ -364,7 +364,7 @@
 <!-- MISSIONS SCREEN -->
 <div class="screen" id="missionsScreen">
   <div class="hdr">
-    <div class="home-logo" style="background:linear-gradient(135deg,#f59e0b,#d97706)">âš”</div>
+    <div class="home-logo" style="background:linear-gradient(135deg,#f59e0b,#d97706)">⚔</div>
     <div style="flex:1">
       <div class="hdr-title">Misiones</div>
       <div class="hdr-sub" id="missionsSubtitle">Completa retos en tus roleplays</div>
@@ -389,11 +389,11 @@
       <div class="section-label" style="margin-bottom:8px">Generar misiones para</div>
       <div class="mission-char-filter" id="missionCharFilter"></div>
       <button class="gen-btn" id="genBtn" onclick="generateMissions()">
-        <span id="genBtnIcon">âœ¦</span>
+        <span id="genBtnIcon">✦</span>
         <span id="genBtnText">Generar misiones con IA</span>
       </button>
       <button class="gen-btn-nsfw" id="genBtnNsfw" onclick="generateNsfwMissions()">
-        <span id="genBtnNsfwIcon">ðŸŒ¶ï¸</span>
+        <span id="genBtnNsfwIcon">🌶️</span>
         <span id="genBtnNsfwText">Misiones picantes</span>
       </button>
     </div>
@@ -409,8 +409,8 @@
 
     <!-- Empty state -->
     <div class="empty-missions" id="missionsEmpty" style="display:none">
-      <div style="font-size:48px;margin-bottom:12px">âš”ï¸</div>
-      <p style="font-size:14px;line-height:1.7">Pulsa el botÃ³n para que la IA<br>genere misiones basadas en tus personajes</p>
+      <div style="font-size:48px;margin-bottom:12px">⚔️</div>
+      <p style="font-size:14px;line-height:1.7">Pulsa el botón para que la IA<br>genere misiones basadas en tus personajes</p>
     </div>
   </div>
 </div>
@@ -420,7 +420,7 @@
   <div class="hito-notif-box">
     <div class="hito-notif-bar"></div>
     <div class="hito-notif-inner">
-      <div class="hito-notif-icon">ðŸ“Œ</div>
+      <div class="hito-notif-icon">📌</div>
       <div class="hito-notif-right">
         <div class="hito-notif-eyebrow">Momento importante</div>
         <div class="hito-notif-text" id="hitoToastText"></div>
@@ -434,10 +434,10 @@
   <div class="mission-notif-box">
     <div class="mission-notif-bar" id="toastRarityBar"></div>
     <div class="mission-notif-inner">
-      <div class="mission-notif-medal" id="toastMedalIcon">ðŸ…</div>
+      <div class="mission-notif-medal" id="toastMedalIcon">🏅</div>
       <div class="mission-notif-right">
-        <div class="mission-notif-eyebrow" id="toastEyebrow">MisiÃ³n completada</div>
-        <div class="mission-notif-title" id="toastTitle">Â¡MisiÃ³n completada!</div>
+        <div class="mission-notif-eyebrow" id="toastEyebrow">Misión completada</div>
+        <div class="mission-notif-title" id="toastTitle">¡Misión completada!</div>
         <div class="mission-notif-desc" id="toastDesc"></div>
       </div>
     </div>
@@ -447,25 +447,25 @@
 <!-- PROFILE SCREEN -->
 <div class="screen" id="profileScreen">
   <div class="hdr">
-    <div class="home-logo" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9)">âœ¦</div>
+    <div class="home-logo" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9)">✦</div>
     <div style="flex:1">
       <div class="hdr-title">Mi Perfil</div>
       <div class="hdr-sub">Tu identidad en el roleplay</div>
     </div>
-    <button class="icon-btn" onclick="saveProfile()">âœ“</button>
+    <button class="icon-btn" onclick="saveProfile()">✓</button>
   </div>
   <div class="edit-scroll">
     <!-- Name -->
     <div class="section-label">Tu nombre / alias</div>
     <div class="field-card">
-      <input class="field-inp" id="profileName" placeholder="Â¿CÃ³mo te llamas tÃº en el roleplay?" maxlength="40">
+      <input class="field-inp" id="profileName" placeholder="¿Cómo te llamas tú en el roleplay?" maxlength="40">
     </div>
 
     <!-- Gender -->
-    <div class="section-label">Tu gÃ©nero</div>
+    <div class="section-label">Tu género</div>
     <div class="gender-pick">
-      <button class="gender-btn" id="profileGenderM" onclick="pickProfileGender('M')">â™‚ Masculino</button>
-      <button class="gender-btn" id="profileGenderF" onclick="pickProfileGender('F')">â™€ Femenino</button>
+      <button class="gender-btn" id="profileGenderM" onclick="pickProfileGender('M')">♂ Masculino</button>
+      <button class="gender-btn" id="profileGenderF" onclick="pickProfileGender('F')">♀ Femenino</button>
     </div>
 
     <!-- Age + Height -->
@@ -485,33 +485,33 @@
     </div>
 
     <!-- Description -->
-    <div class="section-label">Tu descripciÃ³n</div>
+    <div class="section-label">Tu descripción</div>
     <div class="field-card">
-      <textarea class="field-inp big" id="profileDesc" placeholder="Tu aspecto, personalidad, quiÃ©n eres en estas historiasâ€¦" maxlength="300"></textarea>
+      <textarea class="field-inp big" id="profileDesc" placeholder="Tu aspecto, personalidad, quién eres en estas historias…" maxlength="300"></textarea>
     </div>
 
     <!-- Context -->
     <div class="section-label">Contexto del jugador</div>
-    <div class="info-badge">â„¹ï¸ El personaje sabrÃ¡ esto sobre ti en cada chat</div>
+    <div class="info-badge">ℹ️ El personaje sabrá esto sobre ti en cada chat</div>
     <div class="field-card">
-      <textarea class="field-inp context" id="profileContext" placeholder="Ejemplo: Soy un aventurero llamado Kael, humano de 28 aÃ±os, moreno y callado pero leal. Me interesan los tesoros y la magia oscura. Suelo reaccionar con frialdad al peligroâ€¦"></textarea>
+      <textarea class="field-inp context" id="profileContext" placeholder="Ejemplo: Soy un aventurero llamado Kael, humano de 28 años, moreno y callado pero leal. Me interesan los tesoros y la magia oscura. Suelo reaccionar con frialdad al peligro…"></textarea>
     </div>
 
     <!-- Preferences -->
     <div class="section-label">Preferencias de roleplay</div>
     <div class="field-card">
-      <textarea class="field-inp big" id="profilePrefs" placeholder="GÃ©neros favoritos, cosas que siempre quieres incluir, lÃ­mites, idioma preferidoâ€¦" maxlength="400"></textarea>
+      <textarea class="field-inp big" id="profilePrefs" placeholder="Géneros favoritos, cosas que siempre quieres incluir, límites, idioma preferido…" maxlength="400"></textarea>
     </div>
 
     <!-- API Key -->
     <div class="section-label">API Key de Anthropic</div>
     <div class="field-card" style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:18px">ðŸ”‘</span>
-      <input class="field-inp" id="profileApiKey" type="password" placeholder="sk-ant-â€¦" style="flex:1">
-      <button onclick="toggleApiKeyVisibility()" id="apiKeyToggle" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;flex-shrink:0">ðŸ‘</button>
+      <span style="font-size:18px">🔑</span>
+      <input class="field-inp" id="profileApiKey" type="password" placeholder="sk-ant-…" style="flex:1">
+      <button onclick="toggleApiKeyVisibility()" id="apiKeyToggle" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;flex-shrink:0">👁</button>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin:-10px 0 10px 4px">ObtÃ©n tu key en console.anthropic.com Â· Se guarda solo en tu dispositivo</div>
-    <button onclick="testApiKey()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer;margin-bottom:16px" id="testKeyBtn">ðŸ”Œ Probar conexiÃ³n</button>
+    <div style="font-size:11px;color:var(--muted);margin:-10px 0 10px 4px">Obtén tu key en console.anthropic.com · Se guarda solo en tu dispositivo</div>
+    <button onclick="testApiKey()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer;margin-bottom:16px" id="testKeyBtn">🔌 Probar conexión</button>
 
     <button class="btn-primary" onclick="saveProfile()">Guardar mi perfil</button>
     <div style="height:20px"></div>
@@ -540,4 +540,3 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
-
