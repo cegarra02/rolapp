@@ -144,8 +144,22 @@ async function sendMessage() {
   renderMessages(); scrollBottom();
   showTyping();
   try {
-    const reply = await callAPI(text);
+    const rawReply = await callAPI(text);
     hideTyping();
+
+    // Extract and strip <hito> tag before storing or displaying
+    const hitoMatch = rawReply.match(/<hito>([^<]+)<\/hito>/i);
+    const reply = rawReply.replace(/<hito>[^<]*<\/hito>/gi, '').trim();
+    if (hitoMatch) {
+      const t = currentScene || currentChar;
+      if (t && t.hitosEnabled !== false) {
+        if (!t.hitos) t.hitos = [];
+        t.hitos.unshift({ id: uid(), text: hitoMatch[1].trim(), ts: Date.now() });
+        if (currentScene) saveScenes(); else save();
+        setTimeout(() => toast('📌 Nuevo hito registrado'), 600);
+      }
+    }
+
     const firstNewBotIdx = history.length;
     if (currentScene) {
       const parts = parseSceneReply(reply);

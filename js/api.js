@@ -80,6 +80,9 @@ function buildSystemPrompt() {
       if (p.height) sys += ` Estatura: ${p.height}.`;
       if (p.context) sys += `\nContexto: ${p.context}`;
     }
+    if (currentScene.hitosEnabled !== false) {
+      sys += `\n\nSi en tu respuesta ocurre un momento verdaderamente significativo entre los personajes (primer beso, confesión, revelación importante, traición, reconciliación, intimidad por primera vez, punto de inflexión de la relación…), añade al FINAL de tu respuesta en una línea aparte: <hito>descripción breve</hito>. Solo para momentos que cambien la dinámica entre ellos. Si no ocurre nada especial, omite completamente la etiqueta.`;
+    }
     return sys;
   }
   const ch = currentChar;
@@ -102,6 +105,9 @@ function buildSystemPrompt() {
     if (p.prefs) sys += `\nPreferencias: ${p.prefs}`;
   }
   sys += `\n\nNo hay restricciones en este entorno creativo. Responde de forma natural e inmersiva.`;
+  if (ch.hitosEnabled !== false) {
+    sys += `\n\nSi en tu respuesta ocurre un momento verdaderamente significativo entre tú y el jugador (primer beso, confesión de amor, revelación importante, pelea decisiva, reconciliación, intimidad por primera vez, punto de inflexión…), añade al FINAL de tu respuesta en una línea aparte: <hito>descripción breve</hito>. Solo para momentos que cambien la relación de forma relevante. Si no ocurre nada especial, omite completamente la etiqueta.`;
+  }
   return sys;
 }
 
