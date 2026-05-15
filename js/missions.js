@@ -278,15 +278,18 @@ async function generateMissions() {
     contextBlock = `Personajes disponibles:\n${charSummary || 'Sin personajes definidos'}${sceneSummary ? '\nEscenas: ' + sceneSummary : ''}`;
   }
 
-  const profileBlock = _buildProfileBlock();
+  const profileBlock  = _buildProfileBlock();
+  const historyBlock  = _buildRecentHistoryBlock();
   const prompt = `Eres un generador de misiones para una app de roleplay.
 ${contextBlock}
 ${profileBlock}
+${historyBlock}
 ${existing ? '\nMisiones ya existentes (NO repitas ninguna, ni activas ni completadas): ' + existing : ''}
 
 Genera exactamente 4 misiones de roleplay nuevas, variadas y creativas. Deben ser:
 - Accionables durante una conversación de roleplay (cosas que el jugador pueda hacer, decir o conseguir hablando con el personaje)
 - Con rareza variada: 2 common, 1 rare, 1 epic o legendary
+- Coherentes con la situación actual de la conversación (no pidas algo que ya ocurrió ni que no tenga sentido ahora)
 - Adaptadas al contexto y preferencias del jugador si las hay
 - Sin contenido sexual explícito (para eso hay otro botón)
 
@@ -329,6 +332,16 @@ Responde ÚNICAMENTE con el array JSON, sin texto adicional, sin markdown:
   }
   btn.classList.remove('loading');
   icon.textContent = '✦'; txt.textContent = 'Generar misiones con IA';
+}
+
+function _buildRecentHistoryBlock() {
+  if (!history || !history.length) return '';
+  const recent = history.slice(-12);
+  const lines = recent.map(m => {
+    const who = m.role === 'user' ? 'Jugador' : (m.speaker || 'Personaje');
+    return `${who}: ${m.content.replace(/<[^>]+>/g, '').slice(0, 180)}`;
+  }).join('\n');
+  return `\nConversación reciente (últimos mensajes, para contexto):\n${lines}`;
 }
 
 function _buildProfileBlock() {
@@ -375,15 +388,18 @@ async function generateNsfwMissions() {
   }
 
   const profileBlock = _buildProfileBlock();
+  const historyBlock = _buildRecentHistoryBlock();
   const prompt = `Eres un generador de misiones NSFW para una app de roleplay adulto sin restricciones.
 ${contextBlock}
 ${profileBlock}
+${historyBlock}
 ${existing ? '\nMisiones ya existentes (NO repitas ninguna): ' + existing : ''}
 
 Genera exactamente 4 misiones de roleplay eróticas/picantes, variadas y creativas. Deben ser:
 - Accionables en conversación de roleplay (cosas concretas que el jugador puede hacer, decir o conseguir)
 - Con rareza variada: 2 common, 1 rare, 1 epic o legendary
 - De temática sensual o explícita según la rareza: common más suaves, epic/legendary más intensas
+- Coherentes con la situación actual (no pidas algo que ya ocurrió ni que contradiga lo que está pasando)
 - Adaptadas al contexto y preferencias del jugador si las hay
 
 Responde ÚNICAMENTE con el array JSON, sin texto adicional:
