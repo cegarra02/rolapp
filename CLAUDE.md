@@ -77,7 +77,19 @@ sw.js               — Service Worker
 - **Compresión de imágenes**: las fotos de personaje (fondo de chat) y fotos de referencia se comprimen a 512px/JPEG 0.82 antes de guardarse, para no saturar localStorage.
 - **Fotos de referencia**: cada personaje puede tener hasta 4 fotos (campo `refPhotos[]`, índice activo `activeRefPhoto`). La foto activa se usa como `source_image` en AI Horde (img2img).
 - **Historial de chat**: se guarda en cada objeto `char.history[]` o `scene.history[]`. Los mensajes de imagen se excluyen al construir el contexto para Claude (`buildMessages` filtra `type !== 'image'`).
-- **Versión en URLs de scripts**: `?v=NN` en los `<script src>` sirve como cache-busting manual. Actualmente en v24/v25.
+- **Versión en URLs de scripts**: `?v=NN` en los `<script src>` sirve como cache-busting manual. Actualmente en **v25**.
+
+---
+
+## Proceso de deploy — IMPORTANTE
+
+Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del commit, o los usuarios verán la versión antigua aunque el repo esté actualizado:
+
+1. **Subir el número de versión** en `index.html` — todos los `?v=NN` deben pasar al mismo número nuevo (buscar y reemplazar todo `?v=24` → `?v=25`, etc.).
+2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` al nuevo número Y actualizar la lista `ASSETS` para que incluya todos los archivos con el nuevo `?v=NN`. Si se añade un archivo JS nuevo, también hay que añadirlo aquí.
+3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
+
+El Service Worker intercepta todas las peticiones y sirve desde su caché interna. Si `CACHE` no cambia de nombre, el SW sigue devolviendo los archivos antiguos aunque el servidor ya tenga los nuevos. El cambio de nombre de caché activa el ciclo `install → activate → skipWaiting → claim`, que borra la caché vieja y descarga la nueva.
 
 ---
 
