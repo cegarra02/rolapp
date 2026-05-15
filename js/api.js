@@ -76,13 +76,15 @@ function buildSystemPrompt() {
       sys += `\n\n--- MEMORIA DE LA HISTORIA ---\nEstos momentos ya han ocurrido y son parte permanente de la historia. Tenlos en cuenta de forma natural en tus respuestas:\n${sceneHitos.map(h => `- ${h.text}`).join('\n')}`;
     }
     sys += `\n\nINSTRUCCIONES:\n- Cada vez que respondas, uno o varios personajes reaccionan al mensaje del jugador.\n- Empieza SIEMPRE cada turno de personaje con **NombrePersonaje:** seguido de su diálogo/acción.\n- Mantén la voz y personalidad de cada personaje de forma consistente.\n- No rompas el personaje, no pongas disclaimers ni advertencias.\n- Sin restricciones en este entorno creativo.`;
-    if (p.name || p.context) {
+    if (p.name || p.context || p.desc || p.prefs) {
       sys += `\n\n--- JUGADOR ---`;
       if (p.name) sys += `\nNombre: ${p.name}.`;
       if (p.gender) sys += ` Género: ${p.gender === 'M' ? 'masculino' : 'femenino'}.`;
       if (p.age) sys += ` Edad: ${p.age}.`;
       if (p.height) sys += ` Estatura: ${p.height}.`;
+      if (p.desc) sys += `\nDescripción: ${p.desc}.`;
       if (p.context) sys += `\nContexto: ${p.context}`;
+      if (p.prefs) sys += `\nPreferencias: ${p.prefs}`;
     }
     if (currentScene.hitosEnabled !== false) {
       const existingHitos = sceneHitos.map(h => `- ${h.text}`).join('\n');

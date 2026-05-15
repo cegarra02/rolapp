@@ -183,7 +183,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 .medal-count{font-size:11px;color:var(--accent);font-weight:600}
 .empty-missions{text-align:center;padding:40px 20px;color:var(--muted)}
 /* completion notification */
-.hito-notif{position:fixed;top:calc(var(--safe-top) + 64px);left:50%;transform:translateX(-50%) translateY(-20px);z-index:601;pointer-events:none;opacity:0;transition:opacity .35s,transform .35s;width:calc(100% - 32px);max-width:380px}
+.hito-notif{position:fixed;top:calc(var(--safe-top) + 148px);left:50%;transform:translateX(-50%) translateY(-20px);z-index:601;pointer-events:none;opacity:0;transition:opacity .35s,transform .35s;width:calc(100% - 32px);max-width:380px}
 .hito-notif.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .hito-notif-box{background:rgba(18,18,22,.97);backdrop-filter:blur(24px);border-radius:20px;border:1px solid rgba(192,132,252,.25);overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.6),0 0 0 1px rgba(192,132,252,.08)}
 .hito-notif-bar{height:3px;background:linear-gradient(90deg,var(--accent),#7c3aed)}
