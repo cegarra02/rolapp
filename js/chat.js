@@ -332,6 +332,7 @@ function openChat(id) {
 function openChatMenu() {
   openModal('Opciones del chat', [
     {label: '✎  Editar personaje',  action: `editFromChat()`},
+    {label: '📌  Hitos',            action: `openMilestonesModal()`},
     {label: '🎨  Estilo del chat',   action: `openChatStyleModal()`},
     {label: '🗑  Limpiar historial', action: `clearHistory()`},
     {label: '✕  Cancelar',          action: 'closeModal()'}
