@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d0d0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Roleplay AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=24">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="home">
+  <div class="hdr">
+    <div class="home-logo">✦</div>
+    <div>
+      <div class="hdr-title">Roleplay AI</div>
+      <div class="hdr-sub">Sin límites, tus reglas</div>
+    </div>
+  </div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-inp" id="searchInp" placeholder="Buscar personajes…" oninput="renderChars()">
+  </div>
+  <div class="chars-list" id="charsList"></div>
+  <button class="fab" onclick="openCreate()" style="font-size:32px;line-height:1;padding-bottom:2px">+</button>
+</div>
+
+<!-- CREATE / EDIT -->
+<div class="screen" id="editScreen">
+  <div class="hdr">
+    <button class="icon-btn" onclick="goHome()">←</button>
+    <div class="hdr-title" id="editTitle">Nuevo personaje</div>
+    <button class="icon-btn" id="saveBtn" onclick="saveChar()">✓</button>
+  </div>
+  <div class="edit-scroll">
+    <!-- Photos -->
+    <div class="section-label">Fotos</div>
+    <div class="photo-row" style="justify-content:center">
+      <div style="width:60%">
+        <div class="photo-slot" id="bgSlot" onclick="triggerFile('bgFile')" style="aspect-ratio:3/4">
+          <div class="photo-slot-icon">🖼️</div>
+          <div class="overlay">✎</div>
+        </div>
+        <div class="photo-slot-label">Fondo del chat</div>
+      </div>
+    </div>
+    <input type="file" id="avatarFileInner" accept="image/*" onchange="loadPhoto(this,'avatar')" style="display:none">
+    <input type="file" id="bgFileInner" accept="image/*" onchange="loadPhoto(this,'bg')" style="display:none">
+
+    <!-- Ref Photos -->
+    <div class="section-label">Fotos de referencia <span class="section-label-sub">· para generar imágenes con IA (máx. 4)</span></div>
+    <div class="ref-photos-grid" id="refPhotosGrid"></div>
+    <input type="file" id="refPhotoFile" accept="image/*" onchange="loadRefPhoto(this)" style="display:none">
+
+    <!-- Name -->
+    <div class="section-label">Nombre del personaje</div>
+    <div class="field-card">
+      <input class="field-inp" id="charName" placeholder="Ej: Serafina, Viktor, Kira…" maxlength="40">
+    </div>
+
+    <!-- Tags -->
+    <div class="section-label">Etiqueta / Género</div>
+    <div class="field-card">
+      <input class="field-inp" id="charTag" placeholder="Ej: Fantasía, Romántico, Aventura…" maxlength="30">
+    </div>
+
+    <!-- Gender -->
+    <div class="section-label">Sexo del personaje</div>
+    <div class="gender-pick">
+      <button class="gender-btn" id="genderM" onclick="pickGender('M')">♂ Masculino</button>
+      <button class="gender-btn" id="genderF" onclick="pickGender('F')">♀ Femenino</button>
+    </div>
+
+    <!-- Age + Shoe size -->
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div style="flex:1">
+        <div class="section-label">Edad</div>
+        <div class="field-card" style="margin-bottom:0">
+          <input class="field-inp" id="charAge" placeholder="Ej: 24" maxlength="10" type="text" inputmode="numeric">
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="section-label">Talla de pie</div>
+        <div class="field-card" style="margin-bottom:0">
+          <input class="field-inp" id="charShoeSize" placeholder="Ej: 38" maxlength="10" type="text" inputmode="decimal">
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="section-label">Descripción breve</div>
+    <div class="field-card">
+      <textarea class="field-inp big" id="charDesc" placeholder="¿Cómo es este personaje? Apariencia, personalidad, voz…" maxlength="200"></textarea>
+    </div>
+
+    <!-- Context -->
+    <div class="section-label">Contexto / Instrucciones (prompt del sistema)</div>
+    <div class="field-card">
+      <textarea class="field-inp context" id="charContext" placeholder="Describe aquí cómo debe comportarse el personaje, su mundo, restricciones, objetivos, tono… Sin límites creativos."></textarea>
+    </div>
+
+    <!-- Personality sliders -->
+    <div class="section-label">Personalidad y comportamiento</div>
+    <div class="field-card">
+
+      <div class="slider-block">
+        <div class="slider-title"><span>😶</span> Timidez</div>
+        <div class="slider-row">
+          <input type="range" class="pers-slider" id="slTimid" min="1" max="10" value="5"
+            style="background:linear-gradient(to right,var(--accent) 0%,var(--border) 0%)"
+            oninput="updateSlider(this,'valTimid')">
+          <div class="slider-val" id="valTimid">5</div>
+        </div>
+        <div class="slider-labels"><span class="slider-label">Muy tímido</span><span class="slider-label right">Muy seguro</span></div>
+      </div>
+
+      <div class="slider-block">
+        <div class="slider-title"><span>❤️</span> Apertura romántica</div>
+        <div class="slider-row">
+          <input type="range" class="pers-slider" id="slRomantic" min="1" max="10" value="5"
+            style="background:linear-gradient(to right,var(--accent) 0%,var(--border) 0%)"
+            oninput="updateSlider(this,'valRomantic')">
+          <div class="slider-val" id="valRomantic">5</div>
+        </div>
+        <div class="slider-labels"><span class="slider-label">Muy cerrado</span><span class="slider-label right">Muy abierto</span></div>
+      </div>
+
+      <div class="slider-block">
+        <div class="slider-title"><span>🔥</span> Ritmo de escalada</div>
+        <div class="slider-row">
+          <input type="range" class="pers-slider" id="slPace" min="1" max="10" value="4"
+            style="background:linear-gradient(to right,var(--accent) 0%,var(--border) 0%)"
+            oninput="updateSlider(this,'valPace')">
+          <div class="slider-val" id="valPace">4</div>
+        </div>
+        <div class="slider-labels"><span class="slider-label">Muy lento</span><span class="slider-label right">Muy rápido</span></div>
+      </div>
+
+      <div class="slider-block" style="margin-bottom:0">
+        <div class="slider-title"><span>🌶️</span> Nivel NSFW máximo</div>
+        <div class="slider-row">
+          <input type="range" class="pers-slider" id="slNsfw" min="1" max="10" value="7"
+            style="background:linear-gradient(to right,var(--accent) 0%,var(--border) 0%)"
+            oninput="updateSlider(this,'valNsfw')">
+          <div class="slider-val" id="valNsfw">7</div>
+        </div>
+        <div class="slider-labels"><span class="slider-label">Solo insinuaciones</span><span class="slider-label right">Explícito total</span></div>
+      </div>
+
+    </div>
+
+    <!-- Greeting -->
+    <div class="section-label">Mensaje de bienvenida</div>
+    <div class="field-card">
+      <textarea class="field-inp big" id="charGreeting" placeholder="El primer mensaje que enviará el personaje…" maxlength="400"></textarea>
+    </div>
+
+    <!-- Custom player profile -->
+    <div class="field-card">
+      <div class="custom-profile-toggle">
+        <div>
+          <div class="custom-profile-toggle-label">Perfil del jugador personalizado</div>
+          <div class="custom-profile-toggle-sub">Usa datos distintos a "Mi Perfil" en este chat</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="charUseCustomProfile" onchange="toggleCustomProfile(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="charCustomProfileFields" style="display:none" class="custom-profile-fields">
+        <div class="section-label" style="margin-top:4px">Tu nombre en este chat</div>
+        <input class="field-inp" id="charCpName" placeholder="Nombre del jugador" maxlength="40" style="margin-bottom:10px">
+        <div class="section-label">Tu descripción</div>
+        <textarea class="field-inp big" id="charCpDesc" placeholder="Aspecto, personalidad…" maxlength="300" style="margin-bottom:10px"></textarea>
+        <div class="section-label">Contexto del jugador</div>
+        <textarea class="field-inp context" id="charCpContext" placeholder="Qué sabe el personaje sobre ti…" style="margin-bottom:10px"></textarea>
+        <div class="section-label">Preferencias</div>
+        <textarea class="field-inp big" id="charCpPrefs" placeholder="Géneros, límites, idioma…" maxlength="400"></textarea>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="saveChar()">Guardar personaje</button>
+    <button class="btn-danger" id="deleteBtn" onclick="deleteChar()" style="display:none">Eliminar personaje</button>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="screen" id="chat">
+  <div class="chat-bg" id="chatBg"></div>
+  <div class="chat-bg-overlay"></div>
+  <div class="chat-content-wrap" id="chatContentWrap">
+    <div class="chat-hdr">
+      <button class="icon-btn" onclick="goHome()" style="background:rgba(30,30,36,.8)">←</button>
+      <div class="chat-hdr-info">
+        <div class="chat-hdr-name" id="chatName"></div>
+        <div class="chat-hdr-meta" id="chatMeta"></div>
+      </div>
+      <button class="chat-missions-btn" id="chatMissionsBtn" onclick="openChatMissions()">
+        <span class="cmb-icon">⚔️</span>
+        <span class="cmb-label">Misiones</span>
+        <span class="cmb-badge" id="chatMissionsBadge" style="display:none"></span>
+      </button>
+      <button class="icon-btn" onclick="openChatMenu()" style="background:rgba(30,30,36,.8)">⋮</button>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="chat-input-wrap">
+      <div class="quick-btns">
+        <button class="qi-btn" onclick="qi_asterisk()">**</button>
+        <button class="qi-btn" onclick="qi_quote()">""</button>
+        <button class="qi-btn" onclick="qi_paren()">()</button>
+      </div>
+      <div class="chat-input-row">
+        <textarea class="chat-inp" id="chatInp" placeholder="Escribe algo…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="img-gen-btn" onclick="generateChatImage()" title="Generar imagen">🎨</button>
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+  <div class="swipe-hint" id="swipeHint">← desliza</div>
+</div>
+
+<!-- IMAGE CROPPER -->
+<div class="cropper-overlay hidden" id="cropperOverlay">
+  <div class="cropper-topbar">
+    <div>
+      <div class="cropper-topbar-title" id="cropperTitle">Ajustar imagen</div>
+      <div class="cropper-topbar-sub" id="cropperSubtitle">Arrastra · pellizca para zoom</div>
+    </div>
+  </div>
+  <div class="cropper-preview-wrap" id="cropperViewport">
+    <canvas id="cropperPreview" class="cropper-preview-canvas"></canvas>
+  </div>
+  <div class="cropper-controls">
+    <div class="zoom-row">
+      <div class="zoom-btn" onclick="cropZoom(-1)">−</div>
+      <input type="range" class="zoom-slider" id="zoomSlider" min="1" max="400" step="1" value="100" oninput="onZoomSlider(this.value)">
+      <div class="zoom-btn" onclick="cropZoom(1)">+</div>
+    </div>
+    <div class="cropper-btns">
+      <button class="cropper-cancel" onclick="closeCropper()">Cancelar</button>
+      <button class="cropper-ok" onclick="confirmCrop()">✓ Usar imagen</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHATS SCREEN -->
+<div class="screen" id="chatsScreen">
+  <div class="hdr">
+    <div class="home-logo" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">💬</div>
+    <div>
+      <div class="hdr-title">Chats</div>
+      <div class="hdr-sub">Tus conversaciones</div>
+    </div>
+  </div>
+  <div class="inbox-list" id="inboxList"></div>
+</div>
+
+<!-- SCENES SCREEN -->
+<div class="screen" id="scenesScreen">
+  <div class="hdr">
+    <div class="home-logo" style="background:linear-gradient(135deg,#f59e0b,#d97706)">⚡</div>
+    <div>
+      <div class="hdr-title">Escenas</div>
+      <div class="hdr-sub">Roleplay grupal</div>
+    </div>
+  </div>
+  <div class="chars-list" id="scenesList" style="padding-bottom:90px"></div>
+  <button class="fab" onclick="openSceneCreate()" style="font-size:32px;line-height:1;padding-bottom:2px">+</button>
+</div>
+
+<!-- SCENE CREATE -->
+<div class="screen" id="sceneScreen">
+  <div class="hdr">
+    <button class="icon-btn" onclick="goHome()">←</button>
+    <div class="hdr-title" id="sceneTitle">Nueva escena grupal</div>
+    <button class="icon-btn" onclick="saveScene()">✓</button>
+  </div>
+  <div class="edit-scroll">
+    <div class="section-label">Nombre de la escena</div>
+    <div class="field-card">
+      <input class="field-inp" id="sceneName" placeholder="Ej: La taberna, El apartamento…" maxlength="40">
+    </div>
+
+    <div class="section-label">Selecciona personajes (mín. 2)</div>
+    <div class="scene-chars-grid" id="sceneCharsPicker"></div>
+
+    <div class="section-label">Contexto de la escena</div>
+    <div class="field-card">
+      <textarea class="field-inp context" id="sceneContext" placeholder="Describe el escenario, qué está pasando, el tono de la escena… Todos los personajes lo compartirán."></textarea>
+    </div>
+
+    <div class="section-label">Mensaje inicial (opcional)</div>
+    <div class="field-card">
+      <textarea class="field-inp big" id="sceneGreeting" placeholder="El primer mensaje que arranca la escena…" maxlength="500"></textarea>
+    </div>
+
+    <!-- Custom player profile -->
+    <div class="field-card">
+      <div class="custom-profile-toggle">
+        <div>
+          <div class="custom-profile-toggle-label">Perfil del jugador personalizado</div>
+          <div class="custom-profile-toggle-sub">Usa datos distintos a "Mi Perfil" en esta escena</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="sceneUseCustomProfile" onchange="toggleSceneCustomProfile(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="sceneCustomProfileFields" style="display:none" class="custom-profile-fields">
+        <div class="section-label" style="margin-top:4px">Tu nombre en esta escena</div>
+        <input class="field-inp" id="sceneCpName" placeholder="Nombre del jugador" maxlength="40" style="margin-bottom:10px">
+        <div class="section-label">Tu descripción</div>
+        <textarea class="field-inp big" id="sceneCpDesc" placeholder="Aspecto, personalidad…" maxlength="300" style="margin-bottom:10px"></textarea>
+        <div class="section-label">Contexto del jugador</div>
+        <textarea class="field-inp context" id="sceneCpContext" placeholder="Qué saben los personajes sobre ti…" style="margin-bottom:10px"></textarea>
+        <div class="section-label">Preferencias</div>
+        <textarea class="field-inp big" id="sceneCpPrefs" placeholder="Géneros, límites, idioma…" maxlength="400"></textarea>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="saveScene()">Crear escena</button>
+    <button class="btn-danger" id="sceneDeleteBtn" onclick="deleteScene()" style="display:none">Eliminar escena</button>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg hidden" id="modal" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <div class="modal-title" id="modalTitle"></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<input type="file" id="bgFile" accept="image/*" onchange="loadPhoto(this,'bg')" style="display:none">
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" id="bottomNav">
+  <div class="nav-tab active" id="tabChars" onclick="switchTab('chars')">
+    <div class="nav-icon">🎭</div>
+    <div class="nav-label">Personajes</div>
+  </div>
+  <div class="nav-tab" id="tabScenes" onclick="switchTab('scenes')">
+    <div class="nav-icon">⚡</div>
+    <div class="nav-label">Escenas</div>
+  </div>
+  <div class="nav-tab" id="tabChats" onclick="switchTab('chats')">
+    <div class="nav-icon">💬</div>
+    <div class="nav-label">Chat</div>
+  </div>
+  <div class="nav-tab" id="tabMissions" onclick="switchTab('missions')">
+    <div class="nav-icon">⚔️</div>
+    <div class="nav-label">Misiones</div>
+  </div>
+  <div class="nav-tab" id="tabProfile" onclick="switchTab('profile')">
+    <div class="nav-icon">👤</div>
+    <div class="nav-label">Mi Perfil</div>
+  </div>
+</nav>
+
+<!-- MISSIONS SCREEN -->
+<div class="screen" id="missionsScreen">
+  <div class="hdr">
+    <div class="home-logo" style="background:linear-gradient(135deg,#f59e0b,#d97706)">⚔</div>
+    <div style="flex:1">
+      <div class="hdr-title">Misiones</div>
+      <div class="hdr-sub" id="missionsSubtitle">Completa retos en tus roleplays</div>
+    </div>
+  </div>
+  <div class="missions-screen-scroll">
+    <!-- Stats -->
+    <div class="missions-stats-row">
+      <div class="mstat"><div class="mstat-val" id="statCompleted">0</div><div class="mstat-lbl">Completadas</div></div>
+      <div class="mstat"><div class="mstat-val" id="statActive">0</div><div class="mstat-lbl">Activas</div></div>
+      <div class="mstat"><div class="mstat-val" id="statStreak">0</div><div class="mstat-lbl">Racha</div></div>
+    </div>
+
+    <!-- Medals -->
+    <div class="medals-section" id="medalsSection" style="display:none">
+      <div class="section-label" style="margin-bottom:10px">Medallas conseguidas</div>
+      <div class="medals-row" id="medalsRow"></div>
+    </div>
+
+    <!-- Generate section with filter -->
+    <div class="mission-gen-section">
+      <div class="section-label" style="margin-bottom:8px">Generar misiones para</div>
+      <div class="mission-char-filter" id="missionCharFilter"></div>
+      <button class="gen-btn" id="genBtn" onclick="generateMissions()">
+        <span id="genBtnIcon">✦</span>
+        <span id="genBtnText">Generar misiones con IA</span>
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mission-tabs">
+      <button class="mission-tab active" id="tabMActive" onclick="setMissionTab('active')">Activas <span class="mission-tab-count" id="countActive">0</span></button>
+      <button class="mission-tab" id="tabMDone" onclick="setMissionTab('done')">Completadas <span class="mission-tab-count" id="countDone">0</span></button>
+    </div>
+
+    <!-- Missions list -->
+    <div id="missionsList"></div>
+
+    <!-- Empty state -->
+    <div class="empty-missions" id="missionsEmpty" style="display:none">
+      <div style="font-size:48px;margin-bottom:12px">⚔️</div>
+      <p style="font-size:14px;line-height:1.7">Pulsa el botón para que la IA<br>genere misiones basadas en tus personajes</p>
+    </div>
+  </div>
+</div>
+
+<!-- MISSION COMPLETE NOTIFICATION -->
+<div class="mission-notif" id="missionToast">
+  <div class="mission-notif-box">
+    <div class="mission-notif-bar" id="toastRarityBar"></div>
+    <div class="mission-notif-inner">
+      <div class="mission-notif-medal" id="toastMedalIcon">🏅</div>
+      <div class="mission-notif-right">
+        <div class="mission-notif-eyebrow" id="toastEyebrow">Misión completada</div>
+        <div class="mission-notif-title" id="toastTitle">¡Misión completada!</div>
+        <div class="mission-notif-desc" id="toastDesc"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE SCREEN -->
+<div class="screen" id="profileScreen">
+  <div class="hdr">
+    <div class="home-logo" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9)">✦</div>
+    <div style="flex:1">
+      <div class="hdr-title">Mi Perfil</div>
+      <div class="hdr-sub">Tu identidad en el roleplay</div>
+    </div>
+    <button class="icon-btn" onclick="saveProfile()">✓</button>
+  </div>
+  <div class="edit-scroll">
+    <!-- Name -->
+    <div class="section-label">Tu nombre / alias</div>
+    <div class="field-card">
+      <input class="field-inp" id="profileName" placeholder="¿Cómo te llamas tú en el roleplay?" maxlength="40">
+    </div>
+
+    <!-- Gender -->
+    <div class="section-label">Tu género</div>
+    <div class="gender-pick">
+      <button class="gender-btn" id="profileGenderM" onclick="pickProfileGender('M')">♂ Masculino</button>
+      <button class="gender-btn" id="profileGenderF" onclick="pickProfileGender('F')">♀ Femenino</button>
+    </div>
+
+    <!-- Age + Height -->
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div style="flex:1">
+        <div class="section-label">Edad</div>
+        <div class="field-card" style="margin-bottom:0">
+          <input class="field-inp" id="profileAge" placeholder="Ej: 22" maxlength="10" type="text" inputmode="numeric">
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="section-label">Estatura</div>
+        <div class="field-card" style="margin-bottom:0">
+          <input class="field-inp" id="profileHeight" placeholder="Ej: 175 cm" maxlength="15">
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="section-label">Tu descripción</div>
+    <div class="field-card">
+      <textarea class="field-inp big" id="profileDesc" placeholder="Tu aspecto, personalidad, quién eres en estas historias…" maxlength="300"></textarea>
+    </div>
+
+    <!-- Context -->
+    <div class="section-label">Contexto del jugador</div>
+    <div class="info-badge">ℹ️ El personaje sabrá esto sobre ti en cada chat</div>
+    <div class="field-card">
+      <textarea class="field-inp context" id="profileContext" placeholder="Ejemplo: Soy un aventurero llamado Kael, humano de 28 años, moreno y callado pero leal. Me interesan los tesoros y la magia oscura. Suelo reaccionar con frialdad al peligro…"></textarea>
+    </div>
+
+    <!-- Preferences -->
+    <div class="section-label">Preferencias de roleplay</div>
+    <div class="field-card">
+      <textarea class="field-inp big" id="profilePrefs" placeholder="Géneros favoritos, cosas que siempre quieres incluir, límites, idioma preferido…" maxlength="400"></textarea>
+    </div>
+
+    <!-- API Key -->
+    <div class="section-label">API Key de Anthropic</div>
+    <div class="field-card" style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">🔑</span>
+      <input class="field-inp" id="profileApiKey" type="password" placeholder="sk-ant-…" style="flex:1">
+      <button onclick="toggleApiKeyVisibility()" id="apiKeyToggle" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;flex-shrink:0">👁</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin:-10px 0 10px 4px">Obtén tu key en console.anthropic.com · Se guarda solo en tu dispositivo</div>
+    <button onclick="testApiKey()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer;margin-bottom:16px" id="testKeyBtn">🔌 Probar conexión</button>
+
+    <!-- AI Horde Key -->
+    <div class="section-label">AI Horde API Key</div>
+    <div class="field-card" style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">🎨</span>
+      <input class="field-inp" id="profileHordeKey" type="password" placeholder="Opcional — para generar imágenes" style="flex:1">
+      <button onclick="toggleHordeKeyVisibility()" id="hordeKeyToggle" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;flex-shrink:0">👁</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin:-10px 0 16px 4px">Obtén tu key en aihorde.net · Gratis con registro</div>
+
+    <button class="btn-primary" onclick="saveProfile()">Guardar mi perfil</button>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<script src="js/state.js?v=24"></script>
+<script src="js/utils.js?v=24"></script>
+<script src="js/ui.js?v=24"></script>
+<script src="js/sliders.js?v=24"></script>
+<script src="js/api.js?v=24"></script>
+<script src="js/cropper.js?v=24"></script>
+<script src="js/chars.js?v=24"></script>
+<script src="js/profile.js?v=24"></script>
+<script src="js/scenes.js?v=24"></script>
+<script src="js/inbox.js?v=24"></script>
+<script src="js/missions.js?v=24"></script>
+<script src="js/horde.js?v=25"></script>
+<script src="js/chat.js?v=24"></script>
+<script src="js/main.js?v=24"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>

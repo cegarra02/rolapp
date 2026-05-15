@@ -1,0 +1,32 @@
+function save() { localStorage.setItem('rp_chars', JSON.stringify(chars)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function esc(s) { return String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function formatMsg(txt) {
+  return esc(txt)
+    .replace(/\n/g, '<br>')
+    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+    .replace(/"([^"\n]{1,300})"/g, '<strong>"$1"</strong>');
+}
+function fmtTime(ts) { const d = new Date(ts); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function compressImage(dataUrl, maxPx) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.src = dataUrl;
+  });
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
