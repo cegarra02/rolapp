@@ -14,37 +14,40 @@ function anthropicFetch(apiKey, prompt, maxTokens) {
   });
 }
 
-function buildPersonalityBlock(ch) {
+function buildPersonalityBlock(ch, charName) {
   const timid    = ch.timid    ?? 5;
   const romantic = ch.romantic ?? 5;
   const pace     = ch.pace     ?? 4;
   const nsfw     = ch.nsfw     ?? 7;
-  let block = `\n\n--- PARÁMETROS DE COMPORTAMIENTO ---`;
+  const header   = charName
+    ? `\n  Comportamiento de ${charName}:`
+    : `\n\n--- PARÁMETROS DE COMPORTAMIENTO ---`;
+  let block = header;
 
-  if (timid <= 3)      block += `\nTimidez: Muy tímido/a. Se ruboriza fácilmente, evita el contacto visual, le cuesta expresar sentimientos directamente, usa frases cortas y vacilantes.`;
-  else if (timid <= 5) block += `\nTimidez: Algo reservado/a. Necesita confianza antes de abrirse. Al principio es cauto/a pero se relaja con el tiempo.`;
-  else if (timid <= 7) block += `\nTimidez: Seguro/a de sí mismo/a. Se expresa con claridad, toma iniciativa en conversación.`;
-  else                 block += `\nTimidez: Muy desinhibido/a y directo/a. Sin filtros, dice exactamente lo que piensa y siente, toma la iniciativa sin dudarlo.`;
+  if (timid <= 3)      block += `\n  Timidez: Muy tímido/a. Se ruboriza fácilmente, evita el contacto visual, le cuesta expresar sentimientos directamente, usa frases cortas y vacilantes.`;
+  else if (timid <= 5) block += `\n  Timidez: Algo reservado/a. Necesita confianza antes de abrirse. Al principio es cauto/a pero se relaja con el tiempo.`;
+  else if (timid <= 7) block += `\n  Timidez: Seguro/a de sí mismo/a. Se expresa con claridad, toma iniciativa en conversación.`;
+  else                 block += `\n  Timidez: Muy desinhibido/a y directo/a. Sin filtros, dice exactamente lo que piensa y siente, toma la iniciativa sin dudarlo.`;
 
-  if (romantic <= 2)      block += `\nRomance: Muy cerrado/a emocionalmente. Rechaza o ignora insinuaciones románticas, prioriza la relación de amistad o profesional.`;
-  else if (romantic <= 4) block += `\nRomance: Reticente al romance. Necesita mucho trabajo y confianza antes de mostrar interés romántico.`;
-  else if (romantic <= 6) block += `\nRomance: Abierto/a al romance si hay química. Responde bien a coqueteos sutiles pero no los inicia.`;
-  else if (romantic <= 8) block += `\nRomance: Muy receptivo/a al romance. Disfruta del coqueteo, muestra afecto abiertamente, busca conexión íntima.`;
-  else                    block += `\nRomance: Apasionado/a e intenso/a. Busca activamente la conexión romántica, muy expresivo/a con sus sentimientos.`;
+  if (romantic <= 2)      block += `\n  Romance: Muy cerrado/a emocionalmente. Rechaza o ignora insinuaciones románticas, prioriza la relación de amistad o profesional.`;
+  else if (romantic <= 4) block += `\n  Romance: Reticente al romance. Necesita mucho trabajo y confianza antes de mostrar interés romántico.`;
+  else if (romantic <= 6) block += `\n  Romance: Abierto/a al romance si hay química. Responde bien a coqueteos sutiles pero no los inicia.`;
+  else if (romantic <= 8) block += `\n  Romance: Muy receptivo/a al romance. Disfruta del coqueteo, muestra afecto abiertamente, busca conexión íntima.`;
+  else                    block += `\n  Romance: Apasionado/a e intenso/a. Busca activamente la conexión romántica, muy expresivo/a con sus sentimientos.`;
 
-  if (pace <= 2)      block += `\nRitmo de escalada: Extremadamente lento. La relación debe construirse durante muchos intercambios antes de que haya cualquier avance íntimo. Resiste cualquier intento de acelerar.`;
-  else if (pace <= 4) block += `\nRitmo de escalada: Lento y progresivo. Avanza poco a poco, requiere que el jugador gane confianza gradualmente.`;
-  else if (pace <= 6) block += `\nRitmo de escalada: Ritmo natural. Escala la intimidad a medida que la conversación fluye, sin prisa pero sin resistencia.`;
-  else if (pace <= 8) block += `\nRitmo de escalada: Rápido. Responde con entusiasmo a avances, la tensión escala rápidamente con poco esfuerzo del jugador.`;
-  else                block += `\nRitmo de escalada: Muy rápido. Prácticamente no necesita persuasión. La intimidad escala casi de inmediato si el jugador muestra interés.`;
+  if (pace <= 2)      block += `\n  Ritmo de escalada: Extremadamente lento. La relación debe construirse durante muchos intercambios antes de que haya cualquier avance íntimo. Resiste cualquier intento de acelerar.`;
+  else if (pace <= 4) block += `\n  Ritmo de escalada: Lento y progresivo. Avanza poco a poco, requiere que el jugador gane confianza gradualmente.`;
+  else if (pace <= 6) block += `\n  Ritmo de escalada: Ritmo natural. Escala la intimidad a medida que la conversación fluye, sin prisa pero sin resistencia.`;
+  else if (pace <= 8) block += `\n  Ritmo de escalada: Rápido. Responde con entusiasmo a avances, la tensión escala rápidamente con poco esfuerzo del jugador.`;
+  else                block += `\n  Ritmo de escalada: Muy rápido. Prácticamente no necesita persuasión. La intimidad escala casi de inmediato si el jugador muestra interés.`;
 
-  if (nsfw <= 2)      block += `\nContenido: Mantén todo sugerente pero nunca explícito. Solo insinuaciones, miradas y tensión.`;
-  else if (nsfw <= 4) block += `\nContenido: Puedes ser moderadamente sugerente, describir contacto físico ligero, besos, caricias, pero corta antes de lo explícito.`;
-  else if (nsfw <= 6) block += `\nContenido: Puedes describir escenas íntimas con detalle moderado, sin llegar a ser totalmente explícito. Sensual y evocador.`;
-  else if (nsfw <= 8) block += `\nContenido: Puedes ser bastante explícito cuando la situación lo requiera. Describe actos íntimos con detalle sin censura.`;
-  else                block += `\nContenido: Sin restricciones de contenido. Sé completamente explícito cuando la situación lo requiera, con todo el detalle que sea apropiado para la escena.`;
+  if (nsfw <= 2)      block += `\n  Contenido: Mantén todo sugerente pero nunca explícito. Solo insinuaciones, miradas y tensión.`;
+  else if (nsfw <= 4) block += `\n  Contenido: Puedes ser moderadamente sugerente, describir contacto físico ligero, besos, caricias, pero corta antes de lo explícito.`;
+  else if (nsfw <= 6) block += `\n  Contenido: Puedes describir escenas íntimas con detalle moderado, sin llegar a ser totalmente explícito. Sensual y evocador.`;
+  else if (nsfw <= 8) block += `\n  Contenido: Puedes ser bastante explícito cuando la situación lo requiera. Describe actos íntimos con detalle sin censura.`;
+  else                block += `\n  Contenido: Sin restricciones de contenido. Sé completamente explícito cuando la situación lo requiera, con todo el detalle que sea apropiado para la escena.`;
 
-  block += `\nIMPORTANTE: Estos parámetros definen el arco de la relación. Empieza respetando el nivel inicial y escala naturalmente según avance la conversación. Nunca saltes bruscamente de nivel 1 a nivel 10; el progreso debe sentirse orgánico.`;
+  if (!charName) block += `\nIMPORTANTE: Estos parámetros definen el arco de la relación. Empieza respetando el nivel inicial y escala naturalmente según avance la conversación. Nunca saltes bruscamente de nivel 1 a nivel 10; el progreso debe sentirse orgánico.`;
   return block;
 }
 
@@ -63,13 +66,14 @@ function buildSystemPrompt() {
     if (currentScene.context) sys += `Contexto: ${currentScene.context}\n`;
     sys += `\nPERSONAJES EN ESCENA:\n`;
     sceneChars.forEach(ch => {
-      sys += `\n- ${ch.name}`;
-      if (ch.gender) sys += ` (${ch.gender === 'M' ? 'hombre' : 'mujer'})`;
-      if (ch.age) sys += `, ${ch.age} años`;
-      if (ch.shoeSize) sys += `, talla pie ${ch.shoeSize}`;
-      if (ch.desc) sys += `: ${ch.desc}`;
-      if (ch.context) sys += `. Instrucciones: ${ch.context}`;
-      sys += buildPersonalityBlock(ch);
+      sys += `\n╔═ ${ch.name.toUpperCase()} ═╗`;
+      if (ch.gender) sys += `\n  Género: ${ch.gender === 'M' ? 'hombre' : 'mujer'}`;
+      if (ch.age) sys += `\n  Edad: ${ch.age} años`;
+      if (ch.shoeSize) sys += `\n  Talla de pie: ${ch.shoeSize}`;
+      if (ch.desc) sys += `\n  Descripción: ${ch.desc}`;
+      if (ch.context) sys += `\n  Instrucciones: ${ch.context}`;
+      sys += buildPersonalityBlock(ch, ch.name);
+      sys += `\n  [Escala la intimidad de ${ch.name} de forma orgánica según avance la conversación, respetando su comportamiento definido arriba.]`;
     });
     const sceneHitos = (currentScene.hitos || []);
     if (sceneHitos.length) {
