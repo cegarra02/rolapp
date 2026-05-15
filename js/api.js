@@ -125,7 +125,7 @@ function buildSystemPrompt() {
 
 function buildMessages(newText) {
   const msgs = [];
-  const chatHistory = history.slice(0, -1);
+  const chatHistory = history.slice(0, -1).slice(-20);
   for (const m of chatHistory) {
     if (m.role === 'assistant' || m.role === 'user') {
       let content = m.content;

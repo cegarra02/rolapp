@@ -49,6 +49,8 @@ function renderMissionsScreen() {
   document.getElementById('missionsSubtitle').textContent = totalCompleted
     ? `${totalCompleted} completada${totalCompleted > 1 ? 's' : ''} · ${mStreak} día${mStreak !== 1 ? 's' : ''} de racha`
     : 'Completa retos en tus roleplays';
+  const toggleBtn = document.getElementById('missionsToggleBtn');
+  if (toggleBtn) { toggleBtn.textContent = missionsEnabled ? '⏸' : '▶'; toggleBtn.title = missionsEnabled ? 'Pausar detección automática' : 'Activar detección automática'; }
   document.getElementById('countDone').textContent   = done;
 
   const medSec = document.getElementById('medalsSection');
@@ -450,8 +452,17 @@ Responde ÚNICAMENTE con el array JSON, sin texto adicional:
   icon.textContent = '🌶️'; txt.textContent = 'Misiones picantes';
 }
 
+// ── TOGGLE ──
+function toggleMissionsEnabled() {
+  missionsEnabled = !missionsEnabled;
+  localStorage.setItem('rp_missions_enabled', missionsEnabled);
+  renderMissionsScreen();
+  toast(missionsEnabled ? 'Detección de misiones activada' : 'Detección de misiones pausada');
+}
+
 // ── AUTO-DETECT COMPLETION ──
 async function checkMissionCompletion(userMsg, botReply) {
+  if (!missionsEnabled) return;
   const allActive = missions.filter(m => !m.done);
   if (!allActive.length) return;
   const apiKey = localStorage.getItem('rp_apikey') || '';

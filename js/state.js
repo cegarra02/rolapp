@@ -33,3 +33,4 @@ let swipeStartX = 0, swipeStartY = 0, isSwiped = false;
 
 let activeMissionTab = 'active';
 let missionGenTarget = null; // null = todos | {type:'char'|'scene', id, name}
+let missionsEnabled = localStorage.getItem('rp_missions_enabled') !== 'false';
