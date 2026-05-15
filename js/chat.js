@@ -156,7 +156,7 @@ async function sendMessage() {
         if (!t.hitos) t.hitos = [];
         t.hitos.unshift({ id: uid(), text: hitoMatch[1].trim(), ts: Date.now() });
         if (currentScene) saveScenes(); else save();
-        setTimeout(() => toast('📌 Nuevo hito registrado'), 600);
+        setTimeout(() => showHitoNotif(hitoMatch[1].trim()), 600);
       }
     }
 

@@ -1,3 +1,14 @@
+function showHitoNotif(text) {
+  const el = document.getElementById('hitoToast');
+  if (!el) return;
+  document.getElementById('hitoToastText').textContent = text;
+  el.classList.remove('show');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 5000);
+  }));
+}
+
 function _hitosTarget() { return currentScene || currentChar || null; }
 
 function _hitosEnabled() {
