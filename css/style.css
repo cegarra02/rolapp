@@ -13,7 +13,7 @@
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bot:env(safe-area-inset-bottom,0px);
 }
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+body{font-family:'Inter',sans-serif;background:var(--surface);color:var(--text);height:100dvh;overflow:hidden;display:flex;flex-direction:column}
 /* ── SCREENS ── */
 .screen{display:none;flex-direction:column;height:100dvh;overflow:hidden}
 .screen.active{display:flex}
