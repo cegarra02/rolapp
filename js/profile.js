@@ -48,12 +48,17 @@ async function testOrKey() {
       body: JSON.stringify({model: 'meta-llama/llama-3.3-70b-instruct:free', max_tokens: 10, messages: [{role: 'user', content: 'hi'}]})
     });
     if (res.ok) { btn.textContent = '✅ Conexión OK'; btn.style.color = '#4ade80'; }
-    else { const d = await res.json(); btn.textContent = '❌ Error: ' + (d.error?.message || res.status); btn.style.color = 'var(--danger)'; }
+    else {
+      let d = {}; try { d = await res.json(); } catch(e) {}
+      const msg = d.error?.message || d.message || JSON.stringify(d) || res.statusText;
+      btn.textContent = '❌ ' + res.status + ': ' + msg;
+      btn.style.color = 'var(--danger)';
+    }
   } catch (e) {
     btn.textContent = '❌ ' + e.message; btn.style.color = 'var(--danger)';
   }
   btn.style.pointerEvents = '';
-  setTimeout(() => { btn.textContent = '🔌 Probar conexión'; btn.style.color = ''; }, 4000);
+  setTimeout(() => { btn.textContent = '🔌 Probar conexión'; btn.style.color = ''; }, 6000);
 }
 
 

@@ -158,8 +158,11 @@ async function callAPI(userText) {
   });
   if (!res.ok) {
     let errMsg = '';
-    try { const ed = await res.json(); errMsg = ed.error?.message || ''; } catch (e) {}
-    throw new Error('API error ' + res.status + ' ' + errMsg);
+    try {
+      const ed = await res.json();
+      errMsg = ed.error?.message || ed.message || JSON.stringify(ed);
+    } catch (e) {}
+    throw new Error('OpenRouter ' + res.status + ': ' + (errMsg || res.statusText));
   }
   const data = await res.json();
   return data.choices[0].message.content;
