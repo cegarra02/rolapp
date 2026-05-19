@@ -144,26 +144,18 @@ function buildMessages(newText) {
 
 async function callAPI(userText) {
   const sysPrompt = buildSystemPrompt();
-  const msgs = [{role: 'system', content: sysPrompt}, ...buildMessages(userText)];
-  const orKey = localStorage.getItem('rp_or_key') || '';
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const msgs = buildMessages(userText);
+  const apiKey = localStorage.getItem('rp_apikey') || '';
+  const res = await fetch('https://misty-heart-cd26.alex1234567890ct.workers.dev', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + orKey,
-      'HTTP-Referer': 'https://cegarra02.github.io/rolapp/',
-      'X-Title': 'Roleplay AI'
-    },
-    body: JSON.stringify({model: 'meta-llama/llama-3.3-70b-instruct', max_tokens: 1000, messages: msgs})
+    headers: {'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01'},
+    body: JSON.stringify({model: 'claude-sonnet-4-6', max_tokens: 1000, system: sysPrompt, messages: msgs})
   });
   if (!res.ok) {
     let errMsg = '';
-    try {
-      const ed = await res.json();
-      errMsg = ed.error?.message || ed.message || JSON.stringify(ed);
-    } catch (e) {}
-    throw new Error('OpenRouter ' + res.status + ': ' + (errMsg || res.statusText));
+    try { const ed = await res.json(); errMsg = ed.error?.message || ''; } catch (e) {}
+    throw new Error('API error ' + res.status + ' ' + errMsg);
   }
   const data = await res.json();
-  return data.choices[0].message.content;
+  return data.content[0].text;
 }
