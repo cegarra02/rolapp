@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Roleplay AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=50">
+<link rel="stylesheet" href="css/style.css?v=51">
 <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -514,25 +514,34 @@
     <div style="font-size:11px;color:var(--muted);margin:-10px 0 10px 4px">Obtén tu key en console.anthropic.com · Se guarda solo en tu dispositivo</div>
     <button onclick="testApiKey()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer;margin-bottom:16px" id="testKeyBtn">🔌 Probar conexión</button>
 
+    <div class="section-label">API Key de OpenRouter (chat)</div>
+    <div class="field-card" style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">🗝️</span>
+      <input class="field-inp" id="profileOrKey" type="password" placeholder="sk-or-…" style="flex:1">
+      <button onclick="toggleOrKeyVisibility()" id="orKeyToggle" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;flex-shrink:0">👁</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin:-10px 0 10px 4px">Obtén tu key en openrouter.ai · Usada para los chats · Se guarda solo en tu dispositivo</div>
+    <button onclick="testOrKey()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:13px;cursor:pointer;margin-bottom:16px" id="testOrKeyBtn">🔌 Probar conexión</button>
+
     <button class="btn-primary" onclick="saveProfile()">Guardar mi perfil</button>
     <div style="height:20px"></div>
   </div>
 </div>
 
-<script src="js/state.js?v=50"></script>
-<script src="js/utils.js?v=50"></script>
-<script src="js/ui.js?v=50"></script>
-<script src="js/sliders.js?v=50"></script>
-<script src="js/api.js?v=50"></script>
-<script src="js/cropper.js?v=50"></script>
-<script src="js/chars.js?v=50"></script>
-<script src="js/profile.js?v=50"></script>
-<script src="js/scenes.js?v=50"></script>
-<script src="js/inbox.js?v=50"></script>
-<script src="js/missions.js?v=50"></script>
-<script src="js/hitos.js?v=50"></script>
-<script src="js/chat.js?v=50"></script>
-<script src="js/main.js?v=50"></script>
+<script src="js/state.js?v=51"></script>
+<script src="js/utils.js?v=51"></script>
+<script src="js/ui.js?v=51"></script>
+<script src="js/sliders.js?v=51"></script>
+<script src="js/api.js?v=51"></script>
+<script src="js/cropper.js?v=51"></script>
+<script src="js/chars.js?v=51"></script>
+<script src="js/profile.js?v=51"></script>
+<script src="js/scenes.js?v=51"></script>
+<script src="js/inbox.js?v=51"></script>
+<script src="js/missions.js?v=51"></script>
+<script src="js/hitos.js?v=51"></script>
+<script src="js/chat.js?v=51"></script>
+<script src="js/main.js?v=51"></script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });

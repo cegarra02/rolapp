@@ -14,6 +14,7 @@ function loadProfileFields() {
   document.getElementById('profileContext').value = p.context || '';
   document.getElementById('profilePrefs').value   = p.prefs   || '';
   document.getElementById('profileApiKey').value  = localStorage.getItem('rp_apikey') || '';
+  document.getElementById('profileOrKey').value   = localStorage.getItem('rp_or_key') || '';
 }
 
 function toggleApiKeyVisibility() {
@@ -21,6 +22,38 @@ function toggleApiKeyVisibility() {
   const btn = document.getElementById('apiKeyToggle');
   if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
   else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+function toggleOrKeyVisibility() {
+  const inp = document.getElementById('profileOrKey');
+  const btn = document.getElementById('orKeyToggle');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+async function testOrKey() {
+  const key = document.getElementById('profileOrKey').value.trim() || localStorage.getItem('rp_or_key') || '';
+  if (!key) { toast('Introduce una API key de OpenRouter primero'); return; }
+  const btn = document.getElementById('testOrKeyBtn');
+  btn.textContent = '⏳ Probando...'; btn.style.pointerEvents = 'none';
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key,
+        'HTTP-Referer': 'https://cegarra02.github.io/rolapp/',
+        'X-Title': 'Roleplay AI'
+      },
+      body: JSON.stringify({model: 'meta-llama/llama-3.3-70b-instruct:free', max_tokens: 10, messages: [{role: 'user', content: 'hi'}]})
+    });
+    if (res.ok) { btn.textContent = '✅ Conexión OK'; btn.style.color = '#4ade80'; }
+    else { const d = await res.json(); btn.textContent = '❌ Error: ' + (d.error?.message || res.status); btn.style.color = 'var(--danger)'; }
+  } catch (e) {
+    btn.textContent = '❌ ' + e.message; btn.style.color = 'var(--danger)';
+  }
+  btn.style.pointerEvents = '';
+  setTimeout(() => { btn.textContent = '🔌 Probar conexión'; btn.style.color = ''; }, 4000);
 }
 
 
@@ -48,6 +81,8 @@ async function testApiKey() {
 function saveProfile() {
   const apiKey = document.getElementById('profileApiKey').value.trim();
   if (apiKey) localStorage.setItem('rp_apikey', apiKey);
+  const orKey = document.getElementById('profileOrKey').value.trim();
+  if (orKey) localStorage.setItem('rp_or_key', orKey);
   profile = {
     name:    document.getElementById('profileName').value.trim(),
     gender:  profile._tempGender || null,
