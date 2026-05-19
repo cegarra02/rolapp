@@ -146,23 +146,23 @@ async function callAPI(userText) {
   const sysPrompt = buildSystemPrompt();
   const msgs = [{role: 'system', content: sysPrompt}, ...buildMessages(userText)];
   const orKey = localStorage.getItem('rp_or_key') || '';
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + orKey,
-      'X-Title': 'Roleplay AI'
-    },
-    body: JSON.stringify({model: 'meta-llama/llama-3.3-70b-instruct:free', max_tokens: 1000, messages: msgs})
-  });
-  if (!res.ok) {
-    let errMsg = '';
-    try {
-      const ed = await res.json();
-      errMsg = ed.error?.message || ed.message || JSON.stringify(ed);
-    } catch (e) {}
+  const body = JSON.stringify({model: 'meta-llama/llama-3.3-70b-instruct:free', max_tokens: 1000, messages: msgs});
+  const headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + orKey, 'X-Title': 'Roleplay AI'};
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {method: 'POST', headers, body});
+    if (res.ok) {
+      const data = await res.json();
+      return data.choices[0].message.content;
+    }
+    let ed = {};
+    try { ed = await res.json(); } catch (e) {}
+    const retryAfter = ed.error?.metadata?.retry_after_seconds;
+    if (res.status === 429 && retryAfter && attempt < 3) {
+      await new Promise(r => setTimeout(r, Math.ceil(retryAfter) * 1000));
+      continue;
+    }
+    const errMsg = ed.error?.message || ed.message || JSON.stringify(ed);
     throw new Error('OpenRouter ' + res.status + ': ' + (errMsg || res.statusText));
   }
-  const data = await res.json();
-  return data.choices[0].message.content;
 }
