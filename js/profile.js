@@ -45,7 +45,7 @@ async function testOrKey() {
         'HTTP-Referer': 'https://cegarra02.github.io/rolapp/',
         'X-Title': 'Roleplay AI'
       },
-      body: JSON.stringify({model: 'google/gemma-3-27b-it:free', max_tokens: 10, messages: [{role: 'user', content: 'hi'}]})
+      body: JSON.stringify({model: 'meta-llama/llama-3.3-70b-instruct:free', max_tokens: 10, messages: [{role: 'user', content: 'hi'}]})
     });
     if (res.ok) { btn.textContent = '✅ Conexión OK'; btn.style.color = '#4ade80'; }
     else {
