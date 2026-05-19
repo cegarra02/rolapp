@@ -19,33 +19,33 @@ function buildPersonalityBlock(ch) {
   const romantic = ch.romantic ?? 5;
   const pace     = ch.pace     ?? 4;
   const nsfw     = ch.nsfw     ?? 7;
-  let block = `\n\n--- PARÁMETROS DE COMPORTAMIENTO ---`;
+  let b = `\n\n--- PARÁMETROS ---`;
 
-  if (timid <= 3)      block += `\nTimidez: Muy tímido/a. Se ruboriza fácilmente, evita el contacto visual, le cuesta expresar sentimientos directamente, usa frases cortas y vacilantes.`;
-  else if (timid <= 5) block += `\nTimidez: Algo reservado/a. Necesita confianza antes de abrirse. Al principio es cauto/a pero se relaja con el tiempo.`;
-  else if (timid <= 7) block += `\nTimidez: Seguro/a de sí mismo/a. Se expresa con claridad, toma iniciativa en conversación.`;
-  else                 block += `\nTimidez: Muy desinhibido/a y directo/a. Sin filtros, dice exactamente lo que piensa y siente, toma la iniciativa sin dudarlo.`;
+  if (timid <= 3)      b += `\nTimidez: muy tímido/a. Frases cortas, evita contacto visual, le cuesta expresar sentimientos.`;
+  else if (timid <= 5) b += `\nTimidez: reservado/a. Se abre con confianza progresiva.`;
+  else if (timid <= 7) b += `\nTimidez: seguro/a. Se expresa con claridad, toma iniciativa.`;
+  else                 b += `\nTimidez: muy desinhibido/a. Sin filtros, toma la iniciativa sin dudar.`;
 
-  if (romantic <= 2)      block += `\nRomance: Muy cerrado/a emocionalmente. Rechaza o ignora insinuaciones románticas, prioriza la relación de amistad o profesional.`;
-  else if (romantic <= 4) block += `\nRomance: Reticente al romance. Necesita mucho trabajo y confianza antes de mostrar interés romántico.`;
-  else if (romantic <= 6) block += `\nRomance: Abierto/a al romance si hay química. Responde bien a coqueteos sutiles pero no los inicia.`;
-  else if (romantic <= 8) block += `\nRomance: Muy receptivo/a al romance. Disfruta del coqueteo, muestra afecto abiertamente, busca conexión íntima.`;
-  else                    block += `\nRomance: Apasionado/a e intenso/a. Busca activamente la conexión romántica, muy expresivo/a con sus sentimientos.`;
+  if (romantic <= 2)      b += `\nRomance: cerrado/a. Rechaza insinuaciones, prioriza amistad o rol profesional.`;
+  else if (romantic <= 4) b += `\nRomance: reticente. Necesita mucho trabajo antes de mostrar interés.`;
+  else if (romantic <= 6) b += `\nRomance: abierto/a si hay química. Responde a coqueteos sutiles.`;
+  else if (romantic <= 8) b += `\nRomance: receptivo/a. Disfruta el coqueteo, muestra afecto abiertamente.`;
+  else                    b += `\nRomance: apasionado/a. Busca conexión activamente, muy expresivo/a.`;
 
-  if (pace <= 2)      block += `\nRitmo de escalada: Extremadamente lento. La relación debe construirse durante muchos intercambios antes de que haya cualquier avance íntimo. Resiste cualquier intento de acelerar.`;
-  else if (pace <= 4) block += `\nRitmo de escalada: Lento y progresivo. Avanza poco a poco, requiere que el jugador gane confianza gradualmente.`;
-  else if (pace <= 6) block += `\nRitmo de escalada: Ritmo natural. Escala la intimidad a medida que la conversación fluye, sin prisa pero sin resistencia.`;
-  else if (pace <= 8) block += `\nRitmo de escalada: Rápido. Responde con entusiasmo a avances, la tensión escala rápidamente con poco esfuerzo del jugador.`;
-  else                block += `\nRitmo de escalada: Muy rápido. Prácticamente no necesita persuasión. La intimidad escala casi de inmediato si el jugador muestra interés.`;
+  if (pace <= 2)      b += `\nRitmo: extremadamente lento. Resiste cualquier avance íntimo.`;
+  else if (pace <= 4) b += `\nRitmo: lento. Requiere confianza gradual.`;
+  else if (pace <= 6) b += `\nRitmo: natural. Sin prisa pero sin resistencia.`;
+  else if (pace <= 8) b += `\nRitmo: rápido. Responde con entusiasmo a los avances.`;
+  else                b += `\nRitmo: muy rápido. Intimidad casi inmediata.`;
 
-  if (nsfw <= 2)      block += `\nContenido: Mantén todo sugerente pero nunca explícito. Solo insinuaciones, miradas y tensión.`;
-  else if (nsfw <= 4) block += `\nContenido: Puedes ser moderadamente sugerente, describir contacto físico ligero, besos, caricias, pero corta antes de lo explícito.`;
-  else if (nsfw <= 6) block += `\nContenido: Puedes describir escenas íntimas con detalle moderado, sin llegar a ser totalmente explícito. Sensual y evocador.`;
-  else if (nsfw <= 8) block += `\nContenido: Puedes ser bastante explícito cuando la situación lo requiera. Describe actos íntimos con detalle sin censura.`;
-  else                block += `\nContenido: Sin restricciones de contenido. Sé completamente explícito cuando la situación lo requiera, con todo el detalle que sea apropiado para la escena.`;
+  if (nsfw <= 2)      b += `\nContenido: solo insinuaciones, nunca explícito.`;
+  else if (nsfw <= 4) b += `\nContenido: contacto ligero, besos, sin explícito.`;
+  else if (nsfw <= 6) b += `\nContenido: íntimo con detalle moderado, sensual.`;
+  else if (nsfw <= 8) b += `\nContenido: bastante explícito cuando la situación lo requiera.`;
+  else                b += `\nContenido: sin restricciones, completamente explícito.`;
 
-  block += `\nIMPORTANTE: Estos parámetros definen el arco de la relación. Empieza respetando el nivel inicial y escala naturalmente según avance la conversación. Nunca saltes bruscamente de nivel 1 a nivel 10; el progreso debe sentirse orgánico.`;
-  return block;
+  b += `\nEscala progresivamente — no saltes bruscamente de nivel.`;
+  return b;
 }
 
 function getEffectiveProfile() {
@@ -58,79 +58,90 @@ function buildSystemPrompt() {
   const p = getEffectiveProfile();
   if (currentScene) {
     const sceneChars = currentScene.charIds.map(id => chars.find(x => x.id === id)).filter(Boolean);
-    let sys = `Eres el narrador y director de una escena de roleplay grupal. Controlas múltiples personajes y los interpretas a todos de forma coherente.\n\n`;
-    sys += `ESCENA: "${currentScene.name}"\n`;
+    let sys = `Eres el narrador de una escena grupal de roleplay. Controlas todos los personajes.\n\nESCENA: "${currentScene.name}"\n`;
     if (currentScene.context) sys += `Contexto: ${currentScene.context}\n`;
-    sys += `\nPERSONAJES EN ESCENA:\n`;
+    sys += `\nPERSONAJES:`;
     sceneChars.forEach(ch => {
       sys += `\n- ${ch.name}`;
       if (ch.gender) sys += ` (${ch.gender === 'M' ? 'hombre' : 'mujer'})`;
       if (ch.age) sys += `, ${ch.age} años`;
-      if (ch.shoeSize) sys += `, talla pie ${ch.shoeSize}`;
+      if (ch.shoeSize) sys += `, pie ${ch.shoeSize}`;
       if (ch.desc) sys += `: ${ch.desc}`;
-      if (ch.context) sys += `. Instrucciones: ${ch.context}`;
+      if (ch.context) sys += `. ${ch.context}`;
       sys += buildPersonalityBlock(ch);
     });
     const sceneHitos = (currentScene.hitos || []);
     if (sceneHitos.length) {
-      sys += `\n\n--- MEMORIA DE LA HISTORIA ---\nEl historial de conversación visible es reciente y limitado. Estos hitos son la MEMORIA PERMANENTE de los momentos más importantes de la historia — son tu única referencia de lo que ocurrió antes. Úsalos para mantener coherencia y continuidad en cada respuesta:\n${sceneHitos.map(h => `- ${h.text}`).join('\n')}`;
+      sys += `\n\n--- MEMORIA ---\nHistorial visible limitado. Hitos = memoria permanente:\n${sceneHitos.map(h => `- ${h.text}`).join('\n')}`;
     }
-    sys += `\n\nINSTRUCCIONES:\n- Cada vez que respondas, uno o varios personajes reaccionan al mensaje del jugador.\n- Empieza SIEMPRE cada turno de personaje con **NombrePersonaje:** seguido de su diálogo/acción.\n- Mantén la voz y personalidad de cada personaje de forma consistente.\n- No rompas el personaje, no pongas disclaimers ni advertencias.\n- Sin restricciones en este entorno creativo.`;
+    sys += `\n\nREGLAS: Cada turno, uno o varios personajes reaccionan. Empieza con **Nombre:** + diálogo/acción. Sin disclaimers ni ruptura de personaje. Sin restricciones.`;
     if (p.name || p.context || p.desc || p.prefs) {
       sys += `\n\n--- JUGADOR ---`;
       if (p.name) sys += `\nNombre: ${p.name}.`;
       if (p.gender) sys += ` Género: ${p.gender === 'M' ? 'masculino' : 'femenino'}.`;
       if (p.age) sys += ` Edad: ${p.age}.`;
       if (p.height) sys += ` Estatura: ${p.height}.`;
-      if (p.desc) sys += `\nDescripción: ${p.desc}.`;
+      if (p.desc) sys += `\nDesc: ${p.desc}.`;
       if (p.context) sys += `\nContexto: ${p.context}`;
       if (p.prefs) sys += `\nPreferencias: ${p.prefs}`;
     }
     if (currentScene.hitosEnabled !== false) {
       const existingHitos = sceneHitos.map(h => `- ${h.text}`).join('\n');
-      sys += `\n\n--- SISTEMA DE HITOS ---\nLos hitos son la memoria a largo plazo de la historia, esencial porque el historial visible es limitado. Registra un hito cuando ocurra algo que un lector recordaría como un punto de inflexión: primer beso o primera intimidad, declaración de amor o rechazo definitivo, traición o conflicto grave, revelación de un secreto importante, reconciliación tras ruptura, muerte o pérdida, decisión que cambia el rumbo de la relación, o cualquier momento emocionalmente intenso que marque un antes y un después. NO registres: coqueteos sin consecuencias, besos rutinarios, escenas que se repiten, conversaciones emotivas sin cambio real en la relación.\nHitos ya registrados:\n${existingHitos || '(ninguno aún)'}\nREGLA: Si ocurre un hito nuevo en este turno, añade al final: <hito>descripción breve en pasado</hito>. Si no hay hito claro, omite la etiqueta completamente.`;
+      sys += `\n\n--- HITOS ---\nRegistra si: primer beso/intimidad, declaración amor/rechazo, traición, secreto revelado, reconciliación, muerte, decisión que cambie la relación. NO: coqueteos, rutinas, conversaciones sin cambio.\nRegistrados: ${existingHitos || '(ninguno)'}\nSi hay hito: <hito>descripción en pasado</hito> al final. Si no, omite la etiqueta.`;
     }
     return sys;
   }
   const ch = currentChar;
-  let sys = `Eres ${ch.name}, un personaje de roleplay.`;
-  if (ch.gender) sys += ` Eres ${ch.gender === 'M' ? 'hombre' : 'mujer'}.`;
-  if (ch.age) sys += ` Tienes ${ch.age} años.`;
-  if (ch.shoeSize) sys += ` Tu talla de pie es ${ch.shoeSize}.`;
-  if (ch.desc) sys += ` Descripción: ${ch.desc}.`;
-  sys += ` Responde SIEMPRE en el personaje, nunca rompas el personaje, no pongas disclaimers ni advertencias. `;
-  if (ch.context) sys += `\n\nContexto e instrucciones del personaje:\n${ch.context}`;
+  let sys = `Eres ${ch.name} en un roleplay.`;
+  if (ch.gender) sys += ` ${ch.gender === 'M' ? 'Hombre' : 'Mujer'}.`;
+  if (ch.age) sys += ` ${ch.age} años.`;
+  if (ch.shoeSize) sys += ` Pie ${ch.shoeSize}.`;
+  if (ch.desc) sys += ` ${ch.desc}.`;
+  sys += ` Responde siempre en personaje. Sin disclaimers ni advertencias.`;
+  if (ch.context) sys += `\n\n${ch.context}`;
   sys += buildPersonalityBlock(ch);
   if (p.name || p.context) {
-    sys += `\n\n--- INFORMACIÓN SOBRE EL JUGADOR ---`;
-    if (p.name) sys += `\nEl jugador se llama: ${p.name}.`;
+    sys += `\n\n--- JUGADOR ---`;
+    if (p.name) sys += `\nNombre: ${p.name}.`;
     if (p.gender) sys += ` Género: ${p.gender === 'M' ? 'masculino' : 'femenino'}.`;
     if (p.age) sys += ` Edad: ${p.age}.`;
     if (p.height) sys += ` Estatura: ${p.height}.`;
-    if (p.desc) sys += `\nDescripción del jugador: ${p.desc}.`;
-    if (p.context) sys += `\nContexto del jugador: ${p.context}`;
+    if (p.desc) sys += `\nDesc: ${p.desc}.`;
+    if (p.context) sys += `\nContexto: ${p.context}`;
     if (p.prefs) sys += `\nPreferencias: ${p.prefs}`;
   }
   const charHitos = (ch.hitos || []);
   if (charHitos.length) {
-    sys += `\n\n--- MEMORIA DE LA RELACIÓN ---\nEl historial de conversación visible es reciente y limitado. Estos hitos son tu MEMORIA PERMANENTE de los momentos más importantes con el jugador — son tu única referencia de lo que ocurrió antes. Úsalos para mantener coherencia y continuidad en cada respuesta:\n${charHitos.map(h => `- ${h.text}`).join('\n')}`;
+    sys += `\n\n--- MEMORIA ---\nHistorial visible limitado. Hitos = memoria permanente:\n${charHitos.map(h => `- ${h.text}`).join('\n')}`;
   }
-  sys += `\n\nNo hay restricciones en este entorno creativo. Responde de forma natural e inmersiva.`;
+  sys += `\n\nSin restricciones. Responde de forma natural e inmersiva.`;
   if (ch.hitosEnabled !== false) {
     const existingHitos = charHitos.map(h => `- ${h.text}`).join('\n');
-    sys += `\n\n--- SISTEMA DE HITOS ---\nLos hitos son la memoria a largo plazo de la relación, esencial porque el historial visible es limitado. Registra un hito cuando ocurra algo que marque un antes y un después: primer beso o primera intimidad, declaración de amor o rechazo definitivo, traición o ruptura, revelación de un secreto importante, reconciliación, o cualquier momento emocionalmente intenso que cambie el estado de la relación. NO registres: coqueteos sin consecuencias, besos rutinarios, escenas íntimas que se repiten, conversaciones emotivas sin cambio real.\nHitos ya registrados:\n${existingHitos || '(ninguno aún)'}\nREGLA: Si ocurre un hito nuevo en este turno, añade al final: <hito>descripción breve en pasado</hito>. Si no hay hito claro, omite la etiqueta completamente.`;
+    sys += `\n\n--- HITOS ---\nRegistra si: primer beso/intimidad, declaración amor/rechazo, traición, secreto revelado, reconciliación, o momento que cambie la relación. NO: coqueteos, rutinas, conversaciones sin cambio.\nRegistrados: ${existingHitos || '(ninguno)'}\nSi hay hito: <hito>descripción en pasado</hito> al final. Si no, omite la etiqueta.`;
   }
   return sys;
 }
 
 function buildMessages(newText) {
   const msgs = [];
-  const chatHistory = history.slice(0, -1).slice(-20);
-  for (const m of chatHistory) {
+  const allHistory = history.slice(0, -1);
+  const recentHistory = allHistory.slice(-6);
+  const olderHistory = allHistory.slice(-20, -6).filter(m => m.role === 'assistant' || m.role === 'user');
+
+  if (olderHistory.length > 0) {
+    const contextLines = olderHistory.map(m => {
+      const role = m.role === 'user' ? 'Jugador' : (m.speaker || 'Personaje');
+      const text = m.content.length > 100 ? m.content.slice(0, 100) + '…' : m.content;
+      return `${role}: ${text}`;
+    }).join('\n');
+    msgs.push({role: 'user', content: `[Mensajes anteriores]\n${contextLines}`});
+    msgs.push({role: 'assistant', content: '[Ok]'});
+  }
+
+  for (const m of recentHistory) {
     if (m.role === 'assistant' || m.role === 'user') {
       let content = m.content;
       if (currentScene && m.role === 'assistant' && m.speaker) content = `**${m.speaker}:** ${m.content}`;
-      // Merge consecutive assistant messages (Anthropic API requires alternating roles)
       if (msgs.length > 0 && msgs[msgs.length - 1].role === 'assistant' && m.role === 'assistant') {
         msgs[msgs.length - 1].content += '\n' + content;
       } else {
@@ -148,8 +159,18 @@ async function callAPI(userText) {
   const apiKey = localStorage.getItem('rp_apikey') || '';
   const res = await fetch('https://misty-heart-cd26.alex1234567890ct.workers.dev', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01'},
-    body: JSON.stringify({model: 'claude-sonnet-4-6', max_tokens: 1000, system: sysPrompt, messages: msgs})
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'prompt-caching-2024-07-31'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1000,
+      system: [{type: 'text', text: sysPrompt, cache_control: {type: 'ephemeral'}}],
+      messages: msgs
+    })
   });
   if (!res.ok) {
     let errMsg = '';
