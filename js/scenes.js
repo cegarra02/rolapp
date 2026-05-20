@@ -111,8 +111,10 @@ function saveScene() {
     charIds:  pickedCharIds,
     context:  document.getElementById('sceneContext').value.trim(),
     greeting: document.getElementById('sceneGreeting').value.trim(),
-    history:  existing?.history   || [],
-    chatStyle:existing?.chatStyle || null,
+    history:      existing?.history      || [],
+    chatStyle:    existing?.chatStyle    || null,
+    hitos:        existing?.hitos        || [],
+    hitosEnabled: existing?.hitosEnabled === false ? false : undefined,
     useCustomProfile: useCustom,
     customProfile: useCustom ? {
       name:    document.getElementById('sceneCpName').value.trim(),

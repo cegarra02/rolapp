@@ -137,8 +137,10 @@ function saveChar() {
   if (editId) {
     const i = chars.findIndex(x => x.id === editId);
     if (i > -1) {
-      c.history   = chars[i].history   || [];
-      c.chatStyle = chars[i].chatStyle || null;
+      c.history      = chars[i].history      || [];
+      c.chatStyle    = chars[i].chatStyle    || null;
+      c.hitos        = chars[i].hitos        || [];
+      if (chars[i].hitosEnabled === false) c.hitosEnabled = false;
       chars[i] = c;
     }
   } else {
