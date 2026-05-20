@@ -169,7 +169,7 @@ async function callAPI(userText) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1000,
-      system: sysPrompt,
+      system: [{ type: 'text', text: sysPrompt, cache_control: { type: 'ephemeral' } }],
       messages: msgs
     })
   });
