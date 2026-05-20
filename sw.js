@@ -1,4 +1,4 @@
-const CACHE = 'rolapp-v65';
+const CACHE = 'rolapp-v66';
 const ASSETS = [
   '/rolapp/',
   '/rolapp/index.html',
