@@ -174,7 +174,7 @@ async function sendMessage() {
     renderMessages(); scrollToMsg(firstNewBotIdx);
     if (currentChar)  inboxMarkActive('char',  currentChar.id);
     if (currentScene) inboxMarkActive('scene', currentScene.id);
-    checkMissionCompletion(text, reply);
+    // checkMissionCompletion(text, reply); // misiones ocultas temporalmente
   } catch (err) {
     hideTyping();
     history.push({role: 'assistant', content: `_(Error: ${err.message}. Comprueba tu API key en Mi Perfil.)_`, ts: Date.now()});
