@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Roleplay AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=67">
+<link rel="stylesheet" href="css/style.css?v=68">
 <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -18,10 +18,11 @@
 <div class="screen active" id="home">
   <div class="hdr">
     <div class="home-logo">✦</div>
-    <div>
+    <div style="flex:1">
       <div class="hdr-title">Roleplay AI</div>
       <div class="hdr-sub">Sin límites, tus reglas</div>
     </div>
+    <div class="user-header-chip" id="headerChipHome"></div>
   </div>
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
@@ -180,6 +181,20 @@
       </div>
     </div>
 
+    <!-- Public toggle (only visible when logged in) -->
+    <div class="field-card" id="publicToggleCard" style="display:none">
+      <div class="custom-profile-toggle" style="border-top:none;padding-top:0">
+        <div>
+          <div class="custom-profile-toggle-label">Hacer público</div>
+          <div class="custom-profile-toggle-sub">Enviar a la biblioteca de la comunidad para revisión</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="charIsPublic">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
     <button class="btn-primary" onclick="saveChar()">Guardar personaje</button>
     <button class="btn-danger" id="deleteBtn" onclick="deleteChar()" style="display:none">Eliminar personaje</button>
     <div style="height:20px"></div>
@@ -260,10 +275,11 @@
 <div class="screen" id="scenesScreen">
   <div class="hdr">
     <div class="home-logo" style="background:linear-gradient(135deg,#f59e0b,#d97706)">⚡</div>
-    <div>
+    <div style="flex:1">
       <div class="hdr-title">Escenas</div>
       <div class="hdr-sub">Roleplay grupal</div>
     </div>
+    <div class="user-header-chip" id="headerChipScenes"></div>
   </div>
   <div class="chars-list" id="scenesList" style="padding-bottom:90px"></div>
   <button class="fab" onclick="openSceneCreate()" style="font-size:32px;line-height:1;padding-bottom:2px">+</button>
@@ -337,8 +353,48 @@
 
 <input type="file" id="bgFile" accept="image/*" onchange="loadPhoto(this,'bg')" style="display:none">
 
+<!-- EXPLORE SCREEN -->
+<div class="screen" id="exploreScreen">
+  <div class="hdr">
+    <div class="home-logo" style="background:linear-gradient(135deg,#38bdf8,#0284c7)">🔍</div>
+    <div style="flex:1">
+      <div class="hdr-title">Explorar</div>
+      <div class="hdr-sub">Personajes de la comunidad</div>
+    </div>
+    <div class="user-header-chip" id="headerChipExplore"></div>
+  </div>
+  <div class="explore-search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-inp" id="exploreSearchInp" placeholder="Buscar personajes…" oninput="onExploreSearch(this.value)">
+  </div>
+  <div class="explore-controls">
+    <div class="explore-tags-row" id="exploreTagsRow"></div>
+    <select class="explore-sort-sel" id="exploreSort" onchange="setExploreSort(this.value)">
+      <option value="new">Nuevos</option>
+      <option value="popular">Populares</option>
+    </select>
+  </div>
+  <div class="chars-list" id="exploreList" style="padding-bottom:90px"></div>
+</div>
+
+<!-- MODERATION SCREEN -->
+<div class="screen" id="moderationScreen">
+  <div class="hdr">
+    <button class="icon-btn" onclick="switchTab('profile')">←</button>
+    <div style="flex:1">
+      <div class="hdr-title">Moderación</div>
+      <div class="hdr-sub">Submissions pendientes</div>
+    </div>
+  </div>
+  <div class="edit-scroll" id="modList"></div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav" id="bottomNav">
+  <div class="nav-tab" id="tabExplore" onclick="switchTab('explore')">
+    <div class="nav-icon">🔍</div>
+    <div class="nav-label">Explorar</div>
+  </div>
   <div class="nav-tab active" id="tabChars" onclick="switchTab('chars')">
     <div class="nav-icon">🎭</div>
     <div class="nav-label">Personajes</div>
@@ -456,6 +512,9 @@
     <button class="icon-btn" onclick="saveProfile()">✓</button>
   </div>
   <div class="edit-scroll">
+    <!-- Auth section -->
+    <div id="authSection"></div>
+
     <!-- Name -->
     <div class="section-label">Tu nombre / alias</div>
     <div class="field-card">
@@ -519,20 +578,24 @@
   </div>
 </div>
 
-<script src="js/state.js?v=67"></script>
-<script src="js/utils.js?v=67"></script>
-<script src="js/ui.js?v=67"></script>
-<script src="js/sliders.js?v=67"></script>
-<script src="js/api.js?v=67"></script>
-<script src="js/cropper.js?v=67"></script>
-<script src="js/chars.js?v=67"></script>
-<script src="js/profile.js?v=67"></script>
-<script src="js/scenes.js?v=67"></script>
-<script src="js/inbox.js?v=67"></script>
-<script src="js/missions.js?v=67"></script>
-<script src="js/hitos.js?v=67"></script>
-<script src="js/chat.js?v=67"></script>
-<script src="js/main.js?v=67"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/state.js?v=68"></script>
+<script src="js/utils.js?v=68"></script>
+<script src="js/ui.js?v=68"></script>
+<script src="js/sliders.js?v=68"></script>
+<script src="js/supabase.js?v=68"></script>
+<script src="js/api.js?v=68"></script>
+<script src="js/cropper.js?v=68"></script>
+<script src="js/chars.js?v=68"></script>
+<script src="js/profile.js?v=68"></script>
+<script src="js/scenes.js?v=68"></script>
+<script src="js/inbox.js?v=68"></script>
+<script src="js/missions.js?v=68"></script>
+<script src="js/hitos.js?v=68"></script>
+<script src="js/explore.js?v=68"></script>
+<script src="js/moderation.js?v=68"></script>
+<script src="js/chat.js?v=68"></script>
+<script src="js/main.js?v=68"></script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });

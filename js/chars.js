@@ -43,6 +43,10 @@ function openCreate() {
   ['charCpName', 'charCpDesc', 'charCpContext', 'charCpPrefs'].forEach(id => {
     const e = document.getElementById(id); if (e) e.value = '';
   });
+  const charIsPublic = document.getElementById('charIsPublic');
+  if (charIsPublic) charIsPublic.checked = false;
+  const ptCard = document.getElementById('publicToggleCard');
+  if (ptCard) ptCard.style.display = supabaseUser ? 'block' : 'none';
   showScreen('editScreen', true);
 }
 
@@ -71,6 +75,10 @@ function openEdit(id) {
     document.getElementById('charCpContext').value = p.context || '';
     document.getElementById('charCpPrefs').value   = p.prefs   || '';
   }
+  const charIsPublic = document.getElementById('charIsPublic');
+  if (charIsPublic) charIsPublic.checked = false;
+  const ptCard = document.getElementById('publicToggleCard');
+  if (ptCard) ptCard.style.display = supabaseUser ? 'block' : 'none';
   showScreen('editScreen', true);
 }
 
@@ -146,7 +154,16 @@ function saveChar() {
   } else {
     chars.unshift(c);
   }
-  save(); toast('Guardado ✓'); goHome();
+  save(); goHome();
+  const isPublic = document.getElementById('charIsPublic')?.checked && supabaseUser;
+  if (isPublic) {
+    toast('Guardado · enviando a revisión…');
+    submitCharToLibrary(c)
+      .then(() => toast('Enviado a revisión ✓'))
+      .catch(e => toast('Error al publicar: ' + e.message));
+  } else {
+    toast('Guardado ✓');
+  }
 }
 
 function deleteChar() {
