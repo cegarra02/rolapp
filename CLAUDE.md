@@ -70,6 +70,16 @@ Supabase CDN se carga primero (antes de state.js) vía `https://cdn.jsdelivr.net
 - Tablas: `characters_library`, `submissions`, `users`
 - RLS activado en todas las tablas
 
+#### Configuración OAuth (Google) — IMPORTANTE
+- **Supabase dashboard → Authentication → URL Configuration:**
+  - Site URL: `https://cegarra02.github.io/rolapp/`
+  - Redirect URLs: incluir `https://cegarra02.github.io/rolapp/` (con barra final)
+- **Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client:**
+  - Authorized redirect URI: `https://pxtnjtckfzsqistfjgn.supabase.co/auth/v1/callback`
+- **Nota:** Los cambios en Google Cloud Console pueden tardar varios minutos en propagarse. Si el login con Google falla con `dns_probe_finished_nxdomain` justo después de configurar, esperar unos minutos antes de descartar error de código.
+- `redirectTo` en `authSignInGoogle()` está hardcodeado a `'https://cegarra02.github.io/rolapp/'` (con barra final) — no usar `window.location.href` para evitar incluir parámetros PKCE en la URL de retorno.
+- El flujo PKCE usa `onAuthStateChange` con evento `INITIAL_SESSION` (no `getSession()` — tiene race condition con el exchange del código).
+
 ---
 
 ## Sistema de biblioteca pública (Supabase)
@@ -165,7 +175,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v68** (sw.js usa `rolapp-v70`)
+**Versión actual: v69** (sw.js usa `rolapp-v71`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 
