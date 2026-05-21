@@ -11,21 +11,27 @@ async function initSupabase() {
     localStorage.setItem('rp_gems_local', '50');
   }
 
-  const { data: { session } } = await supaClient.auth.getSession();
-  if (session) {
-    supabaseUser = session.user;
-    await _ensureUserRow(session.user, 0);
-    await _loadUserGems();
-  }
+  // Render header immediately with no-session state while auth resolves
   renderUserHeader();
 
+  // onAuthStateChange fires INITIAL_SESSION immediately on registration —
+  // this handles existing sessions, OAuth callbacks (PKCE code exchange),
+  // and new logins, all in one place. No need for getSession().
   supaClient.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN') {
-      supabaseUser = session.user;
-      const localGems = parseInt(localStorage.getItem('rp_gems_local') || '0');
-      await _ensureUserRow(session.user, localGems);
-      if (localGems > 0) localStorage.removeItem('rp_gems_local');
-      await _loadUserGems();
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (session?.user) {
+        supabaseUser = session.user;
+        const localGems = parseInt(localStorage.getItem('rp_gems_local') || '0');
+        await _ensureUserRow(session.user, localGems);
+        if (localGems > 0) localStorage.removeItem('rp_gems_local');
+        await _loadUserGems();
+      } else {
+        supabaseUser = null;
+        supabaseGems = 0;
+        if (localStorage.getItem('rp_gems_local') === null) {
+          localStorage.setItem('rp_gems_local', '50');
+        }
+      }
       renderUserHeader();
       if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
     } else if (event === 'SIGNED_OUT') {
@@ -109,7 +115,7 @@ async function authSignIn(email, password) {
 async function authSignInGoogle() {
   const { error } = await supaClient.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    options: { redirectTo: 'https://cegarra02.github.io/rolapp/' }
   });
   if (error) throw error;
 }
