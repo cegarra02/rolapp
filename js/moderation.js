@@ -9,8 +9,25 @@ async function openModeration() {
   await renderModeration();
 }
 
+async function giveGemsToSelf() {
+  if (!supabaseUser) return;
+  const inp = document.getElementById('modSelfGemsInp');
+  const amount = parseInt(inp?.value || '0');
+  if (!amount || amount <= 0) { toast('Introduce una cantidad válida'); return; }
+  const btn = inp?.nextElementSibling;
+  if (btn) { btn.textContent = '⏳'; btn.style.pointerEvents = 'none'; }
+  await addGems(supabaseUser.id, amount);
+  const el = document.getElementById('modMyGems');
+  if (el) el.textContent = getDisplayGems();
+  if (btn) { btn.textContent = '+ Añadir'; btn.style.pointerEvents = ''; }
+  toast(`💎 +${amount} gemas añadidas`);
+}
+
 async function renderModeration() {
   const list = document.getElementById('modList');
+  // Actualizar saldo de gemas propio
+  const gemsEl = document.getElementById('modMyGems');
+  if (gemsEl) gemsEl.textContent = getDisplayGems();
   list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Cargando submissions…</div>';
 
   const { data, error } = await supaClient
