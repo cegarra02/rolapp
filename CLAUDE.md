@@ -14,22 +14,22 @@ PWA de roleplay con IA (single-page, sin bundler, vanilla JS). Permite chatear c
 index.html          — HTML puro, sin CSS ni JS inline
 css/style.css       — Todos los estilos
 js/
-  state.js          — Variables globales: chars, profile, history, scenes, missions, missionsEnabled…
-  utils.js          — save, uid, esc, formatMsg, fmtTime, toast
+  state.js          — Variables globales: chars, libChars, profile, history, scenes, missions, missionsEnabled…
+  utils.js          — save, saveLibChars, uid, esc, formatMsg, fmtTime, toast
   ui.js             — showScreen, goHome, openModal, closeModal, switchTab, setActiveTab
   sliders.js        — updateSlider, initSliders
   supabase.js       — Cliente Supabase, auth, gemas, submitCharToLibrary, renderUserHeader
   api.js            — callAPI, buildSystemPrompt, buildMessages, buildPersonalityBlock
   cropper.js        — Motor completo del recortador de imágenes (touch + mouse)
   chars.js          — CRUD personajes: renderChars, openCreate, openEdit, saveChar, deleteChar
-  profile.js        — Perfil del jugador + API key + sección auth (login/registro/logout)
+  profile.js        — Perfil del jugador + sección auth (login/registro/logout)
   scenes.js         — Escenas grupales: renderScenesScreen, saveScene, openSceneChat
-  inbox.js          — Pantalla "Chats" con historial reciente
+  inbox.js          — Pantalla "Chats" con historial reciente (chars + libChars + scenes)
   missions.js       — Misiones IA (OCULTAS): generateMissions, checkMissionCompletion — código intacto
   hitos.js          — Sistema de hitos: showHitoNotif, _renderHitos, deleteHito
-  explore.js        — Tab Explorar: fetchExploreChars, renderExploreList, openExploreChat
-  moderation.js     — Panel de moderación: renderModeration, approveSubmission, rejectSubmission
-  chat.js           — Chat: renderMessages, sendMessage, openChat, openChatMenu, initChatSwipe
+  explore.js        — Tab Explorar: fetchExploreChars, renderExploreList, openExploreChat, openLibDetail (admin)
+  moderation.js     — Panel de moderación: renderModeration, openSubmissionDetail, approve/reject/delete
+  chat.js           — Chat: renderMessages, sendMessage, openChat, openChatMenu, initChatSwipe, _saveChar
   main.js           — Init: renderChars, loadProfileFields, initChatSwipe, initSupabase
 manifest.json       — PWA manifest (display: fullscreen + display_override)
 sw.js               — Service Worker
@@ -38,6 +38,20 @@ sw.js               — Service Worker
 **Orden de los `<script>` en index.html importa** — no se usan módulos ES, todo son globals.  
 Supabase CDN se carga primero (antes de state.js) vía `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js`.
 
+### Pantallas (screens) en index.html
+Cada `<div class="screen">` se activa con `showScreen(id, hideNav)`. Pantallas existentes:
+- `home` / `charsScreen` — lista de personajes propios
+- `editScreen` — crear/editar personaje
+- `exploreScreen` — biblioteca pública
+- `libDetailScreen` — editar/eliminar personaje de biblioteca (solo admin)
+- `chat` — chat activo
+- `inboxScreen` — historial de chats
+- `profileScreen` — perfil + auth
+- `scenesScreen` — escenas grupales
+- `moderationScreen` — lista de submissions pendientes (solo admin)
+- `modDetailScreen` — editar/aprobar/rechazar/eliminar una submission (solo admin)
+- `missionsScreen` — misiones (oculto)
+
 ---
 
 ## Tecnologías
@@ -45,7 +59,7 @@ Supabase CDN se carga primero (antes de state.js) vía `https://cdn.jsdelivr.net
 - Vanilla JS + HTML + CSS (sin frameworks, sin bundler)
 - PWA (manifest + service worker)
 - Fuentes: Syne (títulos) + Inter (cuerpo) vía Google Fonts
-- Persistencia local: `localStorage` para chars, profile, scenes, missions, historial de chat
+- Persistencia local: `localStorage` para chars, libChars, profile, scenes, missions, historial de chat
 - Persistencia remota: **Supabase** para biblioteca pública, auth y gemas
 - Las imágenes (fondo de chat) se recortan con el cropper integrado y se guardan en localStorage
 
@@ -70,15 +84,18 @@ Supabase CDN se carga primero (antes de state.js) vía `https://cdn.jsdelivr.net
 - Tablas: `characters_library`, `submissions`, `users`
 - RLS activado en todas las tablas
 
+#### Políticas RLS configuradas
+- `submissions`: SELECT (`TO authenticated USING (true)`), INSERT, UPDATE, DELETE (admin)
+- `characters_library`: SELECT (pública), INSERT, UPDATE, DELETE (admin)
+- `users`: SELECT/UPDATE propios
+- **⚠️ Si se añade una tabla nueva**, hay que configurar sus políticas RLS o las operaciones fallarán silenciosamente (sin error en cliente pero sin efecto en BD). El `DELETE` sin política devuelve `error: null` pero no borra nada.
+
 #### Configuración OAuth (Google) — IMPORTANTE
 - **Supabase dashboard → Authentication → URL Configuration:**
   - Site URL: `https://cegarra02.github.io/rolapp/`
   - Redirect URLs: incluir `https://cegarra02.github.io/rolapp/` (con barra final)
 - **Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client:**
   - Authorized redirect URI: `https://pxtnjtckfzsqistfjgn.supabase.co/auth/v1/callback`
-- **Nota:** Los cambios en Google Cloud Console pueden tardar varios minutos en propagarse. Si el login con Google falla con `dns_probe_finished_nxdomain` justo después de configurar, esperar unos minutos antes de descartar error de código.
-- `redirectTo` en `authSignInGoogle()` está hardcodeado a `'https://cegarra02.github.io/rolapp/'` (con barra final) — no usar `window.location.href` para evitar incluir parámetros PKCE en la URL de retorno.
-- El flujo PKCE usa `onAuthStateChange` con evento `INITIAL_SESSION` (no `getSession()` — tiene race condition con el exchange del código).
 
 ---
 
@@ -86,36 +103,56 @@ Supabase CDN se carga primero (antes de state.js) vía `https://cdn.jsdelivr.net
 
 ### Tablas
 - **`characters_library`** — personajes aprobados visibles en Explorar. Campos: `id`, `name`, `tag`, `gender`, `age`, `desc`, `context`, `greeting`, `bg` (base64), `timid`, `romantic`, `pace`, `nsfw`, `status`, `author_id`, `chat_count`, `created_at`
-- **`submissions`** — personajes enviados por usuarios pendientes de revisión. Mismos campos + `status` (pending/approved/rejected)
-- **`users`** — perfil de Supabase del usuario. Campos: `id` (= auth.uid()), `email`, `gems`
+- **`submissions`** — personajes enviados por usuarios pendientes de revisión. Mismos campos + `character_data` (JSONB, NOT NULL) + `status` (pending/approved/rejected)
+- **`users`** — perfil de Supabase del usuario. Campos: `id` (= auth.uid()), `gems`
 
 ### Auth y gemas
 - `supabaseUser` — usuario actual (null si no hay sesión), global en supabase.js
 - `supabaseGems` — saldo de gemas del usuario en Supabase
 - Sin sesión: 50 gemas en `localStorage` como `rp_gems_local`; al registrarse se migran a Supabase y se borra la clave local
-- `renderUserHeader()` — actualiza todos los `.user-header-chip` en la UI (headers de Explorar, Personajes, Escenas)
+- `renderUserHeader()` — actualiza todos los `.user-header-chip` en la UI
 - `addGems(userId, amount)` / `spendGems(userId, amount)` — operaciones de gemas en Supabase
+- `initSupabase()` usa `getSession()` para la carga inicial (fiable en cada recarga) y `onAuthStateChange` para cambios futuros; ignora `INITIAL_SESSION` en el listener
 
 ### Flujo de publicación
 1. Usuario activa toggle "Hacer público" al guardar personaje (solo visible si hay sesión)
-2. `saveChar()` llama `submitCharToLibrary(c)` → inserta en `submissions` con `status: 'pending'`
-3. Admin (emails: `cegarra02@gmail.com`, `alex1234567890ct@gmail.com`) ve submissions en panel de moderación
-4. Aprobar → copia a `characters_library` con `status: 'approved'` + gemas opcionales al autor
-5. Rechazar → cambia `status: 'rejected'` en submissions
+2. `saveChar()` llama `submitCharToLibrary(c)` solo si `!wasPublic && isPublicNow` (evita duplicados)
+3. `submitCharToLibrary` inserta en `submissions` con `status:'pending'` **incluyendo el campo `character_data` (JSONB, NOT NULL)**
+4. Admin ve submissions en panel de moderación → puede editar campos antes de aprobar
+5. Aprobar → copia a `characters_library` + gemas opcionales al autor → status `'approved'`
+6. Rechazar → status `'rejected'` en submissions
+7. Eliminar → hard DELETE (política RLS de DELETE configurada)
 
 ### Tab Explorar
 - Primera tab del nav (icono 🔍)
-- El nav tiene 4 tabs: Explorar, Personajes, Chats, Mi Perfil (Escenas ya no es tab; se accede desde el botón en la pantalla de Personajes)
-- Grid 2 columnas, misma CSS que Personajes
-- Búsqueda con debounce 400ms, filtro por tags (chips scrollables), ordenar Nuevos/Populares
+- El nav tiene 4 tabs: Explorar, Personajes, Chats, Mi Perfil
+- Grid 2 columnas, misma CSS que Personajes (`.chars-list`)
+- Búsqueda con debounce 400ms, filtro por tags, ordenar Nuevos/Populares
 - Al abrir chat: incrementa `chat_count` en Supabase (fire and forget)
-- Los chats con personajes de biblioteca **no se persisten** en localStorage (solo en memoria de sesión)
+- **El historial de chat con personajes de biblioteca SÍ se persiste** en `libChars` (localStorage `rp_lib_chars`) y aparece en la pestaña Chats
+- Cuando admin está logueado: aparece icono ✎ en cada tarjeta → abre `libDetailScreen` para editar/eliminar
+
+### Historial de personajes de biblioteca (`libChars`)
+- `let libChars` en `state.js` — array de objetos char con `isLibraryChar: true` e `history`
+- `saveLibChars()` en `utils.js` — persiste en `localStorage` como `rp_lib_chars`
+- `_saveChar()` en `chat.js` — helper que decide si guardar en `chars` (propios) o `libChars` (biblioteca)
+- `openExploreChat()` en `explore.js` — busca historial previo en `libChars` antes de crear el objeto; no repite el saludo si ya hay historial
+- `inbox.js` incluye `libChars` en `getInboxItems()` con `type:'lib'`; el click reabre con `openLibChatFromInbox(id)`; el delete elimina de `libChars` (no usa `dismissedChats`)
+- En el menú del chat, "Editar personaje" se oculta si `currentChar.isLibraryChar`
+
+### Panel de moderación (solo admin — `alex1234567890ct@gmail.com`)
+- Accesible desde Mi Perfil → "🛡️ Panel de moderación" (solo visible si `isAdmin()`)
+- **Lista**: grid 2 columnas con tarjetas tipo `char-card` (imagen + nombre + tag)
+- **Detalle** (`modDetailScreen`): editar todos los campos de la submission antes de aprobar/rechazar; botón "▶ Probar" abre chat temporal sin guardar historial; todas las acciones tienen modal de confirmación
+- Aprobar: copia a `characters_library` con los valores editados del formulario + gemas opcionales al autor
+- Rechazar: `status='rejected'`
+- Eliminar permanentemente: hard DELETE (política RLS configurada)
 
 ---
 
 ## Sistema de hitos
 
-Los hitos son la **memoria a largo plazo** de la relación. Son esenciales porque el historial de conversación enviado a la API está limitado a los últimos 20 mensajes — los hitos son la única referencia de lo que ocurrió antes.
+Los hitos son la **memoria a largo plazo** de la relación. Son esenciales porque el historial de conversación enviado a la API está limitado a los últimos 20 mensajes.
 
 - Claude puede generar hitos automáticamente añadiendo `<hito>texto</hito>` al final de su respuesta
 - `sendMessage()` en chat.js extrae la etiqueta con regex, la elimina del mensaje visible, y guarda el hito en `t.hitos[]`
@@ -176,25 +213,22 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v93** (sw.js usa `rolapp-v95`)
+**Versión actual: v100** (sw.js usa `rolapp-v102`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 
 ### ⚠️ CRÍTICO: Bump de versión — usar SIEMPRE Node.js
 
-**Nunca usar PowerShell `Get-Content`** — lee UTF-8 como Windows-1252, corrompiendo emojis, tildes y flechas.
+**Nunca usar PowerShell `Get-Content`** — lee UTF-8 como Windows-1252, corrompiendo emojis, tildes y flechas.  
+**Nunca usar `node -e` con strings multilínea en PowerShell** — falla con comillas y saltos de línea. Usar heredoc de bash o un script en fichero.
 
 ```javascript
-node -e "
-const fs = require('fs');
-let html = fs.readFileSync('index.html', 'utf8');
-html = html.replace(/\?v=OLD/g, '?v=NEW');
-fs.writeFileSync('index.html', html, 'utf8');
-let sw = fs.readFileSync('sw.js', 'utf8');
-sw = sw.replace('rolapp-vOLD', 'rolapp-vNEW').replace(/\?v=OLD/g, '?v=NEW');
-fs.writeFileSync('sw.js', sw, 'utf8');
-"
+node -e "const fs=require('fs');let h=fs.readFileSync('index.html','utf8');h=h.replace(/\?v=OLD/g,'?v=NEW');fs.writeFileSync('index.html',h,'utf8');let s=fs.readFileSync('sw.js','utf8');s=s.replace('rolapp-vOLD','rolapp-vNEW').replace(/\?v=OLD/g,'?v=NEW');fs.writeFileSync('sw.js',s,'utf8');console.log('done');"
 ```
+
+### ⚠️ CRÍTICO: Editar index.html con Node.js
+
+Las sustituciones en index.html deben hacerse con regex que admita `\r?\n` (CRLF en Windows). Una sustitución con string literal que tenga `\n` no encontrará el patrón si el fichero usa `\r\n`. Usar siempre regex con `.replace(/patrón/,...)` y heredoc de bash (`node << 'EOF' ... EOF`) para bloques multilínea.
 
 ### Recuperación de emergencia — caché corrupta
 
@@ -220,5 +254,7 @@ self.addEventListener('fetch', e => { e.respondWith(fetch(e.request)); });
 - Hay un sistema de estilos de chat por personaje/escena (colores de burbuja, opacidad, fuente).
 - La barra de chat tiene botones de inserción rápida: `**` (cursiva), `""` (negrita), `()` (paréntesis).
 - El sistema de misiones está oculto pero funcional — se puede reactivar fácilmente.
-- Los personajes de biblioteca tienen `isLibraryChar: true` y `hitosEnabled: false` — el historial de chat con ellos no se persiste en localStorage.
+- Los personajes de biblioteca tienen `isLibraryChar: true` y `hitosEnabled: false`. Su historial **sí se persiste** en `libChars` (localStorage `rp_lib_chars`).
 - Las imágenes `bg` se guardan como base64 en localStorage y también en la columna `bg` de Supabase al publicar — no está optimizado con Supabase Storage todavía.
+- El `_saveChar()` en chat.js es el punto central de guardado: redirige a `save()` (chars propios) o `saveLibChars()` (biblioteca). Todos los save de chat pasan por ahí.
+- Escenas de moderación: botones de Aprobar/Rechazar/Eliminar siempre tienen modal de confirmación (`openModal`). El formulario de detalle usa los valores editados del form en el momento de aprobar.
