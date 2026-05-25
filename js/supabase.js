@@ -19,28 +19,32 @@ async function initSupabase() {
   // this handles existing sessions, OAuth callbacks (PKCE code exchange),
   // and new logins, all in one place. No need for getSession().
   supaClient.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-      if (session?.user) {
-        supabaseUser = session.user;
-        const localGems = parseInt(localStorage.getItem('rp_gems_local') || '0');
-        await _ensureUserRow(session.user, localGems);
-        if (localGems > 0) localStorage.removeItem('rp_gems_local');
-        await _loadUserGems();
-      } else {
+    try {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if (session?.user) {
+          supabaseUser = session.user;
+          const localGems = parseInt(localStorage.getItem('rp_gems_local') || '0');
+          await _ensureUserRow(session.user, localGems);
+          if (localGems > 0) localStorage.removeItem('rp_gems_local');
+          await _loadUserGems();
+        } else {
+          supabaseUser = null;
+          supabaseGems = 0;
+          if (localStorage.getItem('rp_gems_local') === null) {
+            localStorage.setItem('rp_gems_local', '50');
+          }
+        }
+      } else if (event === 'SIGNED_OUT') {
         supabaseUser = null;
         supabaseGems = 0;
         if (localStorage.getItem('rp_gems_local') === null) {
           localStorage.setItem('rp_gems_local', '50');
         }
       }
-      renderUserHeader();
-      if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
-    } else if (event === 'SIGNED_OUT') {
-      supabaseUser = null;
-      supabaseGems = 0;
-      if (localStorage.getItem('rp_gems_local') === null) {
-        localStorage.setItem('rp_gems_local', '50');
-      }
+    } catch (e) {
+      console.warn('[auth] error en onAuthStateChange:', e?.message);
+    } finally {
+      // Siempre actualizar la UI, sin importar si algo falló arriba
       renderUserHeader();
       if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
     }
@@ -73,8 +77,12 @@ async function _ensureUserRow(user, migrateGems) {
 
 async function _loadUserGems() {
   if (!supabaseUser) return;
-  const { data } = await supaClient.from('users').select('gems').eq('id', supabaseUser.id).single();
-  supabaseGems = data?.gems ?? 0;
+  try {
+    const { data } = await supaClient.from('users').select('gems').eq('id', supabaseUser.id).single();
+    supabaseGems = data?.gems ?? 0;
+  } catch (e) {
+    console.warn('[loadUserGems]:', e?.message);
+  }
 }
 
 async function refreshGems() {
