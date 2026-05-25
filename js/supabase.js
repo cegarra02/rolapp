@@ -112,6 +112,10 @@ function renderUserHeader() {
     }
   });
 
+  // Sync profile gems badge if already rendered
+  const badge = document.querySelector('.auth-gems-badge strong');
+  if (badge) badge.textContent = getDisplayGems();
+
   // Show/hide public toggle in char editor
   const ptCard = document.getElementById('publicToggleCard');
   if (ptCard) ptCard.style.display = supabaseUser ? 'block' : 'none';

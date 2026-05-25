@@ -16,11 +16,16 @@ async function giveGemsToSelf() {
   if (!amount || amount <= 0) { toast('Introduce una cantidad válida'); return; }
   const btn = inp?.nextElementSibling;
   if (btn) { btn.textContent = '⏳'; btn.style.pointerEvents = 'none'; }
-  await addGems(supabaseUser.id, amount);
-  const el = document.getElementById('modMyGems');
-  if (el) el.textContent = getDisplayGems();
-  if (btn) { btn.textContent = '+ Añadir'; btn.style.pointerEvents = ''; }
-  toast(`💎 +${amount} gemas añadidas`);
+  try {
+    await addGems(supabaseUser.id, amount);
+    await refreshGems();
+    if (inp) inp.value = '';
+    toast(`💎 +${amount} gemas añadidas`);
+  } catch (e) {
+    toast('Error: ' + (e?.message || 'fallo al añadir gemas'));
+  } finally {
+    if (btn) { btn.textContent = '+ Añadir'; btn.style.pointerEvents = ''; }
+  }
 }
 
 async function renderModeration() {
