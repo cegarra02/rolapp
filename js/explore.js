@@ -19,13 +19,13 @@ function renderExploreLoading() {
 async function fetchExploreChars() {
   let q = supaClient
     .from('characters_library')
-    .select('id, name, tag, bg, chat_count, created_at')
+    .select('id, name, tag, bg, chat_count, message_count, created_at')
     .eq('status', 'approved');
 
   if (exploreSearch) q = q.ilike('name', `%${exploreSearch}%`);
   if (exploreActiveTag) q = q.eq('tag', exploreActiveTag);
   q = exploreSort === 'popular'
-    ? q.order('chat_count', { ascending: false })
+    ? q.order('message_count', { ascending: false })
     : q.order('created_at', { ascending: false });
 
   const { data, error } = await q.limit(50);

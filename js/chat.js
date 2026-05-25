@@ -154,6 +154,11 @@ async function sendMessage() {
   history.push(userMsg);
   if (currentScene) { currentScene.history = history; saveScenes(); }
   else { currentChar.history = history; _saveChar(); }
+  // Contar mensajes enviados a personajes de biblioteca (para ordenar por popularidad)
+  if (currentChar?.isLibraryChar) {
+    const libCharId = currentChar.id.slice(4); // quita el prefijo 'lib_'
+    supaClient.rpc('increment_lib_messages', { char_id: libCharId });
+  }
   renderMessages(); scrollBottom();
   showTyping();
   try {
