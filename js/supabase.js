@@ -130,6 +130,8 @@ async function handleGoogleLogin(response) {
   }
 }
 
+let _gisInitialized = false;
+
 function initGoogleSignIn(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
@@ -138,10 +140,13 @@ function initGoogleSignIn(containerId) {
     setTimeout(() => initGoogleSignIn(containerId), 300);
     return;
   }
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: handleGoogleLogin
-  });
+  if (!_gisInitialized) {
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleLogin
+    });
+    _gisInitialized = true;
+  }
   google.accounts.id.renderButton(el, {
     theme: 'outline',
     size: 'large',
