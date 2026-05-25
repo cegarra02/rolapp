@@ -239,7 +239,20 @@ async function submitCharToLibrary(charData) {
     pace:     charData.pace     ?? 4,
     nsfw:     charData.nsfw     ?? 7,
     author_id: supabaseUser.id,
-    status:   'pending'
+    status:   'pending',
+    character_data: {
+      name:     charData.name,
+      tag:      charData.tag      || null,
+      gender:   charData.gender   || null,
+      age:      charData.age      || null,
+      desc:     charData.desc     || null,
+      context:  charData.context  || null,
+      greeting: charData.greeting || null,
+      timid:    charData.timid    ?? 5,
+      romantic: charData.romantic ?? 5,
+      pace:     charData.pace     ?? 4,
+      nsfw:     charData.nsfw     ?? 7
+    }
   });
   if (error) throw error;
 }

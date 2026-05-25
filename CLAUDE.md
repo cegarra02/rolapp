@@ -176,7 +176,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v91** (sw.js usa `rolapp-v93`)
+**Versión actual: v92** (sw.js usa `rolapp-v94`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 
