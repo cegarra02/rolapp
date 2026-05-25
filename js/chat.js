@@ -149,6 +149,13 @@ function parseSceneReply(reply) {
 async function sendMessage() {
   const inp = document.getElementById('chatInp');
   const text = inp.value.trim(); if (!text) return;
+
+  // Coste por mensaje: 7 gemas
+  if (!deductMessageGems()) {
+    toast(`💎 No tienes gemas suficientes (necesitas ${MESSAGE_GEM_COST})`);
+    return;
+  }
+
   inp.value = ''; inp.style.height = 'auto';
   const userMsg = {role: 'user', content: text, ts: Date.now()};
   history.push(userMsg);

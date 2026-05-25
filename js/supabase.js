@@ -140,6 +140,30 @@ function getDisplayGems() {
   return parseInt(localStorage.getItem('rp_gems_local') || '0');
 }
 
+// ── Coste por mensaje ─────────────────────────────────────────────────────────
+const MESSAGE_GEM_COST = 7;
+
+// Descuenta las gemas del mensaje de forma síncrona (usando la caché local)
+// y persiste el nuevo saldo en Supabase/localStorage en segundo plano.
+// Devuelve true si hay saldo suficiente, false si no.
+function deductMessageGems() {
+  const cost = MESSAGE_GEM_COST;
+  if (supabaseUser) {
+    if (supabaseGems < cost) return false;
+    supabaseGems -= cost;
+    renderUserHeader();
+    // Persistir en Supabase async (fire and forget)
+    supaClient.from('users').update({ gems: supabaseGems }).eq('id', supabaseUser.id);
+    return true;
+  } else {
+    const current = parseInt(localStorage.getItem('rp_gems_local') || '0');
+    if (current < cost) return false;
+    localStorage.setItem('rp_gems_local', String(current - cost));
+    renderUserHeader();
+    return true;
+  }
+}
+
 function renderUserHeader() {
   document.querySelectorAll('.user-header-chip').forEach(el => {
     const gems = getDisplayGems();
