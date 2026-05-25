@@ -1,10 +1,11 @@
 # Rolapp — Contexto del proyecto
 
 ## Qué es
-PWA de roleplay con IA (single-page, sin bundler, vanilla JS). Permite chatear con personajes de ficción usando la API de Anthropic (Claude). Incluye escenas grupales, biblioteca pública de personajes con Supabase, y personalización completa de personajes.
+PWA de roleplay con IA (single-page, sin bundler, vanilla JS) + app Android nativa vía Capacitor. Permite chatear con personajes de ficción usando la API de Anthropic (Claude). Incluye escenas grupales, biblioteca pública de personajes con Supabase, sistema de gemas de pago y personalización completa de personajes.
 
-**URL de producción:** https://cegarra02.github.io/rolapp/  
-**Repositorio:** https://github.com/cegarra02/rolapp
+**URL de producción (web):** https://cegarra02.github.io/rolapp/  
+**Repositorio:** https://github.com/cegarra02/rolapp  
+**App Android:** `com.roleplayai.app` (en desarrollo, Capacitor)
 
 ---
 
@@ -18,7 +19,7 @@ js/
   utils.js          — save, saveLibChars, uid, esc, formatMsg, fmtTime, toast
   ui.js             — showScreen, goHome, openModal, closeModal, switchTab, setActiveTab
   sliders.js        — updateSlider, initSliders
-  supabase.js       — Cliente Supabase, auth, gemas, submitCharToLibrary, renderUserHeader
+  supabase.js       — Cliente Supabase, auth, gemas, deductMessageGems, submitCharToLibrary, renderUserHeader
   api.js            — callAPI, buildSystemPrompt, buildMessages, buildPersonalityBlock
   cropper.js        — Motor completo del recortador de imágenes (touch + mouse)
   chars.js          — CRUD personajes: renderChars, openCreate, openEdit, saveChar, deleteChar
@@ -33,6 +34,12 @@ js/
   main.js           — Init: renderChars, loadProfileFields, initChatSwipe, initSupabase
 manifest.json       — PWA manifest (display: fullscreen + display_override)
 sw.js               — Service Worker
+scripts/
+  build-www.js      — Copia web → www/ para Capacitor (node scripts/build-www.js)
+android/            — Proyecto Android nativo generado por Capacitor (Gradle)
+capacitor.config.json — Config Capacitor: appId, appName, webDir: "www"
+package.json        — npm: scripts build:www, sync, open:android
+www/                — Directorio de salida para Capacitor (gitignored, generado por build-www.js)
 ```
 
 **Orden de los `<script>` en index.html importa** — no se usan módulos ES, todo son globals.  
@@ -57,7 +64,7 @@ Cada `<div class="screen">` se activa con `showScreen(id, hideNav)`. Pantallas e
 ## Tecnologías
 
 - Vanilla JS + HTML + CSS (sin frameworks, sin bundler)
-- PWA (manifest + service worker)
+- PWA (manifest + service worker) + **Capacitor** para empaquetado Android nativo
 - Fuentes: Syne (títulos) + Inter (cuerpo) vía Google Fonts
 - Persistencia local: `localStorage` para chars, libChars, profile, scenes, missions, historial de chat
 - Persistencia remota: **Supabase** para biblioteca pública, auth y gemas
@@ -113,6 +120,13 @@ Cada `<div class="screen">` se activa con `showScreen(id, hideNav)`. Pantallas e
 - `renderUserHeader()` — actualiza todos los `.user-header-chip` en la UI
 - `addGems(userId, amount)` / `spendGems(userId, amount)` — operaciones de gemas en Supabase
 - `initSupabase()` usa `getSession()` para la carga inicial (fiable en cada recarga) y `onAuthStateChange` para cambios futuros; ignora `INITIAL_SESSION` en el listener
+
+### Coste por mensaje — gemas
+- **Coste**: `MESSAGE_GEM_COST = 7` gemas por mensaje enviado (constante en `supabase.js`)
+- `deductMessageGems()` — descuenta de forma **síncrona** desde la caché local (`supabaseGems` o localStorage), actualiza el header inmediatamente y persiste en Supabase en background (fire and forget). Devuelve `true` si había saldo, `false` si no
+- Si no hay gemas: `sendMessage()` muestra toast y hace `return` sin llamar a la API ni tocar el historial
+- Funciona igual para usuarios anónimos (localStorage) y registrados (Supabase)
+- **Para Android**: la recarga de gemas con dinero usará Google Play Billing + `addGems(userId, amount)`. La constante `MESSAGE_GEM_COST` es el único punto a cambiar para ajustar el precio
 
 ### Flujo de publicación
 1. Usuario activa toggle "Hacer público" al guardar personaje (solo visible si hay sesión)
@@ -214,7 +228,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v102** (sw.js usa `rolapp-v104`)
+**Versión actual: v103** (sw.js usa `rolapp-v105`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 
@@ -247,10 +261,35 @@ self.addEventListener('fetch', e => { e.respondWith(fetch(e.request)); });
 
 ---
 
+## Capacitor / Android
+
+### Workflow de desarrollo Android
+```bash
+# Tras modificar cualquier archivo web:
+npm run sync          # = node scripts/build-www.js + npx cap sync android
+npm run open:android  # abre Android Studio
+```
+En Android Studio → Build → Generate Signed APK / Bundle para publicar.
+
+### Estructura Capacitor
+- `capacitor.config.json` — `appId: com.roleplayai.app`, `webDir: "www"`, `androidScheme: "https"`
+- `scripts/build-www.js` — copia `index.html`, `css/`, `js/`, `manifest.json`, `sw.js` a `www/`
+- `www/` está en `.gitignore` (se regenera con `npm run build:www`)
+- `android/` está en git — contiene el proyecto Gradle completo
+
+### ⚠️ Antes de cada `cap sync`
+Ejecutar `npm run build:www` para que `www/` tenga los últimos archivos. Si se salta este paso, Android tendrá la versión anterior del código web.
+
+### Próximos pasos Android
+- Añadir `@capacitor-community/in-app-purchases` o plugin de Google Play Billing para recargas de gemas con dinero real
+- La función `addGems(userId, amount)` ya está lista para recibir el crédito desde el lado nativo
+
+---
+
 ## Contexto para continuar el desarrollo
 
 - Sin tests ni CI — los cambios se prueban manualmente en el navegador.
-- App pensada para móvil (PWA, touch events, safe-area-inset).
+- App pensada para móvil (PWA + Android nativo vía Capacitor, touch events, safe-area-inset).
 - Las escenas usan un formato de lista simple por personaje en el prompt: cada personaje en un `-` con sus datos y `buildPersonalityBlock(ch)`.
 - Hay un sistema de estilos de chat por personaje/escena (colores de burbuja, opacidad, fuente).
 - La barra de chat tiene botones de inserción rápida: `**` (cursiva), `""` (negrita), `()` (paréntesis).
@@ -258,4 +297,4 @@ self.addEventListener('fetch', e => { e.respondWith(fetch(e.request)); });
 - Los personajes de biblioteca tienen `isLibraryChar: true` y `hitosEnabled: false`. Su historial **sí se persiste** en `libChars` (localStorage `rp_lib_chars`).
 - Las imágenes `bg` se guardan como base64 en localStorage y también en la columna `bg` de Supabase al publicar — no está optimizado con Supabase Storage todavía.
 - El `_saveChar()` en chat.js es el punto central de guardado: redirige a `save()` (chars propios) o `saveLibChars()` (biblioteca). Todos los save de chat pasan por ahí.
-- Escenas de moderación: botones de Aprobar/Rechazar/Eliminar siempre tienen modal de confirmación (`openModal`). El formulario de detalle usa los valores editados del form en el momento de aprobar.
+- Moderación: botones de Aprobar/Rechazar/Eliminar siempre tienen modal de confirmación (`openModal`). El formulario de detalle usa los valores editados del form en el momento de aprobar.
