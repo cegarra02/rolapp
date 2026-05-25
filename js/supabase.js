@@ -12,56 +12,63 @@ async function initSupabase() {
     localStorage.setItem('rp_gems_local', '50');
   }
 
-  // Render header immediately with no-session state while auth resolves
+  // UI inicial sin sesión mientras resuelve la auth
   renderUserHeader();
 
-  // onAuthStateChange fires INITIAL_SESSION immediately on registration —
-  // this handles existing sessions, OAuth callbacks (PKCE code exchange),
-  // and new logins, all in one place. No need for getSession().
+  // ── PASO 1: getSession() lee la sesión directamente de localStorage.
+  // Es fiable en cada recarga sin depender del timing de eventos (INITIAL_SESSION
+  // puede llegar con sesión null cuando el JWT expiró y TOKEN_REFRESHED no se manejaba).
+  // Nota: no usamos getSession() para flujos PKCE (redirect OAuth) porque el código
+  // de la URL aún no se ha intercambiado; pero nuestra app solo usa GIS (signInWithIdToken)
+  // que no usa PKCE, así que getSession() es completamente seguro aquí.
+  try {
+    const { data: { session } } = await supaClient.auth.getSession();
+    await _applySession(session);
+  } catch (e) {
+    console.warn('[initSupabase] getSession:', e?.message);
+  }
+  renderUserHeader();
+  if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+
+  // ── PASO 2: onAuthStateChange gestiona cambios futuros (nuevo login, logout,
+  // renovación de token). INITIAL_SESSION se ignora porque ya lo manejó getSession().
   supaClient.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'INITIAL_SESSION') return; // ya gestionado arriba
     try {
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        if (session?.user) {
-          supabaseUser = session.user;
-          const localGems = parseInt(localStorage.getItem('rp_gems_local') || '0');
-          const isNew = await _ensureUserRow(session.user, localGems);
-          // Solo borrar gemas locales si el usuario acaba de crearse (no en cada recarga)
-          if (isNew && localGems > 0) localStorage.removeItem('rp_gems_local');
-          await _loadUserGems();
-        } else {
-          // Sesión null aquí es temporal — puede que TOKEN_REFRESHED llegue en breve
-          supabaseUser = null;
-          supabaseGems = 0;
-          if (localStorage.getItem('rp_gems_local') === null) {
-            localStorage.setItem('rp_gems_local', '50');
-          }
-        }
-      } else if (event === 'TOKEN_REFRESHED') {
-        // El JWT expiró y Supabase lo renovó en background (muy común al recargar).
-        // INITIAL_SESSION pudo haber llegado con sesión null; ahora tenemos sesión válida.
-        if (session?.user) {
-          supabaseUser = session.user;
-          await _loadUserGems();
-        }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        await _applySession(session);
       } else if (event === 'SIGNED_OUT') {
-        supabaseUser = null;
-        supabaseGems = 0;
-        if (localStorage.getItem('rp_gems_local') === null) {
-          localStorage.setItem('rp_gems_local', '50');
-        }
+        await _applySession(null);
       }
     } catch (e) {
-      console.warn('[auth] error en onAuthStateChange:', e?.message);
-    } finally {
-      renderUserHeader();
-      if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+      console.warn('[auth] onAuthStateChange:', e?.message);
     }
+    renderUserHeader();
+    if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
   });
 
   // Sync gems from Supabase when user returns to the tab/app (cross-device sync)
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) refreshGems();
   });
+}
+
+// Aplica una sesión (o null) al estado global y carga las gemas.
+// Usado tanto por getSession() en el arranque como por onAuthStateChange.
+async function _applySession(session) {
+  if (session?.user) {
+    supabaseUser = session.user;
+    const localGems = parseInt(localStorage.getItem('rp_gems_local') || '0');
+    const isNew = await _ensureUserRow(session.user, localGems);
+    if (isNew && localGems > 0) localStorage.removeItem('rp_gems_local');
+    await _loadUserGems();
+  } else {
+    supabaseUser = null;
+    supabaseGems = 0;
+    if (localStorage.getItem('rp_gems_local') === null) {
+      localStorage.setItem('rp_gems_local', '50');
+    }
+  }
 }
 
 async function _ensureUserRow(user, migrateGems) {

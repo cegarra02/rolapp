@@ -44,7 +44,7 @@ function openCreate() {
     const e = document.getElementById(id); if (e) e.value = '';
   });
   const charIsPublic = document.getElementById('charIsPublic');
-  if (charIsPublic) charIsPublic.checked = false;
+  if (charIsPublic) charIsPublic.checked = false; // nuevo personaje empieza sin publicar
   const ptCard = document.getElementById('publicToggleCard');
   if (ptCard) ptCard.style.display = supabaseUser ? 'block' : 'none';
   showScreen('editScreen', true);
@@ -75,7 +75,7 @@ function openEdit(id) {
     document.getElementById('charCpPrefs').value   = p.prefs   || '';
   }
   const charIsPublic = document.getElementById('charIsPublic');
-  if (charIsPublic) charIsPublic.checked = false;
+  if (charIsPublic) charIsPublic.checked = !!c.isPublic; // recupera el estado guardado
   const ptCard = document.getElementById('publicToggleCard');
   if (ptCard) ptCard.style.display = supabaseUser ? 'block' : 'none';
   showScreen('editScreen', true);
@@ -117,6 +117,8 @@ function saveChar() {
   const name = document.getElementById('charName').value.trim();
   if (!name) { toast('El personaje necesita un nombre'); return; }
   const useCustom = document.getElementById('charUseCustomProfile')?.checked || false;
+  const wasPublic = editId ? !!(chars.find(x => x.id === editId)?.isPublic) : false;
+  const isPublicNow = !!(document.getElementById('charIsPublic')?.checked && supabaseUser);
   const c = {
     id: editId || uid(),
     name,
@@ -138,6 +140,7 @@ function saveChar() {
       context: document.getElementById('charCpContext').value.trim(),
       prefs:   document.getElementById('charCpPrefs').value.trim()
     } : null,
+    isPublic: isPublicNow,
     history: []
   };
   if (editId) {
@@ -153,14 +156,11 @@ function saveChar() {
     chars.unshift(c);
   }
   save(); goHome();
-  const isPublic = document.getElementById('charIsPublic')?.checked && supabaseUser;
-  if (isPublic) {
-    toast('Guardado · enviando a revisión…');
-    submitCharToLibrary(c)
-      .then(() => toast('Enviado a revisión ✓'))
-      .catch(e => toast('Error al publicar: ' + e.message));
-  } else {
-    toast('Guardado ✓');
+  toast('Guardado ✓');
+  // Enviar a revisión solo si se acaba de marcar como público por primera vez
+  // (no en cada guardado si ya estaba marcado, para evitar submissions duplicadas)
+  if (!wasPublic && isPublicNow) {
+    submitCharToLibrary(c).catch(e => console.warn('[submitChar]:', e.message));
   }
 }
 
