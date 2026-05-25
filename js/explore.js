@@ -51,7 +51,7 @@ function renderExploreTags() {
   el.innerHTML =
     `<div class="explore-tag-chip${!exploreActiveTag ? ' active' : ''}" onclick="setExploreTag('')">Todos</div>` +
     exploreTags.map(t =>
-      `<div class="explore-tag-chip${exploreActiveTag === t ? ' active' : ''}" onclick="setExploreTag(${JSON.stringify(t)})">${esc(t)}</div>`
+      `<div class="explore-tag-chip${exploreActiveTag === t ? ' active' : ''}" onclick="setExploreTag(decodeURIComponent('${encodeURIComponent(t)}'))">${esc(t)}</div>`
     ).join('');
 }
 
