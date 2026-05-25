@@ -1,4 +1,4 @@
-const SUPA_URL = 'https://pxtnjtckfzsqistfjgn.supabase.co';
+const SUPA_URL = 'https://pxtnjtkckfzsqistfjgn.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4dG5qdGtja2Z6c3Fpc3RmamduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMDc1ODgsImV4cCI6MjA5NDg4MzU4OH0.toSgkHMYun1yM5UePDGRXYjhe4DRGtRQjsNUGjh5wJY';
 const GOOGLE_CLIENT_ID = '780402566964-3dh5n09g3mo3t10i7quq9rvlu42lefpi.apps.googleusercontent.com';
 
