@@ -55,7 +55,8 @@ async function initSupabase() {
 async function _ensureUserRow(user, migrateGems) {
   const { data } = await supaClient.from('users').select('id,gems').eq('id', user.id).single();
   if (!data) {
-    await supaClient.from('users').insert({ id: user.id, email: user.email, gems: migrateGems });
+    // users table has no email column — only id and gems (default 50)
+    await supaClient.from('users').insert({ id: user.id, gems: migrateGems > 0 ? migrateGems : 50 });
   } else if (migrateGems > 0) {
     await supaClient.from('users').update({ gems: (data.gems || 0) + migrateGems }).eq('id', user.id);
   }
