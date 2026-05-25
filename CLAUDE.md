@@ -85,7 +85,7 @@ Supabase CDN se carga primero (antes de state.js) vía `https://cdn.jsdelivr.net
 ## Sistema de biblioteca pública (Supabase)
 
 ### Tablas
-- **`characters_library`** — personajes aprobados visibles en Explorar. Campos: `id`, `name`, `tag`, `gender`, `age`, `shoe_size`, `desc`, `context`, `greeting`, `bg` (base64), `timid`, `romantic`, `pace`, `nsfw`, `status`, `author_id`, `chat_count`, `created_at`
+- **`characters_library`** — personajes aprobados visibles en Explorar. Campos: `id`, `name`, `tag`, `gender`, `age`, `desc`, `context`, `greeting`, `bg` (base64), `timid`, `romantic`, `pace`, `nsfw`, `status`, `author_id`, `chat_count`, `created_at`
 - **`submissions`** — personajes enviados por usuarios pendientes de revisión. Mismos campos + `status` (pending/approved/rejected)
 - **`users`** — perfil de Supabase del usuario. Campos: `id` (= auth.uid()), `email`, `gems`
 
@@ -175,7 +175,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v69** (sw.js usa `rolapp-v71`)
+**Versión actual: v88** (sw.js usa `rolapp-v90`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 

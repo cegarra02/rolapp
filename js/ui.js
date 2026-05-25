@@ -25,7 +25,7 @@ function switchTab(tab) {
   else if (tab === 'scenes')   { renderScenesScreen();  showScreen('scenesScreen'); setActiveTab('scenes'); }
   else if (tab === 'chats')    { renderInboxScreen();   showScreen('chatsScreen');  setActiveTab('chats'); }
   else if (tab === 'missions') { renderMissionsScreen(); showScreen('missionsScreen'); setActiveTab('missions'); }
-  else if (tab === 'profile')  { loadProfileFields();   showScreen('profileScreen'); setActiveTab('profile'); }
+  else if (tab === 'profile')  { loadProfileFields();   showScreen('profileScreen'); setActiveTab('profile'); refreshGems(); }
 }
 
 function setActiveTab(tab) {

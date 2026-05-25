@@ -57,19 +57,15 @@ async function initSupabase() {
 }
 
 async function _ensureUserRow(user, migrateGems) {
-  // Wrapped in try/catch with timeout so a hanging Supabase call never blocks the auth flow
+  // Only creates the row if it doesn't exist yet (new user signup).
+  // Existing users: never add rp_gems_local — that value is just the initSupabase() default.
   try {
     const { data } = await supaClient.from('users').select('id,gems').eq('id', user.id).single();
     if (!data) {
+      // New user → insert row, optionally carrying over gems earned as guest
       await supaClient.from('users').insert({ id: user.id, gems: migrateGems > 0 ? migrateGems : 50 });
-    } else if (migrateGems > 0) {
-      // Timeout of 3s: if the UPDATE hangs (e.g. RLS policy issue) we skip migration silently
-      const _timeout = new Promise(r => setTimeout(r, 3000));
-      await Promise.race([
-        supaClient.from('users').update({ gems: (data.gems || 0) + migrateGems }).eq('id', user.id),
-        _timeout
-      ]);
     }
+    // Existing user → nothing to do here; gems come from _loadUserGems()
   } catch (e) {
     console.warn('[ensureUserRow] non-fatal:', e?.message);
   }
@@ -78,10 +74,16 @@ async function _ensureUserRow(user, migrateGems) {
 async function _loadUserGems() {
   if (!supabaseUser) return;
   try {
-    const { data } = await supaClient.from('users').select('gems').eq('id', supabaseUser.id).single();
+    const { data, error } = await supaClient.from('users').select('gems').eq('id', supabaseUser.id).single();
+    if (error) {
+      // PGRST116 = no row found; any other error = network/RLS issue
+      console.warn('[loadUserGems]:', error.message, error.code);
+      return; // Keep last known supabaseGems — don't reset to 0
+    }
     supabaseGems = data?.gems ?? 0;
   } catch (e) {
-    console.warn('[loadUserGems]:', e?.message);
+    console.warn('[loadUserGems] catch:', e?.message);
+    // Don't reset supabaseGems to 0 on network failures
   }
 }
 
