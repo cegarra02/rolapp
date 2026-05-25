@@ -71,8 +71,12 @@ async function refreshGems() {
   if (!supabaseUser) return;
   await _loadUserGems();
   renderUserHeader();
-  const el = document.getElementById('modMyGems');
-  if (el) el.textContent = supabaseGems;
+  // Sync profile screen badge if visible
+  const badge = document.querySelector('.auth-gems-badge strong');
+  if (badge) badge.textContent = supabaseGems;
+  // Sync mod panel label
+  const modEl = document.getElementById('modMyGems');
+  if (modEl) modEl.textContent = supabaseGems;
 }
 
 async function addGems(userId, amount) {
