@@ -1,5 +1,6 @@
 const SUPA_URL = 'https://pxtnjtckfzsqistfjgn.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4dG5qdGtja2Z6c3Fpc3RmamduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMDc1ODgsImV4cCI6MjA5NDg4MzU4OH0.toSgkHMYun1yM5UePDGRXYjhe4DRGtRQjsNUGjh5wJY';
+const GOOGLE_CLIENT_ID = '780402566964-3dh5n09g3mo3t10i7quq9rvlu42lefpi.apps.googleusercontent.com';
 
 const supaClient = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
@@ -112,22 +113,43 @@ async function authSignIn(email, password) {
   return data;
 }
 
-async function authSignInGoogle() {
-  console.log('[OAuth Google] iniciando signInWithOAuth...');
+// Google Identity Services — no redirect, usa popup propio de Google
+async function handleGoogleLogin(response) {
+  console.log('[GIS] credential recibido, longitud:', response?.credential?.length);
   try {
-    const result = await supaClient.auth.signInWithOAuth({
+    const { data, error } = await supaClient.auth.signInWithIdToken({
       provider: 'google',
-      options: { redirectTo: 'https://cegarra02.github.io/rolapp/' }
+      token: response.credential
     });
-    console.log('[OAuth Google] resultado completo:', JSON.stringify(result, null, 2));
-    if (result.error) {
-      console.error('[OAuth Google] error del SDK:', result.error);
-      throw result.error;
-    }
+    console.log('[GIS] signInWithIdToken — data:', data, '— error:', error);
+    if (error) throw error;
+    // onAuthStateChange gestiona el resto (gems, header, etc.)
   } catch (e) {
-    console.error('[OAuth Google] excepción capturada:', e);
-    throw e;
+    console.error('[GIS] handleGoogleLogin error:', e);
+    toast('Error Google: ' + (e.message || JSON.stringify(e)));
   }
+}
+
+function initGoogleSignIn(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (typeof google === 'undefined' || !google?.accounts?.id) {
+    // Script aún cargando, reintenta en 300ms
+    setTimeout(() => initGoogleSignIn(containerId), 300);
+    return;
+  }
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleLogin
+  });
+  google.accounts.id.renderButton(el, {
+    theme: 'outline',
+    size: 'large',
+    text: 'continue_with',
+    shape: 'rectangular',
+    logo_alignment: 'left',
+    width: el.offsetWidth || 300
+  });
 }
 
 async function authSignOut() {

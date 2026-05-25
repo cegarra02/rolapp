@@ -53,9 +53,10 @@ function renderAuthSection() {
         <button class="auth-btn auth-btn-primary" onclick="doAuth()">
           ${_authTab === 'login' ? 'Entrar' : 'Crear cuenta'}
         </button>
-        <button class="auth-btn auth-btn-google" onclick="doGoogleAuth()">🔐 Continuar con Google</button>
+        <div id="googleBtnContainer" style="margin-bottom:8px;min-height:44px"></div>
         <div class="auth-note">💎 Tienes ${getDisplayGems()} gemas locales · Crea una cuenta para no perderlas</div>
       </div>`;
+    setTimeout(() => initGoogleSignIn('googleBtnContainer'), 100);
   }
 }
 
@@ -81,15 +82,6 @@ async function doAuth() {
   } catch (e) {
     toast('Error: ' + e.message);
     if (btn) { btn.textContent = _authTab === 'login' ? 'Entrar' : 'Crear cuenta'; btn.style.pointerEvents = ''; }
-  }
-}
-
-async function doGoogleAuth() {
-  try {
-    await authSignInGoogle();
-  } catch (e) {
-    console.error('[doGoogleAuth] error completo:', e);
-    toast('Error Google: ' + (e.message || e.status || JSON.stringify(e)));
   }
 }
 
