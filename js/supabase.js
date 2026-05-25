@@ -125,8 +125,9 @@ async function handleGoogleLogin(response) {
     if (error) throw error;
     // onAuthStateChange gestiona el resto (gems, header, etc.)
   } catch (e) {
-    console.error('[GIS] handleGoogleLogin error:', e);
-    toast('Error Google: ' + (e.message || JSON.stringify(e)));
+    console.error('[GIS] handleGoogleLogin error completo:', e);
+    const msg = e.status ? `${e.status} ${e.message}` : e.message || 'sin conexión con Supabase';
+    toast('Error Google: ' + msg);
   }
 }
 
