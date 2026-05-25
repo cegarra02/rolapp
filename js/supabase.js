@@ -24,15 +24,24 @@ async function initSupabase() {
         if (session?.user) {
           supabaseUser = session.user;
           const localGems = parseInt(localStorage.getItem('rp_gems_local') || '0');
-          await _ensureUserRow(session.user, localGems);
-          if (localGems > 0) localStorage.removeItem('rp_gems_local');
+          const isNew = await _ensureUserRow(session.user, localGems);
+          // Solo borrar gemas locales si el usuario acaba de crearse (no en cada recarga)
+          if (isNew && localGems > 0) localStorage.removeItem('rp_gems_local');
           await _loadUserGems();
         } else {
+          // Sesión null aquí es temporal — puede que TOKEN_REFRESHED llegue en breve
           supabaseUser = null;
           supabaseGems = 0;
           if (localStorage.getItem('rp_gems_local') === null) {
             localStorage.setItem('rp_gems_local', '50');
           }
+        }
+      } else if (event === 'TOKEN_REFRESHED') {
+        // El JWT expiró y Supabase lo renovó en background (muy común al recargar).
+        // INITIAL_SESSION pudo haber llegado con sesión null; ahora tenemos sesión válida.
+        if (session?.user) {
+          supabaseUser = session.user;
+          await _loadUserGems();
         }
       } else if (event === 'SIGNED_OUT') {
         supabaseUser = null;
@@ -44,7 +53,6 @@ async function initSupabase() {
     } catch (e) {
       console.warn('[auth] error en onAuthStateChange:', e?.message);
     } finally {
-      // Siempre actualizar la UI, sin importar si algo falló arriba
       renderUserHeader();
       if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
     }
@@ -57,17 +65,18 @@ async function initSupabase() {
 }
 
 async function _ensureUserRow(user, migrateGems) {
-  // Only creates the row if it doesn't exist yet (new user signup).
-  // Existing users: never add rp_gems_local — that value is just the initSupabase() default.
+  // Devuelve true si se acaba de crear la fila (usuario nuevo), false si ya existía.
   try {
-    const { data } = await supaClient.from('users').select('id,gems').eq('id', user.id).single();
+    const { data } = await supaClient.from('users').select('id').eq('id', user.id).single();
     if (!data) {
-      // New user → insert row, optionally carrying over gems earned as guest
+      // Usuario nuevo → crear fila con gemas locales si las hay
       await supaClient.from('users').insert({ id: user.id, gems: migrateGems > 0 ? migrateGems : 50 });
+      return true;
     }
-    // Existing user → nothing to do here; gems come from _loadUserGems()
+    return false; // Usuario existente
   } catch (e) {
     console.warn('[ensureUserRow] non-fatal:', e?.message);
+    return false;
   }
 }
 
