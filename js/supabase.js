@@ -113,11 +113,21 @@ async function authSignIn(email, password) {
 }
 
 async function authSignInGoogle() {
-  const { error } = await supaClient.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: 'https://cegarra02.github.io/rolapp/' }
-  });
-  if (error) throw error;
+  console.log('[OAuth Google] iniciando signInWithOAuth...');
+  try {
+    const result = await supaClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'https://cegarra02.github.io/rolapp/' }
+    });
+    console.log('[OAuth Google] resultado completo:', JSON.stringify(result, null, 2));
+    if (result.error) {
+      console.error('[OAuth Google] error del SDK:', result.error);
+      throw result.error;
+    }
+  } catch (e) {
+    console.error('[OAuth Google] excepción capturada:', e);
+    throw e;
+  }
 }
 
 async function authSignOut() {

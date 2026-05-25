@@ -85,8 +85,12 @@ async function doAuth() {
 }
 
 async function doGoogleAuth() {
-  try { await authSignInGoogle(); }
-  catch (e) { toast('Error: ' + e.message); }
+  try {
+    await authSignInGoogle();
+  } catch (e) {
+    console.error('[doGoogleAuth] error completo:', e);
+    toast('Error Google: ' + (e.message || e.status || JSON.stringify(e)));
+  }
 }
 
 async function doSignOut() {
