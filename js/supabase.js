@@ -80,17 +80,21 @@ async function refreshGems() {
 }
 
 async function addGems(userId, amount) {
-  const { data } = await supaClient.from('users').select('gems').eq('id', userId).single();
+  const { data, error: selErr } = await supaClient.from('users').select('gems').eq('id', userId).single();
+  if (selErr) throw selErr;
   const current = data?.gems ?? 0;
-  await supaClient.from('users').update({ gems: current + amount }).eq('id', userId);
+  const { error: updErr } = await supaClient.from('users').update({ gems: current + amount }).eq('id', userId);
+  if (updErr) throw updErr;
   if (supabaseUser?.id === userId) { supabaseGems = current + amount; renderUserHeader(); }
 }
 
 async function spendGems(userId, amount) {
-  const { data } = await supaClient.from('users').select('gems').eq('id', userId).single();
+  const { data, error: selErr } = await supaClient.from('users').select('gems').eq('id', userId).single();
+  if (selErr) throw selErr;
   const current = data?.gems ?? 0;
   if (current < amount) return false;
-  await supaClient.from('users').update({ gems: current - amount }).eq('id', userId);
+  const { error: updErr } = await supaClient.from('users').update({ gems: current - amount }).eq('id', userId);
+  if (updErr) throw updErr;
   if (supabaseUser?.id === userId) { supabaseGems = current - amount; renderUserHeader(); }
   return true;
 }
