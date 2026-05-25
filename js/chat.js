@@ -324,10 +324,7 @@ function openChat(id) {
   currentScene = null; currentChar = c;
   history = c.history || [];
   document.getElementById('chatName').textContent = c.name;
-  const metaParts = [];
-  if (c.age) metaParts.push(c.age + ' años');
-  if (c.shoeSize) metaParts.push('Talla ' + c.shoeSize);
-  document.getElementById('chatMeta').textContent = metaParts.join(' · ');
+  document.getElementById('chatMeta').textContent = c.age ? c.age + ' años' : '';
   const bg = document.getElementById('chatBg');
   if (c.bg) { bg.style.backgroundImage = `url(${c.bg})`; bg.style.display = 'block'; }
   else { bg.style.display = 'none'; }
@@ -418,25 +415,6 @@ function clearHistory() {
   renderMessages(); closeModal(); toast('Historial borrado');
 }
 
-function configKey() {
-  closeModal();
-  setTimeout(() => {
-    openModal('API Key de Anthropic', []);
-    const mb = document.getElementById('modalBody');
-    const cur = localStorage.getItem('rp_apikey') || '';
-    mb.innerHTML = `
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Necesitas una API Key de Anthropic (console.anthropic.com) para que el personaje responda.</p>
-      <input id="keyInp" type="password" placeholder="sk-ant-…" value="${esc(cur)}" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;margin-bottom:12px">
-      <button class="btn-primary" style="width:100%" onclick="saveKey()">Guardar key</button>
-    `;
-  }, 50);
-}
-
-function saveKey() {
-  const k = document.getElementById('keyInp').value.trim();
-  localStorage.setItem('rp_apikey', k);
-  closeModal(); toast('API Key guardada ✓');
-}
 
 function initChatSwipe() {
   const screen = document.getElementById('chat');

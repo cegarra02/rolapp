@@ -57,7 +57,6 @@ async function renderModeration() {
         <div class="mod-card-meta">
           ${s.gender === 'M' ? '♂ Hombre' : s.gender === 'F' ? '♀ Mujer' : ''}
           ${s.age ? ' · ' + s.age + ' años' : ''}
-          ${s.shoe_size ? ' · Pie ' + s.shoe_size : ''}
         </div>
         <div class="mod-card-sliders">
           Timidez: ${s.timid} · Romance: ${s.romantic} · Ritmo: ${s.pace} · NSFW: ${s.nsfw}
@@ -89,7 +88,6 @@ async function approveSubmission(subId, authorId) {
     tag:       sub.tag,
     gender:    sub.gender,
     age:       sub.age,
-    shoe_size: sub.shoe_size,
     desc:      sub.desc,
     context:   sub.context,
     greeting:  sub.greeting,

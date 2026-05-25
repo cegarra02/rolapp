@@ -111,7 +111,6 @@ async function openExploreChat(libCharId) {
     tag:       data.tag,
     gender:    data.gender,
     age:       data.age,
-    shoeSize:  data.shoe_size,
     desc:      data.desc,
     context:   data.context,
     greeting:  data.greeting,
@@ -131,10 +130,7 @@ async function openExploreChat(libCharId) {
   history      = [];
 
   document.getElementById('chatName').textContent = ch.name;
-  const metaParts = [];
-  if (ch.age)      metaParts.push(ch.age + ' años');
-  if (ch.shoeSize) metaParts.push('Talla ' + ch.shoeSize);
-  document.getElementById('chatMeta').textContent = metaParts.join(' · ');
+  document.getElementById('chatMeta').textContent = ch.age ? ch.age + ' años' : '';
 
   const bg = document.getElementById('chatBg');
   if (ch.bg) { bg.style.backgroundImage = `url(${ch.bg})`; bg.style.display = 'block'; }

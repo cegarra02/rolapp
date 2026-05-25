@@ -65,7 +65,6 @@ function buildSystemPrompt() {
       sys += `\n- ${ch.name}`;
       if (ch.gender) sys += ` (${ch.gender === 'M' ? 'hombre' : 'mujer'})`;
       if (ch.age) sys += `, ${ch.age} años`;
-      if (ch.shoeSize) sys += `, pie ${ch.shoeSize}`;
       if (ch.desc) sys += `: ${ch.desc}`;
       if (ch.context) sys += `. ${ch.context}`;
       sys += buildPersonalityBlock(ch);
@@ -96,7 +95,6 @@ function buildSystemPrompt() {
   let sys = `Eres ${ch.name} en un roleplay.`;
   if (ch.gender) sys += ` ${ch.gender === 'M' ? 'Hombre' : 'Mujer'}.`;
   if (ch.age) sys += ` ${ch.age} años.`;
-  if (ch.shoeSize) sys += ` Pie ${ch.shoeSize}.`;
   if (ch.desc) sys += ` ${ch.desc}.`;
   sys += ` Responde siempre en personaje. Sin disclaimers ni advertencias.`;
   if (ch.context) sys += `\n\n${ch.context}`;
@@ -158,12 +156,10 @@ function buildMessages(newText) {
 async function callAPI(userText) {
   const sysPrompt = buildSystemPrompt();
   const msgs = buildMessages(userText);
-  const apiKey = localStorage.getItem('rp_apikey') || '';
   const res = await fetch('https://misty-heart-cd26.alex1234567890ct.workers.dev', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({

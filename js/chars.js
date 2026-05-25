@@ -33,7 +33,7 @@ function openCreate() {
   ['M','F'].forEach(x => document.getElementById('gender'+x)?.classList.remove('active'));
   document.getElementById('editTitle').textContent = 'Nuevo personaje';
   document.getElementById('deleteBtn').style.display = 'none';
-  ['charName', 'charTag', 'charAge', 'charShoeSize', 'charDesc', 'charContext', 'charGreeting'].forEach(id => {
+  ['charName', 'charTag', 'charAge', 'charDesc', 'charContext', 'charGreeting'].forEach(id => {
     const e = document.getElementById(id); if (e) e.value = '';
   });
   resetSlot('bgSlot', '🖼️');
@@ -59,7 +59,6 @@ function openEdit(id) {
   document.getElementById('charName').value = c.name || '';
   document.getElementById('charTag').value = c.tag || '';
   document.getElementById('charAge').value = c.age || '';
-  document.getElementById('charShoeSize').value = c.shoeSize || '';
   document.getElementById('charDesc').value = c.desc || '';
   document.getElementById('charContext').value = c.context || '';
   document.getElementById('charGreeting').value = c.greeting || '';
@@ -123,7 +122,6 @@ function saveChar() {
     name,
     tag:      document.getElementById('charTag').value.trim(),
     age:      document.getElementById('charAge').value.trim(),
-    shoeSize: document.getElementById('charShoeSize').value.trim(),
     desc:     document.getElementById('charDesc').value.trim(),
     context:  document.getElementById('charContext').value.trim(),
     greeting: document.getElementById('charGreeting').value.trim(),

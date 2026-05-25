@@ -169,7 +169,6 @@ async function submitCharToLibrary(charData) {
     tag:      charData.tag      || null,
     gender:   charData.gender   || null,
     age:      charData.age      || null,
-    shoe_size: charData.shoeSize || null,
     desc:     charData.desc     || null,
     context:  charData.context  || null,
     greeting: charData.greeting || null,
