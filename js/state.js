@@ -1,6 +1,7 @@
 var _3d = null;
-let chars = JSON.parse(localStorage.getItem('rp_chars') || '[]');
-let profile = JSON.parse(localStorage.getItem('rp_profile') || '{}');
+let chars    = JSON.parse(localStorage.getItem('rp_chars')     || '[]');
+let libChars = JSON.parse(localStorage.getItem('rp_lib_chars') || '[]'); // historial de personajes de biblioteca
+let profile  = JSON.parse(localStorage.getItem('rp_profile')   || '{}');
 let editId = null;
 let currentChar = null;
 let history = [];

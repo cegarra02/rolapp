@@ -92,6 +92,9 @@ function onExploreSearch(val) {
 }
 
 async function openExploreChat(libCharId) {
+  const libId    = 'lib_' + libCharId;
+  const existing = libChars.find(x => x.id === libId); // historial local previo
+
   const { data, error } = await supaClient
     .from('characters_library')
     .select('*')
@@ -106,28 +109,28 @@ async function openExploreChat(libCharId) {
     .eq('id', libCharId);
 
   const ch = {
-    id:        'lib_' + libCharId,
-    name:      data.name,
-    tag:       data.tag,
-    gender:    data.gender,
-    age:       data.age,
-    desc:      data.desc,
-    context:   data.context,
-    greeting:  data.greeting,
-    bg:        data.bg,
-    timid:     data.timid    ?? 5,
-    romantic:  data.romantic ?? 5,
-    pace:      data.pace     ?? 4,
-    nsfw:      data.nsfw     ?? 7,
-    hitos:     [],
+    id:           libId,
+    name:         data.name,
+    tag:          data.tag,
+    gender:       data.gender,
+    age:          data.age,
+    desc:         data.desc,
+    context:      data.context,
+    greeting:     data.greeting,
+    bg:           data.bg,
+    timid:        data.timid    ?? 5,
+    romantic:     data.romantic ?? 5,
+    pace:         data.pace     ?? 4,
+    nsfw:         data.nsfw     ?? 7,
+    hitos:        existing?.hitos   || [],
     hitosEnabled: false,
-    history:   [],
+    history:      existing?.history || [],
     isLibraryChar: true
   };
 
   currentChar  = ch;
   currentScene = null;
-  history      = [];
+  history      = ch.history;
 
   document.getElementById('chatName').textContent = ch.name;
   document.getElementById('chatMeta').textContent = ch.age ? ch.age + ' años' : '';
@@ -142,8 +145,13 @@ async function openExploreChat(libCharId) {
   document.getElementById('swipeHint').style.display = '';
   showScreen('chat', true);
 
+  // Saludo solo si no hay historial previo; guardar inmediatamente en libChars
   if (!history.length && ch.greeting) {
     history.push({ role: 'assistant', content: ch.greeting, ts: Date.now() });
+    ch.history = history;
+    const idx = libChars.findIndex(x => x.id === ch.id);
+    if (idx > -1) libChars[idx] = ch; else libChars.unshift(ch);
+    saveLibChars();
     renderMessages();
   }
   setTimeout(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }, 50);

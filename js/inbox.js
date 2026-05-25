@@ -15,6 +15,13 @@ function getInboxItems() {
     const preview = last.role === 'user' ? ('Tú: ' + last.content) : last.content;
     items.push({type:'char', id:ch.id, name:ch.name, bg:ch.bg, preview, ts:last.ts});
   });
+  // Personajes de biblioteca (Explorar) — historial persistido en libChars
+  libChars.forEach(ch => {
+    if (!ch.history?.length) return;
+    const last = ch.history[ch.history.length - 1];
+    const preview = last.role === 'user' ? ('Tú: ' + last.content) : last.content;
+    items.push({type:'lib', id:ch.id, name:ch.name, bg:ch.bg, preview, ts:last.ts});
+  });
   scenes.forEach(sc => {
     if (!sc.history?.length) return;
     if (dismissedChats.has('scene:' + sc.id)) return;
@@ -89,8 +96,10 @@ function initInboxSwipes() {
 
     row.addEventListener('click', () => {
       if (isOpen) { snapTo(0); return; }
-      if (wrap.dataset.type === 'char') openChat(wrap.dataset.id);
-      else openSceneChat(wrap.dataset.id);
+      const type = wrap.dataset.type, id = wrap.dataset.id;
+      if (type === 'char')  openChat(id);
+      else if (type === 'lib') openLibChatFromInbox(id);
+      else openSceneChat(id);
     });
 
     row.addEventListener('touchstart', e => {
@@ -142,8 +151,34 @@ function deleteInboxChat(type, id) {
 }
 
 function confirmDeleteInboxChat(type, id) {
-  dismissedChats.add(type + ':' + id);
-  saveDismissed();
   closeModal();
+  if (type === 'lib') {
+    // Borrar el historial local del personaje de biblioteca
+    const idx = libChars.findIndex(x => x.id === id);
+    if (idx > -1) { libChars.splice(idx, 1); saveLibChars(); }
+  } else {
+    dismissedChats.add(type + ':' + id);
+    saveDismissed();
+  }
   renderInboxScreen();
+}
+
+// Reabre el chat con un personaje de biblioteca desde el inbox
+function openLibChatFromInbox(id) {
+  const ch = libChars.find(x => x.id === id);
+  if (!ch) { toast('Conversación no encontrada'); return; }
+  currentChar  = ch;
+  currentScene = null;
+  history      = ch.history || [];
+  document.getElementById('chatName').textContent = ch.name;
+  document.getElementById('chatMeta').textContent = ch.age ? ch.age + ' años' : '';
+  const bg = document.getElementById('chatBg');
+  if (ch.bg) { bg.style.backgroundImage = `url(${ch.bg})`; bg.style.display = 'block'; }
+  else bg.style.display = 'none';
+  renderMessages();
+  isSwiped = false;
+  document.getElementById('chatContentWrap').classList.remove('swiped');
+  document.getElementById('swipeHint').style.display = '';
+  showScreen('chat', true);
+  setTimeout(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }, 50);
 }

@@ -1,4 +1,5 @@
 function save() { localStorage.setItem('rp_chars', JSON.stringify(chars)); }
+function saveLibChars() { localStorage.setItem('rp_lib_chars', JSON.stringify(libChars)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function esc(s) { return String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function formatMsg(txt) {

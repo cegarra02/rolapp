@@ -98,9 +98,22 @@ function cancelEdit(i, orig) {
   renderMessages();
 }
 
+// Persiste currentChar en el store correcto (chars[] o libChars[] según sea de biblioteca)
+function _saveChar() {
+  if (!currentChar) return;
+  if (currentChar.isLibraryChar) {
+    const idx = libChars.findIndex(x => x.id === currentChar.id);
+    if (idx > -1) libChars[idx] = currentChar;
+    else libChars.unshift(currentChar);
+    saveLibChars();
+  } else {
+    save();
+  }
+}
+
 function saveHistory() {
   if (currentScene) { currentScene.history = history; saveScenes(); }
-  else if (currentChar) { currentChar.history = history; save(); }
+  else if (currentChar) { currentChar.history = history; _saveChar(); }
 }
 
 function scrollBottom() { setTimeout(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }, 50); }
@@ -140,7 +153,7 @@ async function sendMessage() {
   const userMsg = {role: 'user', content: text, ts: Date.now()};
   history.push(userMsg);
   if (currentScene) { currentScene.history = history; saveScenes(); }
-  else { currentChar.history = history; save(); }
+  else { currentChar.history = history; _saveChar(); }
   renderMessages(); scrollBottom();
   showTyping();
   try {
@@ -155,7 +168,7 @@ async function sendMessage() {
       if (t && t.hitosEnabled !== false) {
         if (!t.hitos) t.hitos = [];
         t.hitos.unshift({ id: uid(), text: hitoMatch[1].trim(), ts: Date.now() });
-        if (currentScene) saveScenes(); else save();
+        if (currentScene) saveScenes(); else _saveChar();
         setTimeout(() => showHitoNotif(hitoMatch[1].trim()), 600);
       }
     }
@@ -169,7 +182,7 @@ async function sendMessage() {
       currentScene.history = history; saveScenes();
     } else {
       history.push({role: 'assistant', content: reply, ts: Date.now(), speaker: null});
-      currentChar.history = history; save();
+      currentChar.history = history; _saveChar();
     }
     renderMessages(); scrollToMsg(firstNewBotIdx);
     if (currentChar)  inboxMarkActive('char',  currentChar.id);
@@ -179,7 +192,7 @@ async function sendMessage() {
     hideTyping();
     history.push({role: 'assistant', content: `_(Error: ${err.message}. Comprueba tu API key en Mi Perfil.)_`, ts: Date.now()});
     if (currentScene) { currentScene.history = history; saveScenes(); }
-    else { currentChar.history = history; save(); }
+    else { currentChar.history = history; _saveChar(); }
     renderMessages(); scrollBottom();
   }
 }
@@ -305,7 +318,7 @@ function saveChatStyle() {
     fontSize:      parseInt(document.getElementById('csFontSize').value)
   };
   if (currentScene) { currentScene.chatStyle = s; saveScenes(); }
-  else if (currentChar) { currentChar.chatStyle = s; save(); }
+  else if (currentChar) { currentChar.chatStyle = s; _saveChar(); }
   closeModal();
   renderMessages();
   toast('Estilo guardado ✓');
@@ -313,7 +326,7 @@ function saveChatStyle() {
 
 function resetChatStyle() {
   if (currentScene) { delete currentScene.chatStyle; saveScenes(); }
-  else if (currentChar) { delete currentChar.chatStyle; save(); }
+  else if (currentChar) { delete currentChar.chatStyle; _saveChar(); }
   closeModal();
   renderMessages();
   toast('Estilo restablecido');
@@ -341,8 +354,9 @@ function openChat(id) {
 }
 
 function openChatMenu() {
+  const isLib = !!(currentChar?.isLibraryChar);
   openModal('Opciones del chat', [
-    {label: '✎  Editar personaje',  action: `editFromChat()`},
+    ...(!isLib && !currentScene ? [{label: '✎  Editar personaje', action: `editFromChat()`}] : []),
     {label: '📌  Hitos',            action: `openMilestonesModal()`},
     {label: '🎨  Estilo del chat',   action: `openChatStyleModal()`},
     {label: '🗑  Limpiar historial', action: `clearHistory()`},
@@ -409,8 +423,8 @@ function clearHistory() {
     currentScene.history = []; saveScenes();
     if (currentScene.greeting) { const m = {role: 'assistant', content: currentScene.greeting, ts: Date.now(), speaker: 'Narrador'}; history.push(m); currentScene.history = history; saveScenes(); }
   } else {
-    currentChar.history = []; save();
-    if (currentChar.greeting) { const m = {role: 'assistant', content: currentChar.greeting, ts: Date.now()}; history.push(m); currentChar.history = history; save(); }
+    currentChar.history = []; _saveChar();
+    if (currentChar.greeting) { const m = {role: 'assistant', content: currentChar.greeting, ts: Date.now()}; history.push(m); currentChar.history = history; _saveChar(); }
   }
   renderMessages(); closeModal(); toast('Historial borrado');
 }
