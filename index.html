@@ -10,7 +10,7 @@
 <title>Roleplay AI</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c084fc'/><text x='16' y='23' text-anchor='middle' font-size='20' font-family='serif' fill='%23fff'>✦</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=88">
+<link rel="stylesheet" href="css/style.css?v=89">
 <link rel="manifest" href="manifest.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -26,6 +26,14 @@
     </div>
     <div class="user-header-chip" id="headerChipHome"></div>
   </div>
+  <button class="scenes-shortcut" onclick="switchTab('scenes')">
+    <div class="scenes-shortcut-icon">⚡</div>
+    <div style="flex:1">
+      <div class="scenes-shortcut-label">Escenas grupales</div>
+      <div class="scenes-shortcut-sub">Roleplay con múltiples personajes</div>
+    </div>
+    <div class="scenes-shortcut-arrow">›</div>
+  </button>
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
     <input class="search-inp" id="searchInp" placeholder="Buscar personajes…" oninput="renderChars()">
@@ -266,12 +274,11 @@
 <!-- SCENES SCREEN -->
 <div class="screen" id="scenesScreen">
   <div class="hdr">
-    <div class="home-logo" style="background:linear-gradient(135deg,#f59e0b,#d97706)">⚡</div>
+    <button class="icon-btn" onclick="goHome()">←</button>
     <div style="flex:1">
       <div class="hdr-title">Escenas</div>
       <div class="hdr-sub">Roleplay grupal</div>
     </div>
-    <div class="user-header-chip" id="headerChipScenes"></div>
   </div>
   <div class="chars-list" id="scenesList" style="padding-bottom:90px"></div>
   <button class="fab" onclick="openSceneCreate()" style="font-size:32px;line-height:1;padding-bottom:2px">+</button>
@@ -397,10 +404,6 @@
   <div class="nav-tab active" id="tabChars" onclick="switchTab('chars')">
     <div class="nav-icon">🎭</div>
     <div class="nav-label">Personajes</div>
-  </div>
-  <div class="nav-tab" id="tabScenes" onclick="switchTab('scenes')">
-    <div class="nav-icon">⚡</div>
-    <div class="nav-label">Escenas</div>
   </div>
   <div class="nav-tab" id="tabChats" onclick="switchTab('chats')">
     <div class="nav-icon">💬</div>
@@ -563,28 +566,28 @@
     </div>
 
 <button class="btn-primary" onclick="saveProfile()">Guardar mi perfil</button>
-    <div style="height:20px"></div>
+    <div class="app-version">v89</div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/state.js?v=88"></script>
-<script src="js/utils.js?v=88"></script>
-<script src="js/ui.js?v=88"></script>
-<script src="js/sliders.js?v=88"></script>
-<script src="js/supabase.js?v=88"></script>
-<script src="js/api.js?v=88"></script>
-<script src="js/cropper.js?v=88"></script>
-<script src="js/chars.js?v=88"></script>
-<script src="js/profile.js?v=88"></script>
-<script src="js/scenes.js?v=88"></script>
-<script src="js/inbox.js?v=88"></script>
-<script src="js/missions.js?v=88"></script>
-<script src="js/hitos.js?v=88"></script>
-<script src="js/explore.js?v=88"></script>
-<script src="js/moderation.js?v=88"></script>
-<script src="js/chat.js?v=88"></script>
-<script src="js/main.js?v=88"></script>
+<script src="js/state.js?v=89"></script>
+<script src="js/utils.js?v=89"></script>
+<script src="js/ui.js?v=89"></script>
+<script src="js/sliders.js?v=89"></script>
+<script src="js/supabase.js?v=89"></script>
+<script src="js/api.js?v=89"></script>
+<script src="js/cropper.js?v=89"></script>
+<script src="js/chars.js?v=89"></script>
+<script src="js/profile.js?v=89"></script>
+<script src="js/scenes.js?v=89"></script>
+<script src="js/inbox.js?v=89"></script>
+<script src="js/missions.js?v=89"></script>
+<script src="js/hitos.js?v=89"></script>
+<script src="js/explore.js?v=89"></script>
+<script src="js/moderation.js?v=89"></script>
+<script src="js/chat.js?v=89"></script>
+<script src="js/main.js?v=89"></script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });

@@ -22,14 +22,14 @@ function closeModal(e) {
 function switchTab(tab) {
   if      (tab === 'explore')  { renderExploreScreen(); showScreen('exploreScreen'); setActiveTab('explore'); }
   else if (tab === 'chars')    { showScreen('home');     renderChars();              setActiveTab('chars'); }
-  else if (tab === 'scenes')   { renderScenesScreen();  showScreen('scenesScreen'); setActiveTab('scenes'); }
+  else if (tab === 'scenes')   { renderScenesScreen();  showScreen('scenesScreen'); setActiveTab('chars'); }
   else if (tab === 'chats')    { renderInboxScreen();   showScreen('chatsScreen');  setActiveTab('chats'); }
   else if (tab === 'missions') { renderMissionsScreen(); showScreen('missionsScreen'); setActiveTab('missions'); }
   else if (tab === 'profile')  { loadProfileFields();   showScreen('profileScreen'); setActiveTab('profile'); refreshGems(); }
 }
 
 function setActiveTab(tab) {
-  ['tabExplore', 'tabChars', 'tabScenes', 'tabChats', 'tabMissions', 'tabProfile'].forEach(id => {
+  ['tabExplore', 'tabChars', 'tabChats', 'tabMissions', 'tabProfile'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('active', id === 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
   });

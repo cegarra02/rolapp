@@ -105,6 +105,7 @@ Supabase CDN se carga primero (antes de state.js) vía `https://cdn.jsdelivr.net
 
 ### Tab Explorar
 - Primera tab del nav (icono 🔍)
+- El nav tiene 4 tabs: Explorar, Personajes, Chats, Mi Perfil (Escenas ya no es tab; se accede desde el botón en la pantalla de Personajes)
 - Grid 2 columnas, misma CSS que Personajes
 - Búsqueda con debounce 400ms, filtro por tags (chips scrollables), ordenar Nuevos/Populares
 - Al abrir chat: incrementa `chat_count` en Supabase (fire and forget)
@@ -175,7 +176,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v88** (sw.js usa `rolapp-v90`)
+**Versión actual: v89** (sw.js usa `rolapp-v91`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 
