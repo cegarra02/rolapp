@@ -41,6 +41,7 @@ function renderAuthSection() {
         <button class="auth-btn auth-btn-logout" style="margin-top:10px" onclick="doSignOut()">Cerrar sesión</button>
       </div>`;
   } else {
+    const isNative = !!(window.Capacitor?.isNativePlatform?.());
     el.innerHTML = `
       <div class="auth-section">
         <div class="auth-tab-row">
@@ -52,10 +53,13 @@ function renderAuthSection() {
         <button class="auth-btn auth-btn-primary" onclick="doAuth()">
           ${_authTab === 'login' ? 'Entrar' : 'Crear cuenta'}
         </button>
-        <div id="googleBtnContainer" style="margin-bottom:8px;min-height:44px"></div>
+        ${isNative
+          ? `<div class="auth-note" style="text-align:center">El login con Google está disponible en la <a href="https://cegarra02.github.io/rolapp/" style="color:var(--accent)">versión web</a></div>`
+          : `<div id="googleBtnContainer" style="margin-bottom:8px;min-height:44px"></div>`
+        }
         <div class="auth-note">💎 Tienes ${getDisplayGems()} gemas locales · Crea una cuenta para no perderlas</div>
       </div>`;
-    setTimeout(() => initGoogleSignIn('googleBtnContainer'), 100);
+    if (!isNative) setTimeout(() => initGoogleSignIn('googleBtnContainer'), 100);
   }
 }
 

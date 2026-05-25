@@ -280,6 +280,11 @@ async function submitCharToLibrary(charData) {
     }
   });
   console.log('[submitChar] resultado INSERT → error:', error);
-  if (error) throw error;
+  if (error) {
+    console.error('[submitChar] FALLO:', error.code, error.message, error.details);
+    toast('❌ Error al enviar a revisión: ' + (error.message || error.code || 'desconocido'));
+    throw error;
+  }
   console.log('[submitChar] INSERT OK ✓');
+  toast('✓ Personaje enviado a revisión');
 }

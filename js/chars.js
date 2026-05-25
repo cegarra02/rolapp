@@ -162,7 +162,7 @@ function saveChar() {
   console.log('[saveChar] editId:', editId, '| wasPublic:', wasPublic, '| isPublicNow:', isPublicNow);
   if (!wasPublic && isPublicNow) {
     console.log('[saveChar] → llamando submitCharToLibrary para:', c.name);
-    submitCharToLibrary(c).catch(e => console.warn('[submitChar] catch:', e.message));
+    submitCharToLibrary(c).catch(e => console.error('[submitChar] error final:', e?.message, e?.code));
   } else if (isPublicNow) {
     console.log('[saveChar] → ya estaba público, no se reenvía (wasPublic=true)');
   }
