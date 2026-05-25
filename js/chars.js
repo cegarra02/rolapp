@@ -159,8 +159,12 @@ function saveChar() {
   toast('Guardado ✓');
   // Enviar a revisión solo si se acaba de marcar como público por primera vez
   // (no en cada guardado si ya estaba marcado, para evitar submissions duplicadas)
+  console.log('[saveChar] editId:', editId, '| wasPublic:', wasPublic, '| isPublicNow:', isPublicNow);
   if (!wasPublic && isPublicNow) {
-    submitCharToLibrary(c).catch(e => console.warn('[submitChar]:', e.message));
+    console.log('[saveChar] → llamando submitCharToLibrary para:', c.name);
+    submitCharToLibrary(c).catch(e => console.warn('[submitChar] catch:', e.message));
+  } else if (isPublicNow) {
+    console.log('[saveChar] → ya estaba público, no se reenvía (wasPublic=true)');
   }
 }
 

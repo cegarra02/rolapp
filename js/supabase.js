@@ -225,6 +225,7 @@ async function authSignOut() {
 
 async function submitCharToLibrary(charData) {
   if (!supabaseUser) { toast('Inicia sesión para publicar personajes'); return; }
+  console.log('[submitChar] INSERT → name:', charData.name, '| author_id:', supabaseUser.id);
   const { error } = await supaClient.from('submissions').insert({
     name:     charData.name,
     tag:      charData.tag      || null,
@@ -254,5 +255,7 @@ async function submitCharToLibrary(charData) {
       nsfw:     charData.nsfw     ?? 7
     }
   });
+  console.log('[submitChar] resultado INSERT → error:', error);
   if (error) throw error;
+  console.log('[submitChar] INSERT OK ✓');
 }
