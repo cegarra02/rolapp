@@ -42,6 +42,8 @@ async function renderModeration() {
     .eq('status', 'pending')
     .order('created_at', { ascending: true });
 
+  console.log('[mod] user:', supabaseUser?.email, '| data:', data, '| error:', error);
+
   if (error) {
     list.innerHTML = `<div style="padding:20px;color:var(--danger)">Error: ${esc(error.message)}</div>`;
     return;
