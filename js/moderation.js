@@ -285,10 +285,7 @@ function _confirmDeleteSub(subId) {
 
 async function _doDeleteSub(subId) {
   closeModal();
-  // Hard DELETE falla silenciosamente si no hay política RLS de DELETE.
-  // Usamos UPDATE status='deleted' — la consulta de moderación solo muestra 'pending',
-  // así que desaparece de la lista igualmente y el UPDATE sí está permitido por RLS.
-  const { error } = await supaClient.from('submissions').update({ status: 'deleted' }).eq('id', subId);
+  const { error } = await supaClient.from('submissions').delete().eq('id', subId);
   if (error) { toast('Error: ' + error.message); return; }
   toast('Eliminado');
   _modSubs = _modSubs.filter(x => x.id !== subId);

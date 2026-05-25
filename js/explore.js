@@ -264,9 +264,7 @@ function _confirmDeleteLibChar(charId) {
 
 async function _doDeleteLibChar(charId) {
   closeModal();
-  // Hard DELETE falla silenciosamente sin política RLS de DELETE.
-  // UPDATE status='deleted' — fetchExploreChars filtra por 'approved', así desaparece igualmente.
-  const { error } = await supaClient.from('characters_library').update({ status: 'deleted' }).eq('id', charId);
+  const { error } = await supaClient.from('characters_library').delete().eq('id', charId);
   if (error) { toast('Error: ' + error.message); return; }
   toast('Eliminado de la biblioteca');
   exploreChars = exploreChars.filter(x => x.id !== charId);
