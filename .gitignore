@@ -1,2 +1,4 @@
 .claude/
 instrucciones.txt
+node_modules/
+www/

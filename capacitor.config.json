@@ -1,0 +1,8 @@
+{
+  "appId": "com.roleplayai.app",
+  "appName": "Roleplay AI",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

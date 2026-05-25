@@ -1,0 +1,19 @@
+{
+  "name": "roleplay-app",
+  "version": "1.0.0",
+  "main": "gen-icons.js",
+  "scripts": {
+    "build:www": "node scripts/build-www.js",
+    "sync": "node scripts/build-www.js && npx cap sync android",
+    "open:android": "npx cap open android"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^7.6.5",
+    "@capacitor/core": "^8.3.4"
+  }
+}
