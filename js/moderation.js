@@ -1,4 +1,4 @@
-const ADMIN_EMAILS = ['cegarra02@gmail.com', 'alex1234567890ct@gmail.com'];
+const ADMIN_EMAILS = ['alex1234567890ct@gmail.com'];
 
 function isAdmin() {
   return !!(supabaseUser && ADMIN_EMAILS.includes(supabaseUser.email));
