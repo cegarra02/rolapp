@@ -45,6 +45,11 @@ async function initSupabase() {
       if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
     }
   });
+
+  // Sync gems from Supabase when user returns to the tab/app (cross-device sync)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshGems();
+  });
 }
 
 async function _ensureUserRow(user, migrateGems) {
@@ -60,6 +65,14 @@ async function _loadUserGems() {
   if (!supabaseUser) return;
   const { data } = await supaClient.from('users').select('gems').eq('id', supabaseUser.id).single();
   supabaseGems = data?.gems ?? 0;
+}
+
+async function refreshGems() {
+  if (!supabaseUser) return;
+  await _loadUserGems();
+  renderUserHeader();
+  const el = document.getElementById('modMyGems');
+  if (el) el.textContent = supabaseGems;
 }
 
 async function addGems(userId, amount) {

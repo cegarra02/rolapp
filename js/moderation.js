@@ -25,7 +25,8 @@ async function giveGemsToSelf() {
 
 async function renderModeration() {
   const list = document.getElementById('modList');
-  // Actualizar saldo de gemas propio
+  // Actualizar saldo de gemas propio (leer de Supabase para tener el valor real)
+  await refreshGems();
   const gemsEl = document.getElementById('modMyGems');
   if (gemsEl) gemsEl.textContent = getDisplayGems();
   list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Cargando submissions…</div>';
