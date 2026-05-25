@@ -436,3 +436,11 @@ input[type=file]{display:none}
 .mod-test-btn:active{background:var(--surface3)}
 .mod-btn-delete{width:100%;margin-top:8px;padding:10px;background:transparent;border:1px solid rgba(248,113,113,.3);border-radius:12px;color:var(--danger);cursor:pointer;font-size:14px;font-family:'Inter',sans-serif}
 .mod-btn-delete:active{background:rgba(248,113,113,.08)}
+
+/* ── FORM HELPERS (moderation + lib detail) ── */
+.field-label{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);margin:0 0 6px 2px;display:block}
+.edit-inp{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;padding:11px 13px;outline:none;margin-bottom:14px;box-sizing:border-box}
+.edit-inp:focus{border-color:var(--accent)}
+.edit-ta{resize:none;line-height:1.5}
+.save-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:14px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;letter-spacing:.3px}
+.save-btn:active{opacity:.85}

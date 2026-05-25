@@ -62,6 +62,7 @@ function renderExploreList() {
     list.innerHTML = `<div class="empty-state" style="grid-column:span 2"><div class="icon">🔍</div><p>Aún no hay personajes en la biblioteca</p></div>`;
     return;
   }
+  const admin = isAdmin();
   list.innerHTML = exploreChars.map(x => `
     <div class="char-card" onclick="openExploreChat('${x.id}')">
       ${x.bg
@@ -71,8 +72,14 @@ function renderExploreList() {
         <div class="char-card-name">${esc(x.name)}</div>
         ${x.tag ? `<span class="char-card-tag">${esc(x.tag)}</span>` : ''}
       </div>
+      ${admin ? `<div class="char-card-edit" onclick="event.stopPropagation();openLibDetail('${x.id}')">✎</div>` : ''}
     </div>`
   ).join('');
+}
+
+function showExplore() {
+  showScreen('exploreScreen', false);
+  setActiveTab('explore');
 }
 
 function setExploreTag(tag) {
@@ -155,4 +162,112 @@ async function openExploreChat(libCharId) {
     renderMessages();
   }
   setTimeout(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }, 50);
+}
+
+// ── Admin: gestión de personaje de biblioteca ─────────────────────────────────
+let _libEditGender = null;
+
+async function openLibDetail(libCharId) {
+  const { data, error } = await supaClient
+    .from('characters_library')
+    .select('*')
+    .eq('id', libCharId)
+    .single();
+  if (error || !data) { toast('Error cargando personaje'); return; }
+  _renderLibDetail(data);
+  showScreen('libDetailScreen', true);
+}
+
+function _renderLibDetail(data) {
+  const nameEl = document.getElementById('libDetailName');
+  if (nameEl) nameEl.textContent = data.name;
+  _libEditGender = data.gender || null;
+  const gM = _libEditGender === 'M' ? ' active' : '';
+  const gF = _libEditGender === 'F' ? ' active' : '';
+
+  const body = document.getElementById('libDetailBody');
+  if (!body) return;
+  body.innerHTML = `
+    ${data.bg ? `<div class="mod-detail-bg" style="background-image:url('${data.bg}')"></div>` : ''}
+    <div class="mod-detail-form">
+
+      <div class="field-label">Nombre</div>
+      <input class="edit-inp" id="libEditName" value="${esc(data.name)}">
+
+      <div class="field-label">Tag / Categoría</div>
+      <input class="edit-inp" id="libEditTag" value="${esc(data.tag || '')}">
+
+      <div class="field-label">Género</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="gender-btn${gM}" id="libEditGenderM" onclick="libPickGender('M')">♂ Hombre</button>
+        <button class="gender-btn${gF}" id="libEditGenderF" onclick="libPickGender('F')">♀ Mujer</button>
+      </div>
+
+      <div class="field-label">Edad</div>
+      <input class="edit-inp" id="libEditAge" value="${esc(data.age || '')}">
+
+      <div class="field-label">Descripción</div>
+      <textarea class="edit-inp edit-ta" id="libEditDesc" rows="3">${esc(data.desc || '')}</textarea>
+
+      <div class="field-label">Contexto / Personalidad</div>
+      <textarea class="edit-inp edit-ta" id="libEditContext" rows="5">${esc(data.context || '')}</textarea>
+
+      <div class="field-label">Saludo inicial</div>
+      <textarea class="edit-inp edit-ta" id="libEditGreeting" rows="3">${esc(data.greeting || '')}</textarea>
+
+      <div class="mod-card-sliders" style="margin:10px 0 4px">
+        Timidez: ${data.timid} · Romance: ${data.romantic} · Ritmo: ${data.pace} · NSFW: ${data.nsfw}
+      </div>
+      <div class="mod-card-meta">Autor ID: ${esc(data.author_id || '—')}</div>
+
+      <button class="save-btn" style="margin-top:16px;width:100%" onclick="_saveLibEdit('${data.id}')">💾 Guardar cambios</button>
+
+      <hr class="mod-sep">
+
+      <button class="mod-btn-delete" onclick="_confirmDeleteLibChar('${data.id}')">🗑 Eliminar de la biblioteca</button>
+    </div>
+  `;
+}
+
+function libPickGender(g) {
+  _libEditGender = _libEditGender === g ? null : g;
+  ['M', 'F'].forEach(x => document.getElementById('libEditGender' + x)?.classList.toggle('active', _libEditGender === x));
+}
+
+async function _saveLibEdit(charId) {
+  const name = document.getElementById('libEditName')?.value.trim();
+  if (!name) { toast('Nombre obligatorio'); return; }
+  const updates = {
+    name,
+    tag:      document.getElementById('libEditTag')?.value.trim()      || null,
+    gender:   _libEditGender                                            || null,
+    age:      document.getElementById('libEditAge')?.value.trim()      || null,
+    desc:     document.getElementById('libEditDesc')?.value.trim()     || null,
+    context:  document.getElementById('libEditContext')?.value.trim()  || null,
+    greeting: document.getElementById('libEditGreeting')?.value.trim() || null,
+  };
+  const { error } = await supaClient.from('characters_library').update(updates).eq('id', charId);
+  if (error) { toast('Error: ' + error.message); return; }
+  document.getElementById('libDetailName').textContent = name;
+  // Actualizar en el cache local de explore si está cargado
+  const idx = exploreChars.findIndex(x => x.id === charId);
+  if (idx > -1) exploreChars[idx] = { ...exploreChars[idx], ...updates };
+  toast('Guardado ✓');
+}
+
+function _confirmDeleteLibChar(charId) {
+  openModal('Eliminar de la biblioteca', [
+    { label: '🗑 Sí, eliminar', action: `_doDeleteLibChar('${charId}')`, danger: true },
+    { label: 'Cancelar', action: 'closeModal()' }
+  ]);
+}
+
+async function _doDeleteLibChar(charId) {
+  closeModal();
+  const { error } = await supaClient.from('characters_library').delete().eq('id', charId);
+  if (error) { toast('Error: ' + error.message); return; }
+  toast('Eliminado de la biblioteca');
+  exploreChars = exploreChars.filter(x => x.id !== charId);
+  showExplore();
+  renderExploreList();
 }

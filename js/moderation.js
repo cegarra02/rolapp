@@ -42,7 +42,7 @@ async function renderModeration() {
   await refreshGems();
   const gemsEl = document.getElementById('modMyGems');
   if (gemsEl) gemsEl.textContent = getDisplayGems();
-  list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Cargando submissions…</div>';
+  list.innerHTML = '<div style="grid-column:span 2;text-align:center;padding:40px;color:var(--muted)">Cargando submissions…</div>';
 
   const { data, error } = await supaClient
     .from('submissions')
@@ -53,12 +53,12 @@ async function renderModeration() {
   _modSubs = data || [];
 
   if (error) {
-    list.innerHTML = `<div style="padding:20px;color:var(--danger)">Error: ${esc(error.message)}</div>`;
+    list.innerHTML = `<div style="grid-column:span 2;padding:20px;color:var(--danger)">Error: ${esc(error.message)}</div>`;
     return;
   }
 
   if (!data?.length) {
-    list.innerHTML = '<div class="empty-state"><div class="icon">✓</div><p>Sin submissions pendientes</p></div>';
+    list.innerHTML = '<div class="empty-state" style="grid-column:span 2"><div class="icon">✓</div><p>Sin submissions pendientes</p></div>';
     return;
   }
 
@@ -66,7 +66,7 @@ async function renderModeration() {
     <div class="char-card" onclick="openSubmissionDetail('${s.id}')">
       ${s.bg
         ? `<div class="char-card-bg" style="background-image:url('${s.bg}')"></div>`
-        : `<div class="char-card-bg-placeholder">${esc(s.name?.[0] || '?')}</div>`
+        : `<div class="char-card-bg-placeholder">${esc((s.name || '?')[0])}</div>`
       }
       <div class="char-card-body">
         <div class="char-card-name">${esc(s.name)}</div>
@@ -76,7 +76,7 @@ async function renderModeration() {
   `).join('');
 }
 
-// ── Pantalla de detalle / edición de una submission ───────────────────────────
+// ── Pantalla de detalle / edición ─────────────────────────────────────────────
 let _modEditGender = null;
 
 function openSubmissionDetail(subId) {
@@ -87,13 +87,17 @@ function openSubmissionDetail(subId) {
 }
 
 function _renderSubmissionDetail(s) {
-  document.getElementById('modDetailName').textContent = s.name;
+  const nameEl = document.getElementById('modDetailName');
+  if (nameEl) nameEl.textContent = s.name;
   _modEditGender = s.gender || null;
 
   const gM = _modEditGender === 'M' ? ' active' : '';
   const gF = _modEditGender === 'F' ? ' active' : '';
 
-  document.getElementById('modDetailBody').innerHTML = `
+  const body = document.getElementById('modDetailBody');
+  if (!body) return;
+
+  body.innerHTML = `
     ${s.bg ? `<div class="mod-detail-bg" style="background-image:url('${s.bg}')"></div>` : ''}
     <div class="mod-detail-form">
 
@@ -126,9 +130,9 @@ function _renderSubmissionDetail(s) {
       </div>
       <div class="mod-card-meta">Autor ID: ${esc(s.author_id || '—')}</div>
 
-      <button class="save-btn" style="margin-top:16px" onclick="_saveSubmissionEdit('${s.id}')">💾 Guardar cambios</button>
+      <button class="save-btn" style="margin-top:16px;width:100%" onclick="_saveSubmissionEdit('${s.id}')">💾 Guardar cambios</button>
 
-      <div class="mod-sep"></div>
+      <hr class="mod-sep">
 
       <button class="mod-test-btn" onclick="testSubmissionChat('${s.id}')">▶ Probar personaje</button>
 
@@ -137,10 +141,10 @@ function _renderSubmissionDetail(s) {
         <input type="number" class="mod-gems-inp" id="modEditGems" value="0" min="0" max="9999">
       </div>
       <div class="mod-actions" style="margin-top:10px">
-        <button class="mod-btn-approve" onclick="_approveFromDetail('${s.id}','${s.author_id || ''}')">✓ Aprobar</button>
-        <button class="mod-btn-reject"  onclick="_rejectFromDetail('${s.id}')">✕ Rechazar</button>
+        <button class="mod-btn-approve" onclick="_confirmApprove('${s.id}','${s.author_id || ''}')">✓ Aprobar</button>
+        <button class="mod-btn-reject"  onclick="_confirmReject('${s.id}')">✕ Rechazar</button>
       </div>
-      <button class="mod-btn-delete" onclick="_deleteSubmission('${s.id}')">🗑 Eliminar permanentemente</button>
+      <button class="mod-btn-delete" onclick="_confirmDeleteSub('${s.id}')">🗑 Eliminar permanentemente</button>
     </div>
   `;
 }
@@ -156,16 +160,15 @@ async function _saveSubmissionEdit(subId) {
   if (!name) { toast('Nombre obligatorio'); return; }
   const updates = {
     name,
-    tag:      document.getElementById('modEditTag')?.value.trim()     || null,
-    gender:   _modEditGender || null,
-    age:      document.getElementById('modEditAge')?.value.trim()     || null,
-    desc:     document.getElementById('modEditDesc')?.value.trim()    || null,
-    context:  document.getElementById('modEditContext')?.value.trim() || null,
+    tag:      document.getElementById('modEditTag')?.value.trim()      || null,
+    gender:   _modEditGender                                            || null,
+    age:      document.getElementById('modEditAge')?.value.trim()      || null,
+    desc:     document.getElementById('modEditDesc')?.value.trim()     || null,
+    context:  document.getElementById('modEditContext')?.value.trim()  || null,
     greeting: document.getElementById('modEditGreeting')?.value.trim() || null,
   };
   const { error } = await supaClient.from('submissions').update(updates).eq('id', subId);
   if (error) { toast('Error: ' + error.message); return; }
-  // Actualizar caché local
   const idx = _modSubs.findIndex(x => x.id === subId);
   if (idx > -1) _modSubs[idx] = { ..._modSubs[idx], ...updates };
   document.getElementById('modDetailName').textContent = name;
@@ -176,22 +179,15 @@ async function _saveSubmissionEdit(subId) {
 function testSubmissionChat(subId) {
   const s = _modSubs.find(x => x.id === subId);
   if (!s) return;
-  // Usar los valores actuales del formulario si están disponibles
-  const name     = document.getElementById('modEditName')?.value.trim()     || s.name;
-  const age      = document.getElementById('modEditAge')?.value.trim()      || s.age;
-  const desc     = document.getElementById('modEditDesc')?.value.trim()     || s.desc;
-  const context  = document.getElementById('modEditContext')?.value.trim()  || s.context;
-  const greeting = document.getElementById('modEditGreeting')?.value.trim() || s.greeting;
-
   const ch = {
     id:           'sub_' + subId,
-    name,
+    name:         document.getElementById('modEditName')?.value.trim()     || s.name,
     tag:          s.tag,
     gender:       _modEditGender ?? s.gender,
-    age,
-    desc,
-    context,
-    greeting,
+    age:          document.getElementById('modEditAge')?.value.trim()      || s.age,
+    desc:         document.getElementById('modEditDesc')?.value.trim()     || s.desc,
+    context:      document.getElementById('modEditContext')?.value.trim()  || s.context,
+    greeting:     document.getElementById('modEditGreeting')?.value.trim() || s.greeting,
     bg:           s.bg,
     timid:        s.timid    ?? 5,
     romantic:     s.romantic ?? 5,
@@ -202,24 +198,19 @@ function testSubmissionChat(subId) {
     history:      [],
     isLibraryChar: true
   };
-
   currentChar  = ch;
   currentScene = null;
   history      = [];
-
   document.getElementById('chatName').textContent = ch.name;
   document.getElementById('chatMeta').textContent = ch.age ? ch.age + ' años' : '';
-
   const bg = document.getElementById('chatBg');
   if (ch.bg) { bg.style.backgroundImage = `url(${ch.bg})`; bg.style.display = 'block'; }
   else bg.style.display = 'none';
-
   renderMessages();
   isSwiped = false;
   document.getElementById('chatContentWrap').classList.remove('swiped');
   document.getElementById('swipeHint').style.display = '';
   showScreen('chat', true);
-
   if (ch.greeting) {
     history.push({ role: 'assistant', content: ch.greeting, ts: Date.now() });
     renderMessages();
@@ -227,12 +218,21 @@ function testSubmissionChat(subId) {
   setTimeout(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }, 50);
 }
 
-// ── Aprobar ───────────────────────────────────────────────────────────────────
-async function _approveFromDetail(subId, authorId) {
+// ── Aprobar (con confirmación) ────────────────────────────────────────────────
+function _confirmApprove(subId, authorId) {
+  const gems = parseInt(document.getElementById('modEditGems')?.value || '0') || 0;
+  const gemsTxt = gems > 0 ? ` y enviar ${gems} 💎 al autor` : '';
+  openModal('Aprobar personaje', [
+    { label: `✓ Sí, aprobar${gemsTxt}`, action: `_doApprove('${subId}','${authorId}')` },
+    { label: 'Cancelar', action: 'closeModal()' }
+  ]);
+}
+
+async function _doApprove(subId, authorId) {
+  closeModal();
   const s = _modSubs.find(x => x.id === subId);
   if (!s) { toast('Submission no encontrada'); return; }
 
-  // Tomar valores actuales del formulario (ya editados)
   const name     = document.getElementById('modEditName')?.value.trim()     || s.name;
   const tag      = document.getElementById('modEditTag')?.value.trim()      || null;
   const gender   = _modEditGender ?? s.gender;
@@ -244,28 +244,30 @@ async function _approveFromDetail(subId, authorId) {
 
   const { error: insertErr } = await supaClient.from('characters_library').insert({
     name, tag, gender, age, desc, context, greeting,
-    bg:        s.bg,
-    timid:     s.timid,
-    romantic:  s.romantic,
-    pace:      s.pace,
-    nsfw:      s.nsfw,
-    author_id: s.author_id,
-    status:    'approved',
-    chat_count: 0
+    bg: s.bg, timid: s.timid, romantic: s.romantic, pace: s.pace, nsfw: s.nsfw,
+    author_id: s.author_id, status: 'approved', chat_count: 0
   });
   if (insertErr) { toast('Error al insertar: ' + insertErr.message); return; }
 
   await supaClient.from('submissions').update({ status: 'approved' }).eq('id', subId);
   if (gems > 0 && authorId) await addGems(authorId, gems);
 
-  toast('Aprobado ✓' + (gems > 0 ? ` · ${gems} gemas al autor` : ''));
+  toast('Aprobado ✓' + (gems > 0 ? ` · ${gems} 💎 al autor` : ''));
   _modSubs = _modSubs.filter(x => x.id !== subId);
   showMod();
   await renderModeration();
 }
 
-// ── Rechazar ──────────────────────────────────────────────────────────────────
-async function _rejectFromDetail(subId) {
+// ── Rechazar (con confirmación) ───────────────────────────────────────────────
+function _confirmReject(subId) {
+  openModal('Rechazar submission', [
+    { label: '✕ Sí, rechazar', action: `_doReject('${subId}')`, danger: true },
+    { label: 'Cancelar', action: 'closeModal()' }
+  ]);
+}
+
+async function _doReject(subId) {
+  closeModal();
   await supaClient.from('submissions').update({ status: 'rejected' }).eq('id', subId);
   toast('Rechazado');
   _modSubs = _modSubs.filter(x => x.id !== subId);
@@ -273,15 +275,15 @@ async function _rejectFromDetail(subId) {
   await renderModeration();
 }
 
-// ── Eliminar (hard delete) ────────────────────────────────────────────────────
-function _deleteSubmission(subId) {
-  openModal('Eliminar submission', [
-    { label: '🗑 Sí, eliminar', action: `_confirmDeleteSub('${subId}')`, danger: true },
+// ── Eliminar submission (con confirmación) ────────────────────────────────────
+function _confirmDeleteSub(subId) {
+  openModal('Eliminar permanentemente', [
+    { label: '🗑 Sí, eliminar', action: `_doDeleteSub('${subId}')`, danger: true },
     { label: 'Cancelar', action: 'closeModal()' }
   ]);
 }
 
-async function _confirmDeleteSub(subId) {
+async function _doDeleteSub(subId) {
   closeModal();
   const { error } = await supaClient.from('submissions').delete().eq('id', subId);
   if (error) { toast('Error: ' + error.message); return; }
