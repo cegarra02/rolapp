@@ -102,7 +102,7 @@ Cada `<div class="screen">` se activa con `showScreen(id, hideNav)`. Pantallas e
 ## Sistema de biblioteca pública (Supabase)
 
 ### Tablas
-- **`characters_library`** — personajes aprobados visibles en Explorar. Campos: `id`, `name`, `tag`, `gender`, `age`, `desc`, `context`, `greeting`, `bg` (base64), `timid`, `romantic`, `pace`, `nsfw`, `status`, `author_id`, `chat_count`, `created_at`
+- **`characters_library`** — personajes aprobados visibles en Explorar. Campos: `id`, `name`, `tag`, `gender`, `age`, `desc`, `context`, `greeting`, `bg` (base64), `timid`, `romantic`, `pace`, `nsfw`, `status`, `author_id`, `chat_count`, `message_count`, `created_at`
 - **`submissions`** — personajes enviados por usuarios pendientes de revisión. Mismos campos + `character_data` (JSONB, NOT NULL) + `status` (pending/approved/rejected)
 - **`users`** — perfil de Supabase del usuario. Campos: `id` (= auth.uid()), `gems`
 
@@ -127,8 +127,9 @@ Cada `<div class="screen">` se activa con `showScreen(id, hideNav)`. Pantallas e
 - Primera tab del nav (icono 🔍)
 - El nav tiene 4 tabs: Explorar, Personajes, Chats, Mi Perfil
 - Grid 2 columnas, misma CSS que Personajes (`.chars-list`)
-- Búsqueda con debounce 400ms, filtro por tags, ordenar Nuevos/Populares
+- Búsqueda con debounce 400ms, filtro por tags (usa `encodeURIComponent` en onclick para evitar inyección de comillas), ordenar Nuevos/Populares
 - Al abrir chat: incrementa `chat_count` en Supabase (fire and forget)
+- Orden **Popular**: ordena por `message_count` (mensajes enviados por usuarios). Cada mensaje al personaje llama a la RPC `increment_lib_messages(char_id uuid)` — incremento atómico en SQL, sin race condition, accesible por `anon` y `authenticated`
 - **El historial de chat con personajes de biblioteca SÍ se persiste** en `libChars` (localStorage `rp_lib_chars`) y aparece en la pestaña Chats
 - Cuando admin está logueado: aparece icono ✎ en cada tarjeta → abre `libDetailScreen` para editar/eliminar
 
@@ -213,7 +214,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v100** (sw.js usa `rolapp-v102`)
+**Versión actual: v102** (sw.js usa `rolapp-v104`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 
