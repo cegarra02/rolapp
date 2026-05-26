@@ -94,12 +94,20 @@ async function _applySession(session) {
 }
 
 async function _ensureUserRow(user, migrateGems) {
-  // Devuelve true si se acaba de crear la fila (usuario nuevo), false si ya existía.
+  // Devuelve true SOLO si la fila se creó con éxito (usuario nuevo).
+  // Si el INSERT falla (ej: falta política RLS), devuelve false para NO borrar las gemas locales.
   try {
     const { data } = await supaClient.from('users').select('id').eq('id', user.id).single();
     if (!data) {
-      // Usuario nuevo → crear fila con gemas locales si las hay
-      await supaClient.from('users').insert({ id: user.id, gems: migrateGems > 0 ? migrateGems : 50 });
+      // Usuario nuevo → intentar crear fila con gemas locales
+      const gems = migrateGems > 0 ? migrateGems : 50;
+      const { error: insertErr } = await supaClient.from('users').insert({ id: user.id, gems });
+      if (insertErr) {
+        console.error('[ensureUserRow] INSERT falló:', insertErr.message, insertErr.code,
+          '— ¿falta política RLS INSERT en users? Ejecuta: CREATE POLICY "Users insert own row" ON users FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);');
+        return false; // No borrar gemas locales si el INSERT falló
+      }
+      console.log('[ensureUserRow] nueva fila creada, gems:', gems);
       return true;
     }
     return false; // Usuario existente
@@ -114,9 +122,16 @@ async function _loadUserGems() {
   try {
     const { data, error } = await supaClient.from('users').select('gems').eq('id', supabaseUser.id).single();
     if (error) {
-      // PGRST116 = no row found; any other error = network/RLS issue
+      // PGRST116 = no row found (usuario nuevo sin fila en users todavía)
+      // Cualquier otro error = problema de red o RLS
       console.warn('[loadUserGems]:', error.message, error.code);
-      return; // Keep last known supabaseGems — don't reset to 0
+      // Fallback: usar gemas locales si existen (evita mostrar 0 cuando el INSERT de la fila falló)
+      const local = parseInt(localStorage.getItem('rp_gems_local') || '0');
+      if (local > 0 && supabaseGems === 0) {
+        supabaseGems = local;
+        console.warn('[loadUserGems] usando gemas locales como fallback:', local);
+      }
+      return;
     }
     supabaseGems = data?.gems ?? 0;
   } catch (e) {
