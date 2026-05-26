@@ -122,15 +122,23 @@ async function _loadUserGems() {
   try {
     const { data, error } = await supaClient.from('users').select('gems').eq('id', supabaseUser.id).single();
     if (error) {
-      // PGRST116 = no row found | otros = red o RLS
-      // NO sobreescribir supabaseGems con valores locales — eso desincroniza header vs perfil.
-      // Mantener el valor anterior (puede ser 0 si es la primera carga).
-      console.warn('[loadUserGems]:', error.code, error.message);
+      if (error.code === 'PGRST116') {
+        // No hay fila → crearla con las gemas locales (o 50 por defecto)
+        console.warn('[loadUserGems] sin fila → _ensureUserRow');
+        const localGems = parseInt(localStorage.getItem('rp_gems_local') || '50');
+        const created = await _ensureUserRow(supabaseUser, localGems);
+        if (created) {
+          localStorage.removeItem('rp_gems_local');
+          supabaseGems = localGems;
+        }
+      } else {
+        // Error de red u otro: no tocar supabaseGems para no perder valor previo
+        console.warn('[loadUserGems]:', error.code, error.message);
+      }
       return;
     }
     supabaseGems = data?.gems ?? 0;
   } catch (e) {
-    // Error de red: no cambiar supabaseGems para no perder el valor conocido
     console.warn('[loadUserGems] catch:', e?.message);
   }
 }
@@ -258,11 +266,20 @@ async function signInWithGoogleRedirect() {
   }
 }
 
+// Deduplicación: evita procesar el mismo deep link dos veces
+// (getLaunchUrl + appUrlOpen pueden dispararse ambos en cold-start en algunos dispositivos).
+let _lastDeepLinkUrl = '';
+
 // Gestiona el deep link de retorno tras OAuth (llamado desde main.js).
 // Supabase v2 usa PKCE por defecto → la URL tiene ?code=... (no #access_token).
 // Se intercambia con exchangeCodeForSession, que almacena la sesión de forma persistente.
 async function handleDeepLink(url) {
   if (!url || !url.startsWith('com.roleplayai.app://')) return;
+  if (url === _lastDeepLinkUrl) {
+    console.log('[deepLink] URL duplicada ignorada');
+    return;
+  }
+  _lastDeepLinkUrl = url;
   console.log('[deepLink] URL recibida:', url.slice(0, 80));
   try { await window.Capacitor.Plugins.Browser.close(); } catch (_) {}
 
@@ -272,16 +289,26 @@ async function handleDeepLink(url) {
     const { data, error } = await supaClient.auth.exchangeCodeForSession(url);
     if (error) {
       console.error('[deepLink] exchangeCodeForSession error:', error);
+      _lastDeepLinkUrl = ''; // permitir reintento si el exchange falla
       toast('Error sesión: ' + error.message);
-    } else {
-      console.log('[deepLink] sesión establecida ✓ user:', data?.session?.user?.email);
-      // Forzar actualización inmediata de UI — onAuthStateChange puede llegar con retraso
-      // en Android o no dispararse si el evento fue antes de que el listener estuviera listo.
-      if (data?.session?.user) {
-        await _applySession(data.session);
-        renderUserHeader();
-        if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
-      }
+      return;
+    }
+    console.log('[deepLink] sesión establecida ✓ user:', data?.session?.user?.email);
+    // Actualizar UI inmediatamente: onAuthStateChange(SIGNED_IN) llamará _applySession
+    // completo (gemas, ensureUserRow). Aquí solo actualizamos el user para respuesta rápida.
+    if (data?.session?.user) {
+      supabaseUser = data.session.user;
+      renderUserHeader();
+      if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+      // Fallback: si onAuthStateChange tarda o no llega, forzar carga de gemas tras 3s.
+      setTimeout(() => {
+        if (supabaseUser && supabaseGems === 0) {
+          console.log('[deepLink] fallback refreshGems');
+          refreshGems().then(() => {
+            if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+          });
+        }
+      }, 3000);
     }
     return;
   }

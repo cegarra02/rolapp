@@ -6,8 +6,10 @@ let exploreSort  = 'new';
 
 async function renderExploreScreen() {
   renderExploreLoading();
-  await Promise.all([fetchExploreChars(), fetchExploreTags()]);
-  renderExploreList();
+  const [charsOk] = await Promise.all([fetchExploreChars(), fetchExploreTags()]);
+  // Solo renderizar la lista si la carga fue exitosa.
+  // Si fetchExploreChars falló, ya puso el HTML de error en #exploreList — no sobreescribir.
+  if (charsOk !== false) renderExploreList();
   renderExploreTags();
 }
 
@@ -38,9 +40,10 @@ async function fetchExploreChars() {
         <p>Error al cargar. Comprueba tu conexión.</p>
         <button class="save-btn" style="margin-top:12px;width:auto;padding:10px 24px" onclick="renderExploreScreen()">🔄 Reintentar</button>
       </div>`;
-    return;
+    return false; // señal de error para renderExploreScreen
   }
   exploreChars = data || [];
+  return true;
 }
 
 async function fetchExploreTags() {
