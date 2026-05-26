@@ -29,7 +29,17 @@ async function fetchExploreChars() {
     : q.order('created_at', { ascending: false });
 
   const { data, error } = await q.limit(50);
-  if (error) { console.error('explore fetch:', error); return; }
+  if (error) {
+    console.error('explore fetch:', error);
+    const list = document.getElementById('exploreList');
+    if (list) list.innerHTML = `
+      <div class="empty-state" style="grid-column:span 2">
+        <div class="icon">⚠️</div>
+        <p>Error al cargar. Comprueba tu conexión.</p>
+        <button class="save-btn" style="margin-top:12px;width:auto;padding:10px 24px" onclick="renderExploreScreen()">🔄 Reintentar</button>
+      </div>`;
+    return;
+  }
   exploreChars = data || [];
 }
 
