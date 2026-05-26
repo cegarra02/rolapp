@@ -220,6 +220,22 @@ async function authSignIn(email, password) {
   return data;
 }
 
+// Google OAuth redirect — para Android (WebView no soporta GIS).
+// Navega a la página de Google en el WebView, el usuario firma y Google
+// redirige de vuelta a window.location.origin (debe estar en Supabase Redirect URLs).
+async function signInWithGoogleRedirect() {
+  const redirectTo = window.location.origin + '/';
+  console.log('[Google] redirect OAuth → redirectTo:', redirectTo);
+  const { error } = await supaClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo }
+  });
+  if (error) {
+    console.error('[Google] signInWithOAuth error:', error);
+    toast('Error Google: ' + error.message);
+  }
+}
+
 // Google Identity Services — no redirect, usa popup propio de Google
 async function handleGoogleLogin(response) {
   console.log('[GIS] credential recibido, longitud:', response?.credential?.length);
