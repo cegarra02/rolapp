@@ -259,23 +259,32 @@ async function signInWithGoogleRedirect() {
 }
 
 // Gestiona el deep link de retorno tras OAuth (llamado desde main.js).
-// URL ejemplo: com.roleplayai.app://#access_token=...&refresh_token=...
+// Supabase v2 usa PKCE por defecto → la URL tiene ?code=... (no #access_token).
+// Se intercambia con exchangeCodeForSession, que almacena la sesión de forma persistente.
 async function handleDeepLink(url) {
   if (!url || !url.startsWith('com.roleplayai.app://')) return;
-  console.log('[deepLink] URL recibida:', url.slice(0, 60) + '…');
-  // Cerrar Chrome Custom Tabs
+  console.log('[deepLink] URL recibida:', url.slice(0, 80));
   try { await window.Capacitor.Plugins.Browser.close(); } catch (_) {}
-  // Extraer tokens del fragmento o query string
+
+  // Flujo PKCE (Supabase v2 por defecto): contiene ?code=...
+  if (url.includes('code=')) {
+    console.log('[deepLink] flujo PKCE → exchangeCodeForSession');
+    const { data, error } = await supaClient.auth.exchangeCodeForSession(url);
+    if (error) { console.error('[deepLink] exchangeCodeForSession error:', error); toast('Error sesión: ' + error.message); }
+    else console.log('[deepLink] sesión establecida ✓ user:', data?.session?.user?.email);
+    return; // onAuthStateChange SIGNED_IN se dispara automáticamente
+  }
+
+  // Flujo implícito (fallback): #access_token=...&refresh_token=...
   const raw = url.includes('#') ? url.split('#')[1] : (url.split('?')[1] || '');
   const params = new URLSearchParams(raw);
   const access_token  = params.get('access_token');
   const refresh_token = params.get('refresh_token');
   if (access_token && refresh_token) {
     const { error } = await supaClient.auth.setSession({ access_token, refresh_token });
-    if (error) { toast('Error sesión: ' + error.message); return; }
-    // onAuthStateChange SIGNED_IN se dispara automáticamente
+    if (error) toast('Error sesión: ' + error.message);
   } else {
-    console.warn('[deepLink] tokens no encontrados en URL');
+    console.warn('[deepLink] URL no contiene code ni tokens:', url.slice(0, 120));
   }
 }
 

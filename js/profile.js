@@ -83,20 +83,19 @@ async function doAuth() {
 }
 
 async function doSignOut() {
+  // Limpiar estado local ANTES de llamar a Supabase para respuesta inmediata en UI.
+  // onAuthStateChange(SIGNED_OUT) puede tardar o no disparar en Android.
+  supabaseUser = null;
+  supabaseGems = 0;
+  if (!localStorage.getItem('rp_gems_local')) localStorage.setItem('rp_gems_local', '50');
+  renderUserHeader();
+  loadProfileFields();
+  toast('Sesión cerrada');
   try {
     await authSignOut();
-    // Éxito: onAuthStateChange SIGNED_OUT se encargará de limpiar la UI
   } catch (e) {
-    console.warn('[doSignOut] signOut falló, limpiando estado local:', e?.message);
-    // Si signOut falla (ej: token ya expirado, sin sesión activa), el evento
-    // SIGNED_OUT nunca dispara. Forzamos la limpieza manual.
-    supabaseUser = null;
-    supabaseGems = 0;
-    if (!localStorage.getItem('rp_gems_local')) localStorage.setItem('rp_gems_local', '50');
-    renderUserHeader();
-    loadProfileFields();
+    console.warn('[doSignOut] signOut error (ya limpiado localmente):', e?.message);
   }
-  toast('Sesión cerrada');
 }
 
 function saveProfile() {
