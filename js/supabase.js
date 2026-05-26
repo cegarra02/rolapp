@@ -247,6 +247,7 @@ async function signInWithGoogleRedirect() {
   const isNative = !!(window.Capacitor?.isNativePlatform?.());
   const redirectTo = isNative ? 'com.roleplayai.app://' : window.location.origin + '/';
   console.log('[Google] signInWithOAuth → redirectTo:', redirectTo);
+  toast('🚀 Iniciando OAuth…');
 
   const { data, error } = await supaClient.auth.signInWithOAuth({
     provider: 'google',
@@ -259,6 +260,7 @@ async function signInWithGoogleRedirect() {
   }
   // En nativo: abre Chrome Custom Tabs (no WebView → Google lo permite)
   if (isNative && data?.url) {
+    toast('🌐 Abriendo navegador…');
     try {
       await window.Capacitor.Plugins.Browser.open({ url: data.url });
     } catch (e) {
@@ -283,6 +285,14 @@ async function handleDeepLink(url) {
   }
   _lastDeepLinkUrl = url;
   console.log('[deepLink] URL recibida:', url.slice(0, 100));
+
+  // ── DIAGNÓSTICO: muestra qué contiene la URL ──────────────────────────
+  const _hasHash  = url.includes('#');
+  const _hasCode  = url.includes('code=');
+  const _hasToken = url.includes('access_token=');
+  toast('🔗 ' + (_hasToken ? 'tokens✓' : _hasCode ? 'code✓' : 'sin datos⚠') + ' | hash:' + _hasHash);
+  // ──────────────────────────────────────────────────────────────────────
+
   try { await window.Capacitor.Plugins.Browser.close(); } catch (_) {}
 
   // Parsear hash (#...) y query (?...) por separado
@@ -301,7 +311,7 @@ async function handleDeepLink(url) {
     const { data, error } = await supaClient.auth.setSession({ access_token, refresh_token });
     if (error) {
       console.error('[deepLink] setSession error:', error);
-      toast('Error sesión: ' + error.message);
+      toast('❌ setSession: ' + error.message);
       _lastDeepLinkUrl = '';
       return;
     }
@@ -310,6 +320,7 @@ async function handleDeepLink(url) {
       await _applySession(data.session);
       renderUserHeader();
       if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+      toast('✅ Login OK · gems:' + supabaseGems);
     }
 
   } else if (code) {
@@ -318,7 +329,7 @@ async function handleDeepLink(url) {
     const { data, error } = await supaClient.auth.exchangeCodeForSession(url);
     if (error) {
       console.error('[deepLink] exchangeCodeForSession error:', error);
-      toast('Error sesión: ' + error.message);
+      toast('❌ PKCE: ' + error.message);
       _lastDeepLinkUrl = '';
       return;
     }
@@ -327,10 +338,12 @@ async function handleDeepLink(url) {
       await _applySession(data.session);
       renderUserHeader();
       if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+      toast('✅ Login PKCE OK · gems:' + supabaseGems);
     }
 
   } else {
-    console.warn('[deepLink] URL sin tokens ni code — ignorada:', url.slice(0, 120));
+    console.warn('[deepLink] URL sin tokens ni code:', url.slice(0, 120));
+    toast('⚠️ URL recibida sin datos de sesión');
     _lastDeepLinkUrl = ''; // no bloquear futuros intentos
   }
 }
