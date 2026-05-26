@@ -22,8 +22,12 @@ async function _fetchWithRetry(url, options = {}) {
   throw lastErr;
 }
 
+// flowType: 'implicit' → el deep link devuelve #access_token=...&refresh_token=...
+// en vez de ?code=... (PKCE). Evita gestionar code_verifier en Capacitor WebView,
+// donde el verifier puede perderse si el SO mata la app entre el OAuth y el retorno.
 const supaClient = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
-  global: { fetch: _fetchWithRetry }
+  global: { fetch: _fetchWithRetry },
+  auth:   { flowType: 'implicit' }
 });
 
 let supabaseUser = null;
@@ -37,12 +41,10 @@ async function initSupabase() {
   // UI inicial sin sesión mientras resuelve la auth
   renderUserHeader();
 
-  // ── PASO 1: getSession() lee la sesión directamente de localStorage.
-  // Es fiable en cada recarga sin depender del timing de eventos (INITIAL_SESSION
-  // puede llegar con sesión null cuando el JWT expiró y TOKEN_REFRESHED no se manejaba).
-  // Nota: no usamos getSession() para flujos PKCE (redirect OAuth) porque el código
-  // de la URL aún no se ha intercambiado; pero nuestra app solo usa GIS (signInWithIdToken)
-  // que no usa PKCE, así que getSession() es completamente seguro aquí.
+  // ── PASO 1: getSession() lee la sesión persistida en localStorage.
+  // Es fiable en cada recarga: no depende del timing de eventos.
+  // Con flowType:'implicit' no hay code pendiente de intercambiar,
+  // así que getSession() siempre devuelve el estado real al arrancar.
   try {
     const { data: { session } } = await supaClient.auth.getSession();
     await _applySession(session);
@@ -271,8 +273,8 @@ async function signInWithGoogleRedirect() {
 let _lastDeepLinkUrl = '';
 
 // Gestiona el deep link de retorno tras OAuth (llamado desde main.js).
-// Supabase v2 usa PKCE por defecto → la URL tiene ?code=... (no #access_token).
-// Se intercambia con exchangeCodeForSession, que almacena la sesión de forma persistente.
+// Con flowType:'implicit', Supabase devuelve #access_token=...&refresh_token=...
+// Mantenemos el rama PKCE (?code=...) como fallback por compatibilidad.
 async function handleDeepLink(url) {
   if (!url || !url.startsWith('com.roleplayai.app://')) return;
   if (url === _lastDeepLinkUrl) {
@@ -280,49 +282,56 @@ async function handleDeepLink(url) {
     return;
   }
   _lastDeepLinkUrl = url;
-  console.log('[deepLink] URL recibida:', url.slice(0, 80));
+  console.log('[deepLink] URL recibida:', url.slice(0, 100));
   try { await window.Capacitor.Plugins.Browser.close(); } catch (_) {}
 
-  // Flujo PKCE (Supabase v2 por defecto): contiene ?code=...
-  if (url.includes('code=')) {
-    console.log('[deepLink] flujo PKCE → exchangeCodeForSession');
+  // Parsear hash (#...) y query (?...) por separado
+  const hashStr  = url.includes('#') ? url.split('#').slice(1).join('#') : '';
+  const queryStr = url.includes('?') ? url.split('?')[1].split('#')[0] : '';
+  const hp = new URLSearchParams(hashStr);
+  const qp = new URLSearchParams(queryStr);
+
+  const access_token  = hp.get('access_token')  || qp.get('access_token');
+  const refresh_token = hp.get('refresh_token') || qp.get('refresh_token');
+  const code          = qp.get('code');
+
+  if (access_token && refresh_token) {
+    // ── Flujo implícito (flowType:'implicit') ────────────────────────────
+    console.log('[deepLink] flujo implícito → setSession');
+    const { data, error } = await supaClient.auth.setSession({ access_token, refresh_token });
+    if (error) {
+      console.error('[deepLink] setSession error:', error);
+      toast('Error sesión: ' + error.message);
+      _lastDeepLinkUrl = '';
+      return;
+    }
+    console.log('[deepLink] sesión ✓ user:', data?.session?.user?.email);
+    if (data?.session) {
+      await _applySession(data.session);
+      renderUserHeader();
+      if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+    }
+
+  } else if (code) {
+    // ── Flujo PKCE (fallback por si el servidor envía code en lugar de tokens) ──
+    console.log('[deepLink] flujo PKCE (fallback) → exchangeCodeForSession');
     const { data, error } = await supaClient.auth.exchangeCodeForSession(url);
     if (error) {
       console.error('[deepLink] exchangeCodeForSession error:', error);
-      _lastDeepLinkUrl = ''; // permitir reintento si el exchange falla
       toast('Error sesión: ' + error.message);
+      _lastDeepLinkUrl = '';
       return;
     }
-    console.log('[deepLink] sesión establecida ✓ user:', data?.session?.user?.email);
-    // Actualizar UI inmediatamente: onAuthStateChange(SIGNED_IN) llamará _applySession
-    // completo (gemas, ensureUserRow). Aquí solo actualizamos el user para respuesta rápida.
-    if (data?.session?.user) {
-      supabaseUser = data.session.user;
+    console.log('[deepLink] sesión PKCE ✓ user:', data?.session?.user?.email);
+    if (data?.session) {
+      await _applySession(data.session);
       renderUserHeader();
       if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
-      // Fallback: si onAuthStateChange tarda o no llega, forzar carga de gemas tras 3s.
-      setTimeout(() => {
-        if (supabaseUser && supabaseGems === 0) {
-          console.log('[deepLink] fallback refreshGems');
-          refreshGems().then(() => {
-            if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
-          });
-        }
-      }, 3000);
     }
-    return;
-  }
 
-  // Flujo implícito (fallback): #access_token=...&refresh_token=...
-  const raw = url.includes('#') ? url.split('#')[1] : (url.split('?')[1] || '');
-  const params = new URLSearchParams(raw);
-  const access_token  = params.get('access_token');
-  const refresh_token = params.get('refresh_token');
-  if (access_token && refresh_token) {
-    const { error } = await supaClient.auth.setSession({ access_token, refresh_token });
-    if (error) toast('Error sesión: ' + error.message);
   } else {
-    console.warn('[deepLink] URL no contiene code ni tokens:', url.slice(0, 120));
+    console.warn('[deepLink] URL sin tokens ni code — ignorada:', url.slice(0, 120));
+    _lastDeepLinkUrl = ''; // no bloquear futuros intentos
   }
 }
 
