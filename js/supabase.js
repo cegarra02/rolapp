@@ -122,21 +122,16 @@ async function _loadUserGems() {
   try {
     const { data, error } = await supaClient.from('users').select('gems').eq('id', supabaseUser.id).single();
     if (error) {
-      // PGRST116 = no row found (usuario nuevo sin fila en users todavía)
-      // Cualquier otro error = problema de red o RLS
-      console.warn('[loadUserGems]:', error.message, error.code);
-      // Fallback: usar gemas locales si existen (evita mostrar 0 cuando el INSERT de la fila falló)
-      const local = parseInt(localStorage.getItem('rp_gems_local') || '0');
-      if (local > 0 && supabaseGems === 0) {
-        supabaseGems = local;
-        console.warn('[loadUserGems] usando gemas locales como fallback:', local);
-      }
+      // PGRST116 = no row found | otros = red o RLS
+      // NO sobreescribir supabaseGems con valores locales — eso desincroniza header vs perfil.
+      // Mantener el valor anterior (puede ser 0 si es la primera carga).
+      console.warn('[loadUserGems]:', error.code, error.message);
       return;
     }
     supabaseGems = data?.gems ?? 0;
   } catch (e) {
+    // Error de red: no cambiar supabaseGems para no perder el valor conocido
     console.warn('[loadUserGems] catch:', e?.message);
-    // Don't reset supabaseGems to 0 on network failures
   }
 }
 

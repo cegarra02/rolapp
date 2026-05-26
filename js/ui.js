@@ -25,7 +25,11 @@ function switchTab(tab) {
   else if (tab === 'scenes')   { renderScenesScreen();  showScreen('scenesScreen'); setActiveTab('chars'); }
   else if (tab === 'chats')    { renderInboxScreen();   showScreen('chatsScreen');  setActiveTab('chats'); }
   else if (tab === 'missions') { renderMissionsScreen(); showScreen('missionsScreen'); setActiveTab('missions'); }
-  else if (tab === 'profile')  { loadProfileFields();   showScreen('profileScreen'); setActiveTab('profile'); refreshGems(); }
+  else if (tab === 'profile')  {
+    showScreen('profileScreen'); setActiveTab('profile');
+    loadProfileFields(); // render inmediato con valor actual
+    refreshGems().then(() => loadProfileFields()); // re-render con valor fresco de Supabase
+  }
 }
 
 function setActiveTab(tab) {
