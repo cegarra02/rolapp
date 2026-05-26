@@ -220,19 +220,52 @@ async function authSignIn(email, password) {
   return data;
 }
 
-// Google OAuth redirect — para Android (WebView no soporta GIS).
-// Navega a la página de Google en el WebView, el usuario firma y Google
-// redirige de vuelta a window.location.origin (debe estar en Supabase Redirect URLs).
+// Google OAuth redirect — para Android nativo.
+// Google bloquea OAuth en WebViews → se usa @capacitor/browser (Chrome Custom Tabs).
+// El redirect final vuelve a la app por deep link: com.roleplayai.app://
 async function signInWithGoogleRedirect() {
-  const redirectTo = window.location.origin + '/';
-  console.log('[Google] redirect OAuth → redirectTo:', redirectTo);
-  const { error } = await supaClient.auth.signInWithOAuth({
+  const isNative = !!(window.Capacitor?.isNativePlatform?.());
+  const redirectTo = isNative ? 'com.roleplayai.app://' : window.location.origin + '/';
+  console.log('[Google] signInWithOAuth → redirectTo:', redirectTo);
+
+  const { data, error } = await supaClient.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo }
+    options: { redirectTo, skipBrowserRedirect: isNative }
   });
   if (error) {
     console.error('[Google] signInWithOAuth error:', error);
     toast('Error Google: ' + error.message);
+    return;
+  }
+  // En nativo: abre Chrome Custom Tabs (no WebView → Google lo permite)
+  if (isNative && data?.url) {
+    try {
+      await window.Capacitor.Plugins.Browser.open({ url: data.url });
+    } catch (e) {
+      console.error('[Google] Browser.open error:', e);
+      toast('Error abriendo navegador: ' + e.message);
+    }
+  }
+}
+
+// Gestiona el deep link de retorno tras OAuth (llamado desde main.js).
+// URL ejemplo: com.roleplayai.app://#access_token=...&refresh_token=...
+async function handleDeepLink(url) {
+  if (!url || !url.startsWith('com.roleplayai.app://')) return;
+  console.log('[deepLink] URL recibida:', url.slice(0, 60) + '…');
+  // Cerrar Chrome Custom Tabs
+  try { await window.Capacitor.Plugins.Browser.close(); } catch (_) {}
+  // Extraer tokens del fragmento o query string
+  const raw = url.includes('#') ? url.split('#')[1] : (url.split('?')[1] || '');
+  const params = new URLSearchParams(raw);
+  const access_token  = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  if (access_token && refresh_token) {
+    const { error } = await supaClient.auth.setSession({ access_token, refresh_token });
+    if (error) { toast('Error sesión: ' + error.message); return; }
+    // onAuthStateChange SIGNED_IN se dispara automáticamente
+  } else {
+    console.warn('[deepLink] tokens no encontrados en URL');
   }
 }
 
