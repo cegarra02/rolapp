@@ -115,9 +115,15 @@ WITH CHECK (auth.uid() = author_id);
 #### Configuración OAuth (Google) — IMPORTANTE
 - **Supabase dashboard → Authentication → URL Configuration:**
   - Site URL: `https://cegarra02.github.io/rolapp/`
-  - Redirect URLs: incluir `https://cegarra02.github.io/rolapp/` (con barra final)
+  - Redirect URLs: `https://cegarra02.github.io/rolapp/` y `https://localhost` (este último para Android Capacitor)
 - **Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client:**
   - Authorized redirect URI: `https://pxtnjtckfzsqistfjgn.supabase.co/auth/v1/callback`
+
+#### Auth — solo Google, sin email/password
+El login por email/contraseña ha sido **eliminado de la UI**. Solo existe Google Sign-In:
+- **Web (PWA)**: botón GIS (`google.accounts.id.renderButton`) — popup nativo de Google, sin redirect de página
+- **Android nativo**: botón "Continuar con Google" con SVG del logo G → llama a `signInWithGoogleRedirect()` → `supaClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/' } })` → el WebView navega a la página de Google, el usuario firma, y Supabase redirige de vuelta a `https://localhost/` (la app en Capacitor) con los tokens en el fragmento de URL → `onAuthStateChange` detecta `SIGNED_IN` automáticamente
+- Las funciones `authSignUp`, `authSignIn`, `doAuth`, `setAuthTab` siguen en el código pero no se usan en la UI (no eliminar para evitar errores si algo las referencia)
 
 ---
 
@@ -246,7 +252,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v105** (sw.js usa `rolapp-v109`)
+**Versión actual: v106** (sw.js usa `rolapp-v111`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 
@@ -296,7 +302,7 @@ En Android Studio → Build → Generate Signed APK / Bundle para publicar.
 - `android/` está en git — contiene el proyecto Gradle completo
 
 ### ⚠️ Antes de cada `cap sync`
-Ejecutar `npm run build:www` para que `www/` tenga los últimos archivos. Si se salta este paso, Android tendrá la versión anterior del código web.
+Ejecutar `npm run build:www` (o `npm run sync` para hacer ambos pasos a la vez) para que `www/` tenga los últimos archivos. Si se salta este paso, Android tendrá la versión anterior del código web.
 
 ### Kotlin stdlib — fix de clases duplicadas
 El `android/build.gradle` raíz tiene este bloque para evitar el error `Duplicate class kotlin.collections.jdk8.*` que produce Capacitor al arrastrar `kotlin-stdlib-jdk7/jdk8` junto a `kotlin-stdlib 1.8+`:
@@ -311,8 +317,19 @@ subprojects {
 Desde Kotlin 1.8, el stdlib unificado ya incluye jdk7 y jdk8, por lo que se pueden excluir con seguridad.
 
 ### Google Sign-In en Android
-Google Identity Services (GIS) **no funciona en WebView**. En la app Android, el contenedor del botón de Google no se renderiza; en su lugar se muestra un texto informando al usuario que use la versión web para el login con Google. El login por email/contraseña funciona igual en Android.
-- Detección: `window.Capacitor?.isNativePlatform()` en `profile.js → renderAuthSection()`
+GIS (`google.accounts.id.renderButton`) **no funciona en WebView**. Se usa en su lugar el flujo OAuth redirect:
+- Detección de plataforma: `window.Capacitor?.isNativePlatform()` en `profile.js → renderAuthSection()`
+- En nativo: se muestra botón "Continuar con Google" (SVG inline del logo G) que llama a `signInWithGoogleRedirect()` en `supabase.js`
+- `signInWithGoogleRedirect()` llama a `supaClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/' } })`
+- En Capacitor Android el origen es `https://localhost` → **debe estar en Supabase Redirect URLs**
+- Tras el login, Supabase redirige a `https://localhost/#access_token=...` → la app recarga y `onAuthStateChange` procesa el `SIGNED_IN`
+
+### ⚠️ Sync Android — OBLIGATORIO tras cada cambio
+**Después de cada modificación de archivos web, ejecutar siempre:**
+```bash
+npm run sync   # = node scripts/build-www.js + npx cap sync android
+```
+Esto copia los archivos a `www/` y los sincroniza con el proyecto Gradle de Android Studio. Sin este paso, Android Studio compila la versión anterior del código.
 
 ### Próximos pasos Android
 - Añadir `@capacitor-community/in-app-purchases` o plugin de Google Play Billing para recargas de gemas con dinero real
@@ -323,6 +340,7 @@ Google Identity Services (GIS) **no funciona en WebView**. En la app Android, el
 ## Contexto para continuar el desarrollo
 
 - Sin tests ni CI — los cambios se prueban manualmente en el navegador.
+- **Tras cada sesión de cambios**: ejecutar `npm run sync` para actualizar Android, luego commit + push.
 - App pensada para móvil (PWA + Android nativo vía Capacitor, touch events, safe-area-inset).
 - Las escenas usan un formato de lista simple por personaje en el prompt: cada personaje en un `-` con sus datos y `buildPersonalityBlock(ch)`.
 - Hay un sistema de estilos de chat por personaje/escena (colores de burbuja, opacidad, fuente).
@@ -332,3 +350,4 @@ Google Identity Services (GIS) **no funciona en WebView**. En la app Android, el
 - Las imágenes `bg` se guardan como base64 en localStorage y también en la columna `bg` de Supabase al publicar — no está optimizado con Supabase Storage todavía.
 - El `_saveChar()` en chat.js es el punto central de guardado: redirige a `save()` (chars propios) o `saveLibChars()` (biblioteca). Todos los save de chat pasan por ahí.
 - Moderación: botones de Aprobar/Rechazar/Eliminar siempre tienen modal de confirmación (`openModal`). El formulario de detalle usa los valores editados del form en el momento de aprobar.
+- **IDs de personajes**: los personajes locales usan `uid()` (timestamp base36 + aleatoriedad, ej: `lq8k3f2abc7d`). Los personajes públicos en Supabase reciben un **UUID v4 generado automáticamente por PostgreSQL** al hacer INSERT — no se envía `id` desde el cliente. No hay colisiones posibles en la BD.
