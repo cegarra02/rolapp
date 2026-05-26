@@ -86,16 +86,31 @@ Cada `<div class="screen">` se activa con `showScreen(id, hideNav)`. Pantallas e
 ### Supabase — biblioteca pública y auth
 - URL: `https://pxtnjtckfzsqistfjgn.supabase.co`
 - Anon key en `js/supabase.js` (no es secreta, es pública por diseño)
-- Cliente global: `supaClient` (inicializado en supabase.js)
-- Auth: email/password + Google OAuth
+- Cliente global: `supaClient` (inicializado en supabase.js con fetch personalizado)
+- Auth: email/password + Google OAuth (Google solo disponible en web, no en Android nativo)
 - Tablas: `characters_library`, `submissions`, `users`
 - RLS activado en todas las tablas
 
+#### Fetch con reintentos — `_fetchWithRetry`
+El cliente Supabase se inicializa con un `fetch` personalizado que reintenta automáticamente hasta 2 veces (con backoff 600ms / 1200ms) si ocurre un error de red. Esto absorbe los fallos intermitentes de `ERR_QUIC_PROTOCOL_ERROR` causados por HTTP/3 (QUIC/UDP) de Cloudflare:
+```js
+const supaClient = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
+  global: { fetch: _fetchWithRetry }
+});
+```
+
 #### Políticas RLS configuradas
-- `submissions`: SELECT (`TO authenticated USING (true)`), INSERT, UPDATE, DELETE (admin)
+- `submissions`: SELECT (`TO authenticated USING (true)`), INSERT (authenticated, `WITH CHECK (auth.uid() = author_id)`), UPDATE, DELETE (admin)
 - `characters_library`: SELECT (pública), INSERT, UPDATE, DELETE (admin)
 - `users`: SELECT/UPDATE propios
 - **⚠️ Si se añade una tabla nueva**, hay que configurar sus políticas RLS o las operaciones fallarán silenciosamente (sin error en cliente pero sin efecto en BD). El `DELETE` sin política devuelve `error: null` pero no borra nada.
+
+Si el INSERT de submissions falla, ahora se muestra un **toast rojo** con el mensaje exacto del error (ej: `❌ Error al enviar a revisión: new row violates row-level security`). Si se necesita añadir la política de INSERT para usuarios normales:
+```sql
+CREATE POLICY "Users can submit their own chars"
+ON submissions FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = author_id);
+```
 
 #### Configuración OAuth (Google) — IMPORTANTE
 - **Supabase dashboard → Authentication → URL Configuration:**
@@ -132,6 +147,8 @@ Cada `<div class="screen">` se activa con `showScreen(id, hideNav)`. Pantallas e
 1. Usuario activa toggle "Hacer público" al guardar personaje (solo visible si hay sesión)
 2. `saveChar()` llama `submitCharToLibrary(c)` solo si `!wasPublic && isPublicNow` (evita duplicados)
 3. `submitCharToLibrary` inserta en `submissions` con `status:'pending'` **incluyendo el campo `character_data` (JSONB, NOT NULL)**
+   - Si el INSERT falla → toast rojo con el error exacto (`❌ Error al enviar a revisión: …`)
+   - Si el INSERT tiene éxito → toast verde (`✓ Personaje enviado a revisión`)
 4. Admin ve submissions en panel de moderación → puede editar campos antes de aprobar
 5. Aprobar → copia a `characters_library` + gemas opcionales al autor → status `'approved'`
 6. Rechazar → status `'rejected'` en submissions
@@ -146,6 +163,7 @@ Cada `<div class="screen">` se activa con `showScreen(id, hideNav)`. Pantallas e
 - Orden **Popular**: ordena por `message_count` (mensajes enviados por usuarios). Cada mensaje al personaje llama a la RPC `increment_lib_messages(char_id uuid)` — incremento atómico en SQL, sin race condition, accesible por `anon` y `authenticated`
 - **El historial de chat con personajes de biblioteca SÍ se persiste** en `libChars` (localStorage `rp_lib_chars`) y aparece en la pestaña Chats
 - Cuando admin está logueado: aparece icono ✎ en cada tarjeta → abre `libDetailScreen` para editar/eliminar
+- Si la carga falla (ej: `ERR_QUIC_PROTOCOL_ERROR`), se muestra ⚠️ con botón "🔄 Reintentar" que relanza `renderExploreScreen()`
 
 ### Historial de personajes de biblioteca (`libChars`)
 - `let libChars` en `state.js` — array de objetos char con `isLibraryChar: true` e `history`
@@ -228,7 +246,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v103** (sw.js usa `rolapp-v105`)
+**Versión actual: v105** (sw.js usa `rolapp-v109`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 
@@ -279,6 +297,22 @@ En Android Studio → Build → Generate Signed APK / Bundle para publicar.
 
 ### ⚠️ Antes de cada `cap sync`
 Ejecutar `npm run build:www` para que `www/` tenga los últimos archivos. Si se salta este paso, Android tendrá la versión anterior del código web.
+
+### Kotlin stdlib — fix de clases duplicadas
+El `android/build.gradle` raíz tiene este bloque para evitar el error `Duplicate class kotlin.collections.jdk8.*` que produce Capacitor al arrastrar `kotlin-stdlib-jdk7/jdk8` junto a `kotlin-stdlib 1.8+`:
+```groovy
+subprojects {
+    configurations.all {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+    }
+}
+```
+Desde Kotlin 1.8, el stdlib unificado ya incluye jdk7 y jdk8, por lo que se pueden excluir con seguridad.
+
+### Google Sign-In en Android
+Google Identity Services (GIS) **no funciona en WebView**. En la app Android, el contenedor del botón de Google no se renderiza; en su lugar se muestra un texto informando al usuario que use la versión web para el login con Google. El login por email/contraseña funciona igual en Android.
+- Detección: `window.Capacitor?.isNativePlatform()` en `profile.js → renderAuthSection()`
 
 ### Próximos pasos Android
 - Añadir `@capacitor-community/in-app-purchases` o plugin de Google Play Billing para recargas de gemas con dinero real
