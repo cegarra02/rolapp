@@ -83,11 +83,19 @@ async function doAuth() {
 }
 
 async function doSignOut() {
-  // Limpiar estado local ANTES de llamar a Supabase para respuesta inmediata en UI.
+  // Conservar el saldo de Supabase como gemas locales → el contador no se reinicia a 50.
+  // Si el usuario tenía 36 gemas en Supabase, tras cerrar sesión sigue viendo 36.
+  const gemsToKeep = supabaseGems;
+
+  // Limpiar estado local ANTES de llamar a Supabase → respuesta inmediata en UI.
   // onAuthStateChange(SIGNED_OUT) puede tardar o no disparar en Android.
   supabaseUser = null;
   supabaseGems = 0;
-  if (!localStorage.getItem('rp_gems_local')) localStorage.setItem('rp_gems_local', '50');
+  if (gemsToKeep > 0) {
+    localStorage.setItem('rp_gems_local', String(gemsToKeep));
+  } else if (!localStorage.getItem('rp_gems_local')) {
+    localStorage.setItem('rp_gems_local', '50');
+  }
   renderUserHeader();
   loadProfileFields();
   toast('Sesión cerrada');

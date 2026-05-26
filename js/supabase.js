@@ -270,9 +270,20 @@ async function handleDeepLink(url) {
   if (url.includes('code=')) {
     console.log('[deepLink] flujo PKCE → exchangeCodeForSession');
     const { data, error } = await supaClient.auth.exchangeCodeForSession(url);
-    if (error) { console.error('[deepLink] exchangeCodeForSession error:', error); toast('Error sesión: ' + error.message); }
-    else console.log('[deepLink] sesión establecida ✓ user:', data?.session?.user?.email);
-    return; // onAuthStateChange SIGNED_IN se dispara automáticamente
+    if (error) {
+      console.error('[deepLink] exchangeCodeForSession error:', error);
+      toast('Error sesión: ' + error.message);
+    } else {
+      console.log('[deepLink] sesión establecida ✓ user:', data?.session?.user?.email);
+      // Forzar actualización inmediata de UI — onAuthStateChange puede llegar con retraso
+      // en Android o no dispararse si el evento fue antes de que el listener estuviera listo.
+      if (data?.session?.user) {
+        await _applySession(data.session);
+        renderUserHeader();
+        if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+      }
+    }
+    return;
   }
 
   // Flujo implícito (fallback): #access_token=...&refresh_token=...
