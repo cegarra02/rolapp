@@ -115,15 +115,23 @@ WITH CHECK (auth.uid() = author_id);
 #### Configuración OAuth (Google) — IMPORTANTE
 - **Supabase dashboard → Authentication → URL Configuration:**
   - Site URL: `https://cegarra02.github.io/rolapp/`
-  - Redirect URLs: `https://cegarra02.github.io/rolapp/` y `https://localhost` (este último para Android Capacitor)
-- **Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client:**
-  - Authorized redirect URI: `https://pxtnjtckfzsqistfjgn.supabase.co/auth/v1/callback`
+  - Redirect URLs: `https://cegarra02.github.io/rolapp/` y `com.roleplayai.app://` (deep link para Android)
+- **Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client → Authorized redirect URIs:**
+  - `https://pxtnjtkckfzsqistfjgn.supabase.co/auth/v1/callback` ← **OBLIGATORIO para el redirect flow (Android)**
+  - Sin este URI registrado Google devuelve `redirect_uri_mismatch`. El botón GIS de web no lo necesitaba (usa `signInWithIdToken`), pero el redirect flow de Android sí.
 
 #### Auth — solo Google, sin email/password
 El login por email/contraseña ha sido **eliminado de la UI**. Solo existe Google Sign-In:
-- **Web (PWA)**: botón GIS (`google.accounts.id.renderButton`) — popup nativo de Google, sin redirect de página
-- **Android nativo**: botón "Continuar con Google" con SVG del logo G → llama a `signInWithGoogleRedirect()` → `supaClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/' } })` → el WebView navega a la página de Google, el usuario firma, y Supabase redirige de vuelta a `https://localhost/` (la app en Capacitor) con los tokens en el fragmento de URL → `onAuthStateChange` detecta `SIGNED_IN` automáticamente
+- **Web (PWA)**: botón GIS (`google.accounts.id.renderButton`) — popup nativo de Google, sin redirect de página, no usa el callback de Supabase
+- **Android nativo**: botón "Continuar con Google" (SVG inline del logo G) → `signInWithGoogleRedirect()` en `supabase.js`:
+  1. Llama a `supaClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: 'com.roleplayai.app://', skipBrowserRedirect: true } })`
+  2. Abre `data.url` en **Chrome Custom Tabs** via `window.Capacitor.Plugins.Browser.open()` — Google bloquea OAuth en WebView, Chrome Custom Tabs sí está permitido
+  3. Usuario firma en Chrome Custom Tabs
+  4. Google → Supabase callback → deep link `com.roleplayai.app://#access_token=...`
+  5. `App.addListener('appUrlOpen')` en `main.js` captura el deep link y llama a `handleDeepLink(url)`
+  6. `handleDeepLink()` cierra el browser, extrae tokens y llama a `supaClient.auth.setSession({ access_token, refresh_token })` → `onAuthStateChange` detecta `SIGNED_IN`
 - Las funciones `authSignUp`, `authSignIn`, `doAuth`, `setAuthTab` siguen en el código pero no se usan en la UI (no eliminar para evitar errores si algo las referencia)
+- Plugins instalados: `@capacitor/browser@8.0.3`, `@capacitor/app@8.1.0`
 
 ---
 
@@ -252,7 +260,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v106** (sw.js usa `rolapp-v111`)
+**Versión actual: v107** (sw.js usa `rolapp-v113`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 
@@ -304,6 +312,12 @@ En Android Studio → Build → Generate Signed APK / Bundle para publicar.
 ### ⚠️ Antes de cada `cap sync`
 Ejecutar `npm run build:www` (o `npm run sync` para hacer ambos pasos a la vez) para que `www/` tenga los últimos archivos. Si se salta este paso, Android tendrá la versión anterior del código web.
 
+### Versiones Android (build.gradle / variables.gradle)
+- AGP: `8.9.1` (subido desde 8.7.2 para soportar `androidx.browser:1.9.0` que requiere `@capacitor/browser@8`)
+- compileSdk / targetSdk: `36` (subido desde 35 por el mismo requisito)
+- Gradle wrapper: `8.11.1` (ya era compatible con AGP 8.9.1)
+- minSdk: `23` (sin cambios)
+
 ### Kotlin stdlib — fix de clases duplicadas
 El `android/build.gradle` raíz tiene este bloque para evitar el error `Duplicate class kotlin.collections.jdk8.*` que produce Capacitor al arrastrar `kotlin-stdlib-jdk7/jdk8` junto a `kotlin-stdlib 1.8+`:
 ```groovy
@@ -317,12 +331,15 @@ subprojects {
 Desde Kotlin 1.8, el stdlib unificado ya incluye jdk7 y jdk8, por lo que se pueden excluir con seguridad.
 
 ### Google Sign-In en Android
-GIS (`google.accounts.id.renderButton`) **no funciona en WebView**. Se usa en su lugar el flujo OAuth redirect:
+GIS (`google.accounts.id.renderButton`) **no funciona en WebView**. Se usa en su lugar el flujo OAuth redirect via Chrome Custom Tabs:
 - Detección de plataforma: `window.Capacitor?.isNativePlatform()` en `profile.js → renderAuthSection()`
-- En nativo: se muestra botón "Continuar con Google" (SVG inline del logo G) que llama a `signInWithGoogleRedirect()` en `supabase.js`
-- `signInWithGoogleRedirect()` llama a `supaClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/' } })`
-- En Capacitor Android el origen es `https://localhost` → **debe estar en Supabase Redirect URLs**
-- Tras el login, Supabase redirige a `https://localhost/#access_token=...` → la app recarga y `onAuthStateChange` procesa el `SIGNED_IN`
+- Plugins requeridos: `@capacitor/browser` (Chrome Custom Tabs) y `@capacitor/app` (deep links)
+- Deep link registrado en `AndroidManifest.xml`: `<data android:scheme="com.roleplayai.app" />`
+- `signInWithGoogleRedirect()` en `supabase.js` usa `skipBrowserRedirect: true` + `Browser.open(data.url)`
+- `handleDeepLink(url)` en `supabase.js` procesa el retorno: `Browser.close()` + `setSession({ access_token, refresh_token })`
+- Listener registrado en `main.js`: `App.addListener('appUrlOpen', ({ url }) => handleDeepLink(url))`
+- **Google Cloud Console**: `https://pxtnjtkckfzsqistfjgn.supabase.co/auth/v1/callback` debe estar en Authorized redirect URIs
+- **Supabase Redirect URLs**: añadir `com.roleplayai.app://`
 
 ### ⚠️ Sync Android — OBLIGATORIO tras cada cambio
 **Después de cada modificación de archivos web, ejecutar siempre:**
