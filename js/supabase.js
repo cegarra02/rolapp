@@ -58,6 +58,7 @@ async function initSupabase() {
   // renovación de token). INITIAL_SESSION se ignora porque ya lo manejó getSession().
   supaClient.auth.onAuthStateChange(async (event, session) => {
     if (event === 'INITIAL_SESSION') return; // ya gestionado arriba
+    toast('🔔 ' + event); // DEBUG
     try {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         await _applySession(session);
@@ -307,15 +308,14 @@ async function handleDeepLink(url) {
 
   if (access_token && refresh_token) {
     // ── Flujo implícito (flowType:'implicit') ────────────────────────────
-    console.log('[deepLink] flujo implícito → setSession');
+    toast('🔑 setSession…');
     const { data, error } = await supaClient.auth.setSession({ access_token, refresh_token });
     if (error) {
-      console.error('[deepLink] setSession error:', error);
-      toast('❌ setSession: ' + error.message);
+      toast('❌ setSession: ' + error.message.slice(0, 40));
       _lastDeepLinkUrl = '';
       return;
     }
-    console.log('[deepLink] sesión ✓ user:', data?.session?.user?.email);
+    toast('🔑 session:' + (data?.session ? 'OK' : 'NULL'));
     if (data?.session) {
       await _applySession(data.session);
       renderUserHeader();
@@ -325,15 +325,14 @@ async function handleDeepLink(url) {
 
   } else if (code) {
     // ── Flujo PKCE (fallback por si el servidor envía code en lugar de tokens) ──
-    console.log('[deepLink] flujo PKCE (fallback) → exchangeCodeForSession');
+    toast('🔑 PKCE exchange…');
     const { data, error } = await supaClient.auth.exchangeCodeForSession(url);
     if (error) {
-      console.error('[deepLink] exchangeCodeForSession error:', error);
-      toast('❌ PKCE: ' + error.message);
+      toast('❌ PKCE: ' + error.message.slice(0, 40));
       _lastDeepLinkUrl = '';
       return;
     }
-    console.log('[deepLink] sesión PKCE ✓ user:', data?.session?.user?.email);
+    toast('🔑 session:' + (data?.session ? 'OK' : 'NULL'));
     if (data?.session) {
       await _applySession(data.session);
       renderUserHeader();
@@ -343,8 +342,8 @@ async function handleDeepLink(url) {
 
   } else {
     console.warn('[deepLink] URL sin tokens ni code:', url.slice(0, 120));
-    toast('⚠️ URL recibida sin datos de sesión');
-    _lastDeepLinkUrl = ''; // no bloquear futuros intentos
+    toast('⚠️ URL sin datos de sesión');
+    _lastDeepLinkUrl = '';
   }
 }
 
@@ -394,6 +393,7 @@ function initGoogleSignIn(containerId) {
 }
 
 async function authSignOut() {
+  _lastDeepLinkUrl = ''; // permitir nuevo login tras cerrar sesión
   await supaClient.auth.signOut();
 }
 
