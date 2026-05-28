@@ -26,7 +26,7 @@ function renderAuthSection() {
     const email = supabaseUser.email || '';
     const name  = supabaseUser.user_metadata?.full_name || email;
     const initials = name.slice(0, 2).toUpperCase();
-    const gems = supabaseGems;
+    const gems = getDisplayGems();
     el.innerHTML = `
       <div class="auth-section">
         <div class="auth-user-row">

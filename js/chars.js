@@ -1,14 +1,21 @@
+let editTags = [];
+
 function renderChars() {
   const q = document.getElementById('searchInp').value.toLowerCase();
   const list = document.getElementById('charsList');
-  const filtered = chars.filter(x => x.name.toLowerCase().includes(q) || (x.tag || '').toLowerCase().includes(q));
+  const filtered = chars.filter(x => {
+    const tags = x.tags || (x.tag ? [x.tag] : []);
+    return x.name.toLowerCase().includes(q) || tags.some(t => t.toLowerCase().includes(q));
+  });
   if (!filtered.length) {
     list.style.display = 'block';
     list.innerHTML = `<div class="empty-state"><div class="icon">✦</div><p>${chars.length ? 'Ningún personaje encontrado.' : 'Crea tu primer personaje pulsando <strong>+</strong>'}</p></div>`;
     return;
   }
   list.style.display = '';
-  list.innerHTML = filtered.map(x => `
+  list.innerHTML = filtered.map(x => {
+    const tags = x.tags || (x.tag ? [x.tag] : []);
+    return `
     <div class="char-card" onclick="openChat('${x.id}')">
       ${x.bg
         ? `<div class="char-card-bg" style="background-image:url('${x.bg}')"></div>`
@@ -16,11 +23,33 @@ function renderChars() {
       }
       <div class="char-card-body">
         <div class="char-card-name">${esc(x.name)}</div>
-        ${x.tag ? `<span class="char-card-tag">${esc(x.tag)}</span>` : ''}
+        <div>${tags.map(t => tagBadgeHtml(t)).join('')}</div>
       </div>
       <div class="char-card-edit" onclick="event.stopPropagation();openEdit('${x.id}')">✎</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
+
+function renderEditTags() {
+  document.getElementById('tagChipsList').innerHTML = editTags.map(t => tagChipHtml(t)).join('');
+}
+
+function handleTagInputKey(e) {
+  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTagFromInput(); }
+}
+
+function addTagFromInput() {
+  const inp = document.getElementById('tagInp');
+  const val = inp.value.trim().replace(/,/g, '');
+  if (!val || editTags.includes(val) || editTags.length >= 5) { inp.value = ''; return; }
+  editTags.push(val);
+  inp.value = '';
+  renderEditTags();
+}
+
+function removeEditTag(tag) {
+  editTags = editTags.filter(t => t !== tag);
+  renderEditTags();
 }
 
 function pickGender(g) {
@@ -29,13 +58,14 @@ function pickGender(g) {
 }
 
 function openCreate() {
-  editId = null; tempBg = null; tempGender = null;
+  editId = null; tempBg = null; tempGender = null; editTags = [];
   ['M','F'].forEach(x => document.getElementById('gender'+x)?.classList.remove('active'));
   document.getElementById('editTitle').textContent = 'Nuevo personaje';
   document.getElementById('deleteBtn').style.display = 'none';
-  ['charName', 'charTag', 'charAge', 'charDesc', 'charContext', 'charGreeting'].forEach(id => {
+  ['charName', 'charAge', 'charDesc', 'charContext', 'charGreeting'].forEach(id => {
     const e = document.getElementById(id); if (e) e.value = '';
   });
+  renderEditTags();
   resetSlot('bgSlot', '🖼️');
   initSliders(null);
   const cp = document.getElementById('charUseCustomProfile');
@@ -53,11 +83,12 @@ function openCreate() {
 function openEdit(id) {
   const c = chars.find(x => x.id === id); if (!c) return;
   editId = id; tempBg = c.bg || null; tempGender = c.gender || null;
+  editTags = c.tags ? [...c.tags] : (c.tag ? [c.tag] : []);
   ['M','F'].forEach(x => document.getElementById('gender'+x)?.classList.toggle('active', tempGender === x));
   document.getElementById('editTitle').textContent = 'Editar personaje';
   document.getElementById('deleteBtn').style.display = 'block';
   document.getElementById('charName').value = c.name || '';
-  document.getElementById('charTag').value = c.tag || '';
+  renderEditTags();
   document.getElementById('charAge').value = c.age || '';
   document.getElementById('charDesc').value = c.desc || '';
   document.getElementById('charContext').value = c.context || '';
@@ -117,12 +148,15 @@ function saveChar() {
   const name = document.getElementById('charName').value.trim();
   if (!name) { toast('El personaje necesita un nombre'); return; }
   const useCustom = document.getElementById('charUseCustomProfile')?.checked || false;
-  const wasPublic = editId ? !!(chars.find(x => x.id === editId)?.isPublic) : false;
+  const existingChar = editId ? chars.find(x => x.id === editId) : null;
+  // submittedToLibrary:true → INSERT confirmado; false/undefined → pendiente o fallido (se puede reintentar)
+  const wasSubmitted = !!(existingChar?.submittedToLibrary);
   const isPublicNow = !!(document.getElementById('charIsPublic')?.checked && supabaseUser);
   const c = {
     id: editId || uid(),
     name,
-    tag:      document.getElementById('charTag').value.trim(),
+    tags:     [...editTags],
+    tag:      editTags[0] || '',
     age:      document.getElementById('charAge').value.trim(),
     desc:     document.getElementById('charDesc').value.trim(),
     context:  document.getElementById('charContext').value.trim(),
@@ -146,25 +180,32 @@ function saveChar() {
   if (editId) {
     const i = chars.findIndex(x => x.id === editId);
     if (i > -1) {
-      c.history      = chars[i].history      || [];
-      c.chatStyle    = chars[i].chatStyle    || null;
-      c.hitos        = chars[i].hitos        || [];
+      c.history            = chars[i].history            || [];
+      c.chatStyle          = chars[i].chatStyle          || null;
+      c.hitos              = chars[i].hitos              || [];
+      c.submittedToLibrary = chars[i].submittedToLibrary; // preservar estado de envío
       if (chars[i].hitosEnabled === false) c.hitosEnabled = false;
       chars[i] = c;
     }
   } else {
     chars.unshift(c);
   }
+  // Marcar como envío pendiente antes de guardar: si el INSERT falla, queda en false
+  // y el usuario puede reintentar guardando de nuevo (wasSubmitted será false).
+  if (!wasSubmitted && isPublicNow) {
+    c.submittedToLibrary = false;
+  }
   save(); goHome();
   toast('Guardado ✓');
-  // Enviar a revisión solo si se acaba de marcar como público por primera vez
-  // (no en cada guardado si ya estaba marcado, para evitar submissions duplicadas)
-  console.log('[saveChar] editId:', editId, '| wasPublic:', wasPublic, '| isPublicNow:', isPublicNow);
-  if (!wasPublic && isPublicNow) {
-    console.log('[saveChar] → llamando submitCharToLibrary para:', c.name);
-    submitCharToLibrary(c).catch(e => console.error('[submitChar] error final:', e?.message, e?.code));
-  } else if (isPublicNow) {
-    console.log('[saveChar] → ya estaba público, no se reenvía (wasPublic=true)');
+  if (!wasSubmitted && isPublicNow) {
+    submitCharToLibrary(c).then(() => {
+      // INSERT confirmado: marcar como enviado para no duplicar en ediciones posteriores
+      const idx = chars.findIndex(x => x.id === c.id);
+      if (idx > -1) { chars[idx].submittedToLibrary = true; save(); }
+    }).catch(e => {
+      console.error('[submitChar] error final:', e?.message, e?.code);
+      // submittedToLibrary queda en false → reintento automático al guardar de nuevo
+    });
   }
 }
 

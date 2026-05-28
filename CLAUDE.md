@@ -92,10 +92,14 @@ Cada `<div class="screen">` se activa con `showScreen(id, hideNav)`. Pantallas e
 - RLS activado en todas las tablas
 
 #### Fetch con reintentos — `_fetchWithRetry`
-El cliente Supabase se inicializa con un `fetch` personalizado que reintenta automáticamente hasta 2 veces (con backoff 600ms / 1200ms) si ocurre un error de red. Esto absorbe los fallos intermitentes de `ERR_QUIC_PROTOCOL_ERROR` causados por HTTP/3 (QUIC/UDP) de Cloudflare:
+El cliente Supabase se inicializa con un `fetch` personalizado que reintenta automáticamente hasta 2 veces (con backoff 600ms / 1200ms) si ocurre un error de red. Esto absorbe los fallos intermitentes de `ERR_QUIC_PROTOCOL_ERROR` causados por HTTP/3 (QUIC/UDP) de Cloudflare.
+
+**⚠️ IMPORTANTE: `flowType: 'implicit'`** — Supabase v2 usa PKCE por defecto, lo que es poco fiable en Capacitor WebView (el `code_verifier` se puede perder si el SO mata la app, y `onAuthStateChange(SIGNED_IN)` puede no dispararse tras `exchangeCodeForSession`). Se usa `implicit` para que el deep link devuelva `#access_token=...&refresh_token=...` directamente en el fragmento URL:
+
 ```js
 const supaClient = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
-  global: { fetch: _fetchWithRetry }
+  global: { fetch: _fetchWithRetry },
+  auth:   { flowType: 'implicit' }  // evita unreliabilidad de PKCE en Capacitor WebView
 });
 ```
 
@@ -127,11 +131,40 @@ El login por email/contraseña ha sido **eliminado de la UI**. Solo existe Googl
   1. Llama a `supaClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: 'com.roleplayai.app://', skipBrowserRedirect: true } })`
   2. Abre `data.url` en **Chrome Custom Tabs** via `window.Capacitor.Plugins.Browser.open()` — Google bloquea OAuth en WebView, Chrome Custom Tabs sí está permitido
   3. Usuario firma en Chrome Custom Tabs
-  4. Google → Supabase callback → deep link `com.roleplayai.app://#access_token=...`
-  5. `App.addListener('appUrlOpen')` en `main.js` captura el deep link y llama a `handleDeepLink(url)`
-  6. `handleDeepLink()` cierra el browser, extrae tokens y llama a `supaClient.auth.setSession({ access_token, refresh_token })` → `onAuthStateChange` detecta `SIGNED_IN`
+  4. Google → Supabase callback → deep link `com.roleplayai.app://#access_token=...&refresh_token=...` (implicit flow)
+  5. **Warm start**: `App.addListener('appUrlOpen')` en `main.js` captura el deep link y llama a `handleDeepLink(url)`
+  5. **Cold start**: `App.getLaunchUrl()` en `main.js` también llama a `handleDeepLink(url)` para el caso en que el SO mató la app mientras Chrome Custom Tabs estaba abierto
+  6. `handleDeepLink()` cierra el browser, extrae tokens del fragmento `#` y llama a `supaClient.auth.setSession({ access_token, refresh_token })` → `onAuthStateChange` detecta `SIGNED_IN`
+  7. `_lastDeepLinkUrl` — variable de deduplicación en `supabase.js`: evita procesar el mismo URL de deep link dos veces (cold start + warm start pueden dispararse a la vez). Se limpia en `authSignOut()` para permitir login posterior.
+  8. `handleDeepLink` también tiene rama PKCE (`code=...`) como fallback por si se recibe ese formato inesperadamente
 - Las funciones `authSignUp`, `authSignIn`, `doAuth`, `setAuthTab` siguen en el código pero no se usan en la UI (no eliminar para evitar errores si algo las referencia)
 - Plugins instalados: `@capacitor/browser@8.0.3`, `@capacitor/app@8.1.0`
+
+#### Auth — comportamiento actual y bug pendiente (v115)
+
+**Lo que funciona:**
+- El **primer login** se completa correctamente. `handleDeepLink` recibe los tokens, `setSession` los procesa y `onAuthStateChange(SIGNED_IN)` dispara, cargando las gemas y actualizando la UI.
+- **Logout** es inmediato: `doSignOut()` en `profile.js` limpia el estado local ANTES de llamar a `authSignOut()`, por lo que la UI responde aunque Android tarde en propagar el evento.
+- Al cerrar sesión, **las gemas de Supabase se guardan en `rp_gems_local`** para que el contador no vuelva a 50 tras el logout.
+
+**Bug pendiente — segundo login falla:**
+- `setSession` devuelve `data.session: null` tras el primer login. El login "funciona" porque `onAuthStateChange(SIGNED_IN)` se dispara independientemente.
+- En el segundo intento (logout → login), `onAuthStateChange` **no vuelve a disparar** aunque `handleDeepLink` recibe los tokens correctamente.
+- Síntomas observados: la secuencia de toasts diagnósticos muestra `🔗 tokens✓ | hash:true` y `🔑 setSession…` pero luego nada más (ni `✅ Login OK` ni `🔔 SIGNED_IN`).
+- **Hipótesis principal**: el token de access devuelto en el segundo login ya fue procesado por Supabase internamente en el primer intento (la sesión ya existe en el storage del SDK). `setSession` con tokens idénticos o "ya usados" puede ser ignorado.
+- **Próximo paso de diagnóstico**: revisar si en el segundo login se reciben tokens distintos a los del primero. Si son iguales, el problema es que el SDK cachea y no re-dispara el evento. Si son distintos, el problema está en la validación de `setSession`.
+
+**Build de diagnóstico activo (v115):** `js/supabase.js` tiene toasts en cada paso del flujo:
+- `toast('🚀 Iniciando OAuth…')` al pulsar el botón
+- `toast('🌐 Abriendo navegador…')` antes de `Browser.open()`
+- `toast('🔗 …')` al recibir el deep link (indica si tiene tokens, code o nada)
+- `toast('🔑 setSession…')` antes de llamar a setSession
+- `toast('🔑 session:OK/NULL')` según resultado de setSession
+- `toast('✅ Login OK · gems:N')` si login completado vía handleDeepLink
+- `toast('🔔 SIGNED_IN/etc')` cuando dispara onAuthStateChange
+- `toast('❌ …')` en errores
+
+Estos toasts deben **eliminarse** cuando se resuelva el bug de segundo login.
 
 ---
 
@@ -178,6 +211,7 @@ El login por email/contraseña ha sido **eliminado de la UI**. Solo existe Googl
 - **El historial de chat con personajes de biblioteca SÍ se persiste** en `libChars` (localStorage `rp_lib_chars`) y aparece en la pestaña Chats
 - Cuando admin está logueado: aparece icono ✎ en cada tarjeta → abre `libDetailScreen` para editar/eliminar
 - Si la carga falla (ej: `ERR_QUIC_PROTOCOL_ERROR`), se muestra ⚠️ con botón "🔄 Reintentar" que relanza `renderExploreScreen()`
+- `fetchExploreChars()` devuelve `false` en caso de error y `true` si fue exitoso. `renderExploreScreen()` solo llama a `renderExploreList()` si el resultado no es `false` — esto evita que la lista vacía sobreescriba el HTML de error.
 
 ### Historial de personajes de biblioteca (`libChars`)
 - `let libChars` en `state.js` — array de objetos char con `isLibraryChar: true` e `history`
@@ -260,7 +294,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v107** (sw.js usa `rolapp-v113`)
+**Versión actual: v115** (sw.js usa `rolapp-v129`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 
@@ -337,9 +371,15 @@ GIS (`google.accounts.id.renderButton`) **no funciona en WebView**. Se usa en su
 - Deep link registrado en `AndroidManifest.xml`: `<data android:scheme="com.roleplayai.app" />`
 - `signInWithGoogleRedirect()` en `supabase.js` usa `skipBrowserRedirect: true` + `Browser.open(data.url)`
 - `handleDeepLink(url)` en `supabase.js` procesa el retorno: `Browser.close()` + `setSession({ access_token, refresh_token })`
-- Listener registrado en `main.js`: `App.addListener('appUrlOpen', ({ url }) => handleDeepLink(url))`
+- Listeners registrados en `main.js`:
+  - **Warm start**: `App.addListener('appUrlOpen', ({ url }) => handleDeepLink(url))`
+  - **Cold start**: `App.getLaunchUrl().then(result => { if (result?.url) handleDeepLink(result.url); })`
+- `_lastDeepLinkUrl` en `supabase.js` evita procesar el mismo URL dos veces (cold + warm pueden solaparse)
+- `authSignOut()` en `supabase.js` limpia `_lastDeepLinkUrl = ''` para permitir nuevos logins
+- `flowType: 'implicit'` en el cliente Supabase → deep link devuelve `#access_token=...` (no `?code=...`)
 - **Google Cloud Console**: `https://pxtnjtkckfzsqistfjgn.supabase.co/auth/v1/callback` debe estar en Authorized redirect URIs
 - **Supabase Redirect URLs**: añadir `com.roleplayai.app://`
+- ⚠️ **Bug pendiente**: el segundo login falla (ver sección "Bug pendiente" en Auth arriba)
 
 ### ⚠️ Sync Android — OBLIGATORIO tras cada cambio
 **Después de cada modificación de archivos web, ejecutar siempre:**
@@ -368,3 +408,25 @@ Esto copia los archivos a `www/` y los sincroniza con el proyecto Gradle de Andr
 - El `_saveChar()` en chat.js es el punto central de guardado: redirige a `save()` (chars propios) o `saveLibChars()` (biblioteca). Todos los save de chat pasan por ahí.
 - Moderación: botones de Aprobar/Rechazar/Eliminar siempre tienen modal de confirmación (`openModal`). El formulario de detalle usa los valores editados del form en el momento de aprobar.
 - **IDs de personajes**: los personajes locales usan `uid()` (timestamp base36 + aleatoriedad, ej: `lq8k3f2abc7d`). Los personajes públicos en Supabase reciben un **UUID v4 generado automáticamente por PostgreSQL** al hacer INSERT — no se envía `id` desde el cliente. No hay colisiones posibles en la BD.
+
+### Cambios de la sesión de corrección de bugs Android (mayo 2026)
+
+Los siguientes bugs fueron corregidos en esta sesión (v108–v115):
+
+1. **Logout no respondía en Android** → `doSignOut()` en `profile.js` ahora limpia el estado local inmediatamente antes de llamar a `authSignOut()`, sin esperar `onAuthStateChange(SIGNED_OUT)`.
+
+2. **Gemas vuelven a 50 tras logout** → `doSignOut()` guarda el valor de `supabaseGems` en `rp_gems_local` antes de borrar el estado. Si el usuario tenía N gemas en Supabase, tras cerrar sesión ve N gemas locales.
+
+3. **Error UI de Explorar sobreescrita por "sin personajes"** → `fetchExploreChars()` devuelve `false` cuando hay error (en lugar de no devolver nada). `renderExploreScreen()` solo llama a `renderExploreList()` si recibe `true` o cualquier valor no-`false`.
+
+4. **Cold start de deep link ignorado** → `main.js` ahora llama a `App.getLaunchUrl()` al arrancar, además del listener `appUrlOpen` para warm start.
+
+5. **Double processing del mismo deep link** → variable `_lastDeepLinkUrl` en `supabase.js` ignora URLs duplicados. Se limpia en `authSignOut()`.
+
+6. **PKCE poco fiable en Capacitor** → migrado a `flowType: 'implicit'`. El deep link devuelve tokens directamente en el fragmento `#`, sin intercambio de código.
+
+**Bug sin resolver (pendiente diagnóstico en siguiente sesión):**
+- Segundo login y sucesivos fallan en Android. El primer login funciona vía `onAuthStateChange(SIGNED_IN)`. En el segundo intento, `setSession` devuelve `data.session: null` y `onAuthStateChange` no vuelve a disparar. Build v115 tiene toasts diagnósticos — el usuario aún no ha reportado la secuencia de toasts del segundo intento. **Próximo paso**: pedir al usuario la secuencia completa de toasts en: primer login → logout → segundo login.
+
+### Advertencias Gradle (inofensivas)
+- `Using flatDir should be avoided` — viene de una dependencia de Capacitor, no afecta la funcionalidad.

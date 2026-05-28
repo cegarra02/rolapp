@@ -1,8 +1,10 @@
 let exploreChars = [];
 let exploreTags  = [];
 let exploreSearch = '';
-let exploreActiveTag = '';
+let exploreActiveTags = [];
 let exploreSort  = 'new';
+let exploreGender = '';
+let _exploreFiltersOpen = false;
 
 async function renderExploreScreen() {
   renderExploreLoading();
@@ -21,11 +23,12 @@ function renderExploreLoading() {
 async function fetchExploreChars() {
   let q = supaClient
     .from('characters_library')
-    .select('id, name, tag, bg, chat_count, message_count, created_at')
+    .select('id, name, tag, tags, bg, chat_count, message_count, created_at')
     .eq('status', 'approved');
 
   if (exploreSearch) q = q.ilike('name', `%${exploreSearch}%`);
-  if (exploreActiveTag) q = q.eq('tag', exploreActiveTag);
+  if (exploreActiveTags.length) q = q.overlaps('tags', exploreActiveTags);
+  if (exploreGender) q = q.eq('gender', exploreGender);
   q = exploreSort === 'popular'
     ? q.order('message_count', { ascending: false })
     : q.order('created_at', { ascending: false });
@@ -49,23 +52,27 @@ async function fetchExploreChars() {
 async function fetchExploreTags() {
   const { data } = await supaClient
     .from('characters_library')
-    .select('tag')
-    .eq('status', 'approved')
-    .not('tag', 'is', null);
+    .select('tags, tag')
+    .eq('status', 'approved');
   if (!data) return;
   const counts = {};
-  data.forEach(r => { if (r.tag) counts[r.tag] = (counts[r.tag] || 0) + 1; });
+  data.forEach(r => {
+    const tags = r.tags?.length ? r.tags : (r.tag ? [r.tag] : []);
+    tags.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+  });
   exploreTags = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([t]) => t);
 }
 
 function renderExploreTags() {
   const el = document.getElementById('exploreTagsRow');
   if (!el) return;
+  const todosActive = !exploreActiveTags.length;
+  const todosStyle = todosActive
+    ? 'background:rgba(168,85,247,.42);border-color:rgba(168,85,247,.85);color:rgba(168,85,247,.95)'
+    : 'background:rgba(168,85,247,.22);border-color:rgba(168,85,247,.55);color:rgba(168,85,247,.95)';
   el.innerHTML =
-    `<div class="explore-tag-chip${!exploreActiveTag ? ' active' : ''}" onclick="setExploreTag('')">Todos</div>` +
-    exploreTags.map(t =>
-      `<div class="explore-tag-chip${exploreActiveTag === t ? ' active' : ''}" onclick="setExploreTag(decodeURIComponent('${encodeURIComponent(t)}'))">${esc(t)}</div>`
-    ).join('');
+    `<span class="explore-tag-chip${todosActive ? ' active' : ''}" style="${todosStyle}" onclick="setExploreTag('')">Todos</span>` +
+    exploreTags.map(t => exploreTagChipHtml(t, exploreActiveTags.includes(t))).join('');
 }
 
 function renderExploreList() {
@@ -76,18 +83,20 @@ function renderExploreList() {
     return;
   }
   const admin = isAdmin();
-  list.innerHTML = exploreChars.map(x => `
+  list.innerHTML = exploreChars.map(x => {
+    const tags = x.tags || (x.tag ? [x.tag] : []);
+    return `
     <div class="char-card" onclick="openExploreChat('${x.id}')">
       ${x.bg
         ? `<div class="char-card-bg" style="background-image:url('${x.bg}')"></div>`
         : `<div class="char-card-bg-placeholder">${esc((x.name || '?')[0])}</div>`}
       <div class="char-card-body">
         <div class="char-card-name">${esc(x.name)}</div>
-        ${x.tag ? `<span class="char-card-tag">${esc(x.tag)}</span>` : ''}
+        <div>${tags.map(t => tagBadgeHtml(t)).join('')}</div>
       </div>
       ${admin ? `<div class="char-card-edit" onclick="event.stopPropagation();openLibDetail('${x.id}')">✎</div>` : ''}
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
 }
 
 function showExplore() {
@@ -96,13 +105,36 @@ function showExplore() {
 }
 
 function setExploreTag(tag) {
-  exploreActiveTag = tag;
+  if (!tag) {
+    exploreActiveTags = [];
+  } else {
+    const idx = exploreActiveTags.indexOf(tag);
+    if (idx > -1) exploreActiveTags.splice(idx, 1);
+    else exploreActiveTags.push(tag);
+  }
   renderExploreScreen();
 }
 
 function setExploreSort(val) {
   exploreSort = val;
+  document.querySelectorAll('.esort-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('esort-' + val)?.classList.add('active');
   renderExploreScreen();
+}
+
+function setExploreGender(g) {
+  exploreGender = g;
+  ['all','M','F'].forEach(x => document.getElementById('egender-' + x)?.classList.remove('active'));
+  document.getElementById('egender-' + (g || 'all'))?.classList.add('active');
+  renderExploreScreen();
+}
+
+function toggleExploreFilters() {
+  _exploreFiltersOpen = !_exploreFiltersOpen;
+  const panel = document.getElementById('exploreFiltersPanel');
+  const btn   = document.getElementById('exploreFilterBtn');
+  if (panel) panel.classList.toggle('open', _exploreFiltersOpen);
+  if (btn)   btn.classList.toggle('active', _exploreFiltersOpen);
 }
 
 function onExploreSearch(val) {

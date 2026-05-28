@@ -1,3 +1,38 @@
+// ── Tag color system ─────────────────────────────────────────────────────────
+// 8 colores distintos; el mismo nombre de tag → mismo color siempre
+const _TAG_PALETTES = [
+  ['rgba(56,189,248,.22)','rgba(56,189,248,.55)','rgba(56,189,248,.95)'],   // sky
+  ['rgba(192,132,252,.22)','rgba(192,132,252,.55)','rgba(192,132,252,.95)'],// purple
+  ['rgba(34,197,94,.22)','rgba(34,197,94,.55)','rgba(34,197,94,.95)'],      // green
+  ['rgba(249,115,22,.22)','rgba(249,115,22,.55)','rgba(249,115,22,.95)'],   // orange
+  ['rgba(244,63,94,.22)','rgba(244,63,94,.55)','rgba(244,63,94,.95)'],      // rose
+  ['rgba(234,179,8,.22)','rgba(234,179,8,.55)','rgba(234,179,8,.95)'],      // yellow
+  ['rgba(20,184,166,.22)','rgba(20,184,166,.55)','rgba(20,184,166,.95)'],   // teal
+  ['rgba(239,68,68,.22)','rgba(239,68,68,.55)','rgba(239,68,68,.95)'],      // red
+];
+function _tagPalette(tag) {
+  let h = 0;
+  for (let i = 0; i < tag.length; i++) h = (Math.imul(31, h) + tag.charCodeAt(i)) | 0;
+  return _TAG_PALETTES[Math.abs(h) % _TAG_PALETTES.length];
+}
+// Chip pequeño para tarjetas de personaje (sin ×)
+function tagBadgeHtml(tag) {
+  const [bg, bd, col] = _tagPalette(tag);
+  return `<span class="char-card-tag" style="background:${bg};border-color:${bd};color:${col}">${esc(tag)}</span>`;
+}
+// Chip editable para el formulario de creación (con ×)
+function tagChipHtml(tag) {
+  const [bg, bd, col] = _tagPalette(tag);
+  return `<span class="tag-chip" style="background:${bg};border-color:${bd};color:${col}">${esc(tag)}<button class="tag-chip-rm" onclick="removeEditTag(decodeURIComponent('${encodeURIComponent(tag)}'))" type="button">×</button></span>`;
+}
+// Chip de filtro explore (sin ×, con estilo activo opcional)
+function exploreTagChipHtml(tag, active) {
+  const [bg, bd, col] = _tagPalette(tag);
+  const activeBg  = bg.replace(',.22)', ',.42)');
+  const activeBd  = bd.replace(',.55)', ',.85)');
+  return `<span class="explore-tag-chip${active ? ' active' : ''}" style="background:${active ? activeBg : bg};border-color:${active ? activeBd : bd};color:${col}" onclick="setExploreTag(decodeURIComponent('${encodeURIComponent(tag)}'))">${esc(tag)}</span>`;
+}
+
 function save() { localStorage.setItem('rp_chars', JSON.stringify(chars)); }
 function saveLibChars() { localStorage.setItem('rp_lib_chars', JSON.stringify(libChars)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }

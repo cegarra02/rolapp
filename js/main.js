@@ -1,3 +1,13 @@
+// Migración: personajes con isPublic:true creados antes de añadir submittedToLibrary
+// se marcan como ya enviados para que no se reenvíen en la próxima edición.
+(function _migrateSubmittedToLibrary() {
+  let changed = false;
+  chars.forEach(c => {
+    if (c.isPublic && c.submittedToLibrary === undefined) { c.submittedToLibrary = true; changed = true; }
+  });
+  if (changed) save();
+})();
+
 renderChars();
 loadProfileFields();
 initChatSwipe();

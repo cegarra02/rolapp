@@ -69,7 +69,7 @@ async function initSupabase() {
       console.warn('[auth] onAuthStateChange:', e?.message);
     }
     renderUserHeader();
-    if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+    renderAuthSection(); // siempre actualizar perfil, no solo si está activo
   });
 
   // Sync gems from Supabase when user returns to the tab/app (cross-device sync)
@@ -140,7 +140,19 @@ async function _loadUserGems() {
       }
       return;
     }
-    supabaseGems = data?.gems ?? 0;
+    const remoteGems = data?.gems ?? 0;
+    const cachedGems = parseInt(localStorage.getItem('rp_gems_local') ?? String(remoteGems));
+    if (cachedGems >= 0 && cachedGems < remoteGems) {
+      // Hay deducciones locales que no llegaron a Supabase (update falló) → re-sincronizar
+      console.warn('[loadUserGems] reconcile: local', cachedGems, '< remote', remoteGems, '→ re-syncing');
+      supabaseGems = cachedGems;
+      supaClient.from('users').update({ gems: supabaseGems }).eq('id', supabaseUser.id)
+        .then(({ error }) => { if (error) console.error('[gems] re-sync failed:', error.message); });
+    } else {
+      // Supabase es autoritativo (gemas en sincronía o añadidas desde admin)
+      supabaseGems = remoteGems;
+      localStorage.setItem('rp_gems_local', String(supabaseGems));
+    }
   } catch (e) {
     console.warn('[loadUserGems] catch:', e?.message);
   }
@@ -152,10 +164,10 @@ async function refreshGems() {
   renderUserHeader();
   // Sync profile screen badge if visible
   const badge = document.querySelector('.auth-gems-badge strong');
-  if (badge) badge.textContent = supabaseGems;
+  if (badge) badge.textContent = getDisplayGems();
   // Sync mod panel label
   const modEl = document.getElementById('modMyGems');
-  if (modEl) modEl.textContent = supabaseGems;
+  if (modEl) modEl.textContent = getDisplayGems();
 }
 
 async function addGems(userId, amount) {
@@ -179,7 +191,15 @@ async function spendGems(userId, amount) {
 }
 
 function getDisplayGems() {
-  if (supabaseUser) return supabaseGems;
+  if (supabaseUser) {
+    // Si supabaseGems aún no se cargó (= 0 inicial), usar la caché local como fallback
+    // para evitar el flash de "0" durante la carga asíncrona de gemas.
+    if (supabaseGems === 0) {
+      const cached = parseInt(localStorage.getItem('rp_gems_local') || '0');
+      if (cached > 0) return cached;
+    }
+    return supabaseGems;
+  }
   return parseInt(localStorage.getItem('rp_gems_local') || '0');
 }
 
@@ -194,9 +214,11 @@ function deductMessageGems() {
   if (supabaseUser) {
     if (supabaseGems < cost) return false;
     supabaseGems -= cost;
+    localStorage.setItem('rp_gems_local', String(supabaseGems)); // mantener caché sincronizada
     renderUserHeader();
     // Persistir en Supabase async (fire and forget)
-    supaClient.from('users').update({ gems: supabaseGems }).eq('id', supabaseUser.id);
+    supaClient.from('users').update({ gems: supabaseGems }).eq('id', supabaseUser.id)
+      .then(({ error }) => { if (error) console.error('[gems] deduct update failed:', error.message, error.code); });
     return true;
   } else {
     const current = parseInt(localStorage.getItem('rp_gems_local') || '0');
@@ -252,7 +274,11 @@ async function signInWithGoogleRedirect() {
 
   const { data, error } = await supaClient.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo, skipBrowserRedirect: isNative }
+    options: {
+      redirectTo,
+      skipBrowserRedirect: isNative,
+      queryParams: { prompt: 'select_account' } // fuerza tokens frescos en cada login
+    }
   });
   if (error) {
     console.error('[Google] signInWithOAuth error:', error);
@@ -308,19 +334,29 @@ async function handleDeepLink(url) {
 
   if (access_token && refresh_token) {
     // ── Flujo implícito (flowType:'implicit') ────────────────────────────
+    // Limpiar estado local de Supabase antes de setSession para evitar
+    // conflictos con sesiones previas (el signOut local no revoca en servidor).
+    await supaClient.auth.signOut({ scope: 'local' }).catch(() => {});
     toast('🔑 setSession…');
-    const { data, error } = await supaClient.auth.setSession({ access_token, refresh_token });
-    if (error) {
-      toast('❌ setSession: ' + error.message.slice(0, 40));
+    try {
+      const { data, error } = await supaClient.auth.setSession({ access_token, refresh_token });
+      if (error) {
+        toast('❌ setSession: ' + error.message.slice(0, 40));
+        _lastDeepLinkUrl = '';
+        return;
+      }
+      toast('🔑 session:' + (data?.session ? 'OK' : 'NULL'));
+      if (data?.session) {
+        await _applySession(data.session);
+        renderUserHeader();
+        renderAuthSection(); // siempre actualizar perfil, no solo si está activo
+        toast('✅ Login OK · gems:' + supabaseGems);
+      }
+    } catch (e) {
+      toast('❌ setSession throw: ' + String(e?.message || e).slice(0, 50));
+      console.error('[handleDeepLink] setSession throw:', e);
       _lastDeepLinkUrl = '';
       return;
-    }
-    toast('🔑 session:' + (data?.session ? 'OK' : 'NULL'));
-    if (data?.session) {
-      await _applySession(data.session);
-      renderUserHeader();
-      if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
-      toast('✅ Login OK · gems:' + supabaseGems);
     }
 
   } else if (code) {
@@ -402,7 +438,8 @@ async function submitCharToLibrary(charData) {
   console.log('[submitChar] INSERT → name:', charData.name, '| author_id:', supabaseUser.id);
   const { error } = await supaClient.from('submissions').insert({
     name:     charData.name,
-    tag:      charData.tag      || null,
+    tag:      charData.tags?.[0] || charData.tag || null,
+    tags:     charData.tags?.length ? charData.tags : (charData.tag ? [charData.tag] : null),
     gender:   charData.gender   || null,
     age:      charData.age      || null,
     desc:     charData.desc     || null,
@@ -417,7 +454,8 @@ async function submitCharToLibrary(charData) {
     status:   'pending',
     character_data: {
       name:     charData.name,
-      tag:      charData.tag      || null,
+      tag:      charData.tags?.[0] || charData.tag || null,
+      tags:     charData.tags?.length ? charData.tags : (charData.tag ? [charData.tag] : null),
       gender:   charData.gender   || null,
       age:      charData.age      || null,
       desc:     charData.desc     || null,
@@ -436,5 +474,4 @@ async function submitCharToLibrary(charData) {
     throw error;
   }
   console.log('[submitChar] INSERT OK ✓');
-  toast('✓ Personaje enviado a revisión');
 }
