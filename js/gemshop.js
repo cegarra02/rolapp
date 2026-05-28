@@ -52,8 +52,8 @@ async function initBilling() {
     const { Purchases } = window.Capacitor.Plugins;
     if (!Purchases) { console.warn('[Billing] RevenueCat plugin no cargado'); return; }
     await Purchases.configure({
-      // ↓ REEMPLAZAR con tu API key de RevenueCat (dashboard.revenuecat.com)
-      apiKey: 'goog_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      // RevenueCat Android public API key
+      apiKey: 'goog_MsQFVavHArbkGnfqoOgrRLJiISh',
     });
     console.log('[Billing] RevenueCat inicializado');
   } catch (e) { console.warn('[Billing] init error:', e?.message); }
@@ -244,8 +244,8 @@ async function watchRewardedAd() {
     if (!AdMob) throw new Error('AdMob no disponible');
 
     await AdMob.prepareRewardVideoAd({
-      // ↓ TEST ID de Google — reemplazar con tu ad unit ID real de AdMob
-      adId: 'ca-app-pub-3940256099942544/5224354917',
+      // Ad Unit ID real de AdMob (recompensado)
+      adId: 'ca-app-pub-2254796338985845/7497827581',
     });
     const result = await AdMob.showRewardVideoAd();
 

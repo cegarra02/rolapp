@@ -8,9 +8,8 @@
   "plugins": {
     "AdMob": {
       "appId": {
-        "android": "ca-app-pub-3940256099942544~3347511713"
-      },
-      "initializeForTesting": true
+        "android": "ca-app-pub-2254796338985845~6104324636"
+      }
     }
   }
 }
