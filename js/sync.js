@@ -86,8 +86,11 @@ async function _loadUserDataFromDb() {
       return;
     }
     if (histRes.error) {
-      // No bloquear la carga de chars/perfil si solo falla user_histories
       console.warn('[sync] user_histories error:', histRes.error.message, histRes.error.code);
+      // Tabla inexistente → avisar al usuario con instrucciones claras
+      if (histRes.error.code === '42P01') {
+        toast('⚠️ Tabla user_histories no existe — ejecuta el SQL en Supabase Dashboard');
+      }
     }
 
     const db   = userRes.data || {};
@@ -100,6 +103,8 @@ async function _loadUserDataFromDb() {
       // La BD gana: fue sincronizada desde algún dispositivo del usuario
       profile = Object.assign({}, profile, db.profile);
       localStorage.setItem('rp_profile', JSON.stringify(profile));
+      // Refrescar campos del formulario si la pantalla de perfil ya está visible
+      if (typeof loadProfileFields === 'function') loadProfileFields();
     }
 
     // ── 2. Personajes propios ──────────────────────────────────────────────
