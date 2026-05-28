@@ -44,6 +44,13 @@ function formatMsg(txt) {
     .replace(/"([^"\n]{1,300})"/g, '<strong>"$1"</strong>');
 }
 function fmtTime(ts) { const d = new Date(ts); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); }
+// Formatea un contador de mensajes para la tarjeta: 0→null, 1500→'1.5k', 12000→'12k'
+function _fmtStat(n) {
+  if (!n || n < 1) return null;
+  if (n >= 10000) return Math.round(n / 1000) + 'k';
+  if (n >= 1000)  return (n / 1000).toFixed(1).replace('.0', '') + 'k';
+  return String(n);
+}
 function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
