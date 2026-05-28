@@ -35,15 +35,16 @@ function renderEditTags() {
 }
 
 function handleTagInputKey(e) {
-  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTagFromInput(); }
+  if (e.key === 'Enter' || e.key === ',' || e.key === ' ') { e.preventDefault(); addTagFromInput(); }
 }
 
 function addTagFromInput() {
   const inp = document.getElementById('tagInp');
-  const val = inp.value.trim().replace(/,/g, '');
-  if (!val || editTags.includes(val) || editTags.length >= 5) { inp.value = ''; return; }
-  editTags.push(val);
+  const words = inp.value.split(/[\s,]+/).map(w => w.trim()).filter(Boolean);
   inp.value = '';
+  words.forEach(val => {
+    if (!editTags.includes(val) && editTags.length < 5) editTags.push(val);
+  });
   renderEditTags();
 }
 
