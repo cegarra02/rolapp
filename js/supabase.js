@@ -140,19 +140,9 @@ async function _loadUserGems() {
       }
       return;
     }
-    const remoteGems = data?.gems ?? 0;
-    const cachedGems = parseInt(localStorage.getItem('rp_gems_local') ?? String(remoteGems));
-    if (cachedGems >= 0 && cachedGems < remoteGems) {
-      // Hay deducciones locales que no llegaron a Supabase (update falló) → re-sincronizar
-      console.warn('[loadUserGems] reconcile: local', cachedGems, '< remote', remoteGems, '→ re-syncing');
-      supabaseGems = cachedGems;
-      supaClient.from('users').update({ gems: supabaseGems }).eq('id', supabaseUser.id)
-        .then(({ error }) => { if (error) console.error('[gems] re-sync failed:', error.message); });
-    } else {
-      // Supabase es autoritativo (gemas en sincronía o añadidas desde admin)
-      supabaseGems = remoteGems;
-      localStorage.setItem('rp_gems_local', String(supabaseGems));
-    }
+    // Supabase siempre es autoritativo al iniciar sesión
+    supabaseGems = data?.gems ?? 0;
+    localStorage.setItem('rp_gems_local', String(supabaseGems));
   } catch (e) {
     console.warn('[loadUserGems] catch:', e?.message);
   }
@@ -176,7 +166,7 @@ async function addGems(userId, amount) {
   const current = data?.gems ?? 0;
   const { error: updErr } = await supaClient.from('users').update({ gems: current + amount }).eq('id', userId);
   if (updErr) throw updErr;
-  if (supabaseUser?.id === userId) { supabaseGems = current + amount; renderUserHeader(); }
+  if (supabaseUser?.id === userId) { supabaseGems = current + amount; localStorage.setItem('rp_gems_local', String(supabaseGems)); renderUserHeader(); }
 }
 
 async function spendGems(userId, amount) {

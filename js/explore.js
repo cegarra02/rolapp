@@ -27,7 +27,13 @@ async function fetchExploreChars() {
     .eq('status', 'approved');
 
   if (exploreSearch) q = q.ilike('name', `%${exploreSearch}%`);
-  if (exploreActiveTags.length) q = q.overlaps('tags', exploreActiveTags);
+  if (exploreActiveTags.length) {
+    const orParts = [
+      ...exploreActiveTags.map(t => `tag.eq.${t}`),
+      `tags.ov.{${exploreActiveTags.join(',')}}`
+    ].join(',');
+    q = q.or(orParts);
+  }
   if (exploreGender) q = q.eq('gender', exploreGender);
   q = exploreSort === 'popular'
     ? q.order('message_count', { ascending: false })

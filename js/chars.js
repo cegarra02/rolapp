@@ -35,7 +35,14 @@ function renderEditTags() {
 }
 
 function handleTagInputKey(e) {
-  if (e.key === 'Enter' || e.key === ',' || e.key === ' ') { e.preventDefault(); addTagFromInput(); }
+  if (e.key === 'Enter') { e.preventDefault(); addTagFromInput(); }
+  if (e.key === 'Backspace' && !e.target.value && editTags.length) {
+    editTags.pop(); renderEditTags();
+  }
+}
+
+function onTagInput(inp) {
+  if (inp.value.includes(' ') || inp.value.includes(',')) addTagFromInput();
 }
 
 function addTagFromInput() {
