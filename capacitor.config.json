@@ -1,6 +1,6 @@
 {
-  "appId": "com.roleplayai.app",
-  "appName": "Roleplay AI",
+  "appId": "com.storym.app",
+  "appName": "Storym",
   "webDir": "www",
   "server": {
     "androidScheme": "https"

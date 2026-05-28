@@ -1,0 +1,22 @@
+-- Columnas de sync en la tabla users
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS profile     JSONB DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS chars_data  JSONB DEFAULT '[]',
+  ADD COLUMN IF NOT EXISTS scenes_data JSONB DEFAULT '[]';
+
+-- Tabla para historiales de chat e hitos
+CREATE TABLE IF NOT EXISTS user_histories (
+  user_id    UUID  NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  entity_id  TEXT  NOT NULL,
+  history    JSONB NOT NULL DEFAULT '[]',
+  hitos      JSONB NOT NULL DEFAULT '[]',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, entity_id)
+);
+
+ALTER TABLE user_histories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage own histories"
+  ON user_histories FOR ALL TO authenticated
+  USING  (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);

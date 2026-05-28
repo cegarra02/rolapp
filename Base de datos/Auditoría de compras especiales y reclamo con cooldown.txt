@@ -1,0 +1,42 @@
+-- Tabla de auditoría de compras especiales
+CREATE TABLE IF NOT EXISTS special_purchases (
+  id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id      UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  pack_id      TEXT NOT NULL,
+  purchased_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+ALTER TABLE special_purchases ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users read own special purchases"
+  ON special_purchases FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users insert own special purchases"
+  ON special_purchases FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- RPC atómica: verifica cooldown + acredita gemas + registra compra (todo en una transacción)
+CREATE OR REPLACE FUNCTION claim_special_pack(p_pack_id TEXT, p_amount INT)
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_last TIMESTAMPTZ;
+  v_gems INT;
+BEGIN
+  SELECT MAX(purchased_at) INTO v_last
+  FROM special_purchases
+  WHERE user_id = auth.uid() AND pack_id = p_pack_id;
+
+  IF v_last IS NOT NULL AND v_last > (now() - INTERVAL '7 days') THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'cooldown');
+  END IF;
+
+  UPDATE users SET gems = gems + p_amount
+  WHERE id = auth.uid()
+  RETURNING gems INTO v_gems;
+
+  INSERT INTO special_purchases (user_id, pack_id) VALUES (auth.uid(), p_pack_id);
+
+  RETURN jsonb_build_object('ok', true, 'gems', v_gems);
+END;
+$$;

@@ -1,0 +1,17 @@
+-- Los usuarios no pueden UPDATE directo (evita manipulación)
+-- pero sí pueden llamar a esta función que solo permite decrementar
+CREATE OR REPLACE FUNCTION deduct_gems(amount int)
+RETURNS int LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  current_gems int;
+BEGIN
+  SELECT gems INTO current_gems FROM public.users WHERE id = auth.uid();
+  IF current_gems IS NULL OR current_gems < amount THEN
+    RETURN -1; -- saldo insuficiente
+  END IF;
+  UPDATE public.users SET gems = gems - amount WHERE id = auth.uid();
+  RETURN current_gems - amount; -- nuevo saldo
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION deduct_gems TO authenticated;

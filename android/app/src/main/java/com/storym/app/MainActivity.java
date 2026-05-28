@@ -1,4 +1,4 @@
-package com.roleplayai.app;
+package com.storym.app;
 
 import com.getcapacitor.BridgeActivity;
 

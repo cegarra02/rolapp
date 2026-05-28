@@ -1,0 +1,100 @@
+-- =============================================
+-- USERS
+-- Crear si no existe; si ya existe, añadir columnas que faltan
+-- =============================================
+create table if not exists public.users (
+  id uuid references auth.users primary key,
+  gems int default 50,
+  created_at timestamp with time zone default now()
+);
+
+alter table public.users
+  add column if not exists gems int default 50,
+  add column if not exists created_at timestamp with time zone default now();
+
+-- =============================================
+-- CHARACTERS_LIBRARY
+-- Crear si no existe; si ya existe, añadir columnas que faltan
+-- =============================================
+create table if not exists public.characters_library (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  tag text,
+  gender text,
+  age text,
+  "desc" text,
+  context text,
+  greeting text,
+  bg text,
+  timid int default 5,
+  romantic int default 5,
+  pace int default 4,
+  nsfw int default 7,
+  status text default 'approved',
+  author_id uuid references auth.users,
+  chat_count int default 0,
+  created_at timestamp with time zone default now()
+);
+
+alter table public.characters_library
+  add column if not exists tag text,
+  add column if not exists gender text,
+  add column if not exists "desc" text,
+  add column if not exists bg text,
+  add column if not exists chat_count int default 0,
+  add column if not exists greeting text,
+  add column if not exists age text,
+  add column if not exists timid int default 5,
+  add column if not exists romantic int default 5,
+  add column if not exists pace int default 4,
+  add column if not exists nsfw int default 7,
+  add column if not exists status text default 'approved',
+  add column if not exists author_id uuid references auth.users,
+  add column if not exists created_at timestamp with time zone default now();
+
+create index if not exists idx_cl_status on public.characters_library(status);
+create index if not exists idx_cl_created_at on public.characters_library(created_at desc);
+create index if not exists idx_cl_chat_count on public.characters_library(chat_count desc);
+
+-- =============================================
+-- SUBMISSIONS
+-- Crear si no existe; si ya existe, añadir columnas que faltan
+-- =============================================
+create table if not exists public.submissions (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  tag text,
+  gender text,
+  age text,
+  "desc" text,
+  context text,
+  greeting text,
+  bg text,
+  timid int default 5,
+  romantic int default 5,
+  pace int default 4,
+  nsfw int default 7,
+  author_id uuid references auth.users,
+  status text default 'pending',
+  created_at timestamp with time zone default now()
+);
+
+alter table public.submissions
+  add column if not exists name text,
+  add column if not exists tag text,
+  add column if not exists gender text,
+  add column if not exists age text,
+  add column if not exists "desc" text,
+  add column if not exists context text,
+  add column if not exists greeting text,
+  add column if not exists bg text,
+  add column if not exists timid int default 5,
+  add column if not exists romantic int default 5,
+  add column if not exists pace int default 4,
+  add column if not exists nsfw int default 7,
+  add column if not exists status text default 'pending',
+  add column if not exists author_id uuid references auth.users,
+  add column if not exists created_at timestamp with time zone default now();
+
+create index if not exists idx_sub_status on public.submissions(status);
+create index if not exists idx_sub_author on public.submissions(author_id);

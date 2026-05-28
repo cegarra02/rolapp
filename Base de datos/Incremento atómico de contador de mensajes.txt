@@ -1,0 +1,12 @@
+-- Columna de mensajes recibidos
+ALTER TABLE characters_library
+  ADD COLUMN message_count integer NOT NULL DEFAULT 0;
+
+-- Función RPC para incremento atómico (sin race condition)
+CREATE OR REPLACE FUNCTION increment_lib_messages(char_id uuid)
+RETURNS void LANGUAGE sql SECURITY DEFINER AS $$
+  UPDATE characters_library SET message_count = message_count + 1 WHERE id = char_id;
+$$;
+
+-- Permitir llamarla tanto a usuarios anónimos como autenticados
+GRANT EXECUTE ON FUNCTION increment_lib_messages TO anon, authenticated;

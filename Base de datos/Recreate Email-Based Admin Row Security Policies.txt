@@ -1,0 +1,19 @@
+drop policy if exists "users_admin_select_all" on public.users;
+  drop policy if exists "users_admin_update" on public.users;
+  drop policy if exists "cl_admin_select_all" on public.characters_library;
+  drop policy if exists "cl_admin_update" on public.characters_library;
+  drop policy if exists "sub_admin_select_all" on public.submissions;
+  drop policy if exists "sub_admin_update" on public.submissions;
+
+  create policy "users_admin_select_all" on public.users for select to authenticated
+    using (auth.jwt() ->> 'email' = 'alex1234567890ct@gmail.com');
+  create policy "users_admin_update" on public.users for update to authenticated
+    using (auth.jwt() ->> 'email' = 'alex1234567890ct@gmail.com');
+  create policy "cl_admin_select_all" on public.characters_library for select to authenticated
+    using (auth.jwt() ->> 'email' = 'alex1234567890ct@gmail.com');
+  create policy "cl_admin_update" on public.characters_library for update to authenticated
+    using (auth.jwt() ->> 'email' = 'alex1234567890ct@gmail.com');
+  create policy "sub_admin_select_all" on public.submissions for select to authenticated
+    using (auth.jwt() ->> 'email' = 'alex1234567890ct@gmail.com');
+  create policy "sub_admin_update" on public.submissions for update to authenticated
+    using (auth.jwt() ->> 'email' = 'alex1234567890ct@gmail.com');

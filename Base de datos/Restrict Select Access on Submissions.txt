@@ -1,0 +1,13 @@
+-- Borra todas las políticas SELECT existentes en submissions
+DROP POLICY IF EXISTS "submissions_select" ON public.submissions;
+DROP POLICY IF EXISTS "submissions_read" ON public.submissions;
+DROP POLICY IF EXISTS "Allow users to view own submissions" ON public.submissions;
+DROP POLICY IF EXISTS "Users can read own submissions" ON public.submissions;
+
+-- Nueva política: cualquier usuario autenticado puede leer todas las submissions
+-- (solo el admin tiene acceso al panel de moderación en la UI)
+CREATE POLICY "submissions_select_all_authenticated"
+ON public.submissions
+FOR SELECT
+TO authenticated
+USING (true);

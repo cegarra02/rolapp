@@ -256,10 +256,10 @@ async function authSignIn(email, password) {
 
 // Google OAuth redirect — para Android nativo.
 // Google bloquea OAuth en WebViews → se usa @capacitor/browser (Chrome Custom Tabs).
-// El redirect final vuelve a la app por deep link: com.roleplayai.app://
+// El redirect final vuelve a la app por deep link: com.storym.app://
 async function signInWithGoogleRedirect() {
   const isNative = !!(window.Capacitor?.isNativePlatform?.());
-  const redirectTo = isNative ? 'com.roleplayai.app://' : window.location.origin + '/';
+  const redirectTo = isNative ? 'com.storym.app://' : window.location.origin + '/';
   console.log('[Google] signInWithOAuth → redirectTo:', redirectTo);
   toast('🚀 Iniciando OAuth…');
 
@@ -296,7 +296,7 @@ let _lastDeepLinkUrl = '';
 // Con flowType:'implicit', Supabase devuelve #access_token=...&refresh_token=...
 // Mantenemos el rama PKCE (?code=...) como fallback por compatibilidad.
 async function handleDeepLink(url) {
-  if (!url || !url.startsWith('com.roleplayai.app://')) return;
+  if (!url || !url.startsWith('com.storym.app://')) return;
   if (url === _lastDeepLinkUrl) {
     console.log('[deepLink] URL duplicada ignorada');
     return;

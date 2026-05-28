@@ -1,0 +1,130 @@
+-- =============================================
+-- ACTIVAR RLS EN TODAS LAS TABLAS
+-- =============================================
+alter table public.characters_library enable row level security;
+alter table public.users enable row level security;
+alter table public.submissions enable row level security;
+
+-- =============================================
+-- BORRAR POLICIES EXISTENTES (evitar duplicados)
+-- =============================================
+drop policy if exists "Cualquiera puede ver personajes aprobados" on public.characters_library;
+drop policy if exists "Usuarios autenticados pueden insertar" on public.characters_library;
+drop policy if exists "Autor puede editar su personaje" on public.characters_library;
+drop policy if exists "cl_select_approved" on public.characters_library;
+drop policy if exists "cl_admin_select_all" on public.characters_library;
+drop policy if exists "cl_insert_own" on public.characters_library;
+drop policy if exists "cl_admin_update" on public.characters_library;
+
+drop policy if exists "Usuarios ven sus propias submissions" on public.submissions;
+drop policy if exists "Usuarios pueden crear submissions" on public.submissions;
+drop policy if exists "sub_select_own" on public.submissions;
+drop policy if exists "sub_admin_select_all" on public.submissions;
+drop policy if exists "sub_insert_own" on public.submissions;
+drop policy if exists "sub_admin_update" on public.submissions;
+
+drop policy if exists "Usuarios ven y editan su propio perfil" on public.users;
+drop policy if exists "select_own" on public.users;
+drop policy if exists "insert_own" on public.users;
+drop policy if exists "update_own" on public.users;
+drop policy if exists "admin_update_any" on public.users;
+drop policy if exists "admin_update_gems" on public.users;
+drop policy if exists "users_select_own" on public.users;
+drop policy if exists "users_admin_select_all" on public.users;
+drop policy if exists "users_insert_own" on public.users;
+drop policy if exists "users_admin_update" on public.users;
+
+-- =============================================
+-- CHARACTERS_LIBRARY
+-- =============================================
+
+-- Cualquiera puede ver personajes aprobados (sin login)
+create policy "cl_select_approved"
+on public.characters_library for select
+using (status = 'approved');
+
+-- Admin ve todos los personajes (para moderar)
+create policy "cl_admin_select_all"
+on public.characters_library for select
+to authenticated
+using (
+  (select email from auth.users where id = auth.uid()) = 'alex1234567890ct@gmail.com'
+);
+
+-- Usuarios autenticados pueden insertar personajes aprobados
+create policy "cl_insert_own"
+on public.characters_library for insert
+to authenticated
+with check (true);
+
+-- Admin puede actualizar cualquier personaje (aprobar, cambiar status, etc.)
+create policy "cl_admin_update"
+on public.characters_library for update
+to authenticated
+using (
+  (select email from auth.users where id = auth.uid()) = 'alex1234567890ct@gmail.com'
+);
+
+-- =============================================
+-- SUBMISSIONS
+-- =============================================
+
+-- Cada usuario ve sus propias submissions
+create policy "sub_select_own"
+on public.submissions for select
+to authenticated
+using (author_id = auth.uid());
+
+-- Admin ve todas las submissions
+create policy "sub_admin_select_all"
+on public.submissions for select
+to authenticated
+using (
+  (select email from auth.users where id = auth.uid()) = 'alex1234567890ct@gmail.com'
+);
+
+-- Usuarios autenticados pueden enviar submissions
+create policy "sub_insert_own"
+on public.submissions for insert
+to authenticated
+with check (author_id = auth.uid());
+
+-- Admin puede cambiar el estado (aprobar/rechazar)
+create policy "sub_admin_update"
+on public.submissions for update
+to authenticated
+using (
+  (select email from auth.users where id = auth.uid()) = 'alex1234567890ct@gmail.com'
+);
+
+-- =============================================
+-- USERS
+-- =============================================
+
+-- Cada usuario ve su propia fila
+create policy "users_select_own"
+on public.users for select
+to authenticated
+using (id = auth.uid());
+
+-- Admin ve cualquier fila (necesario para leer gemas del autor al aprobar submissions)
+create policy "users_admin_select_all"
+on public.users for select
+to authenticated
+using (
+  (select email from auth.users where id = auth.uid()) = 'alex1234567890ct@gmail.com'
+);
+
+-- Cada usuario crea su propia fila al registrarse
+create policy "users_insert_own"
+on public.users for insert
+to authenticated
+with check (id = auth.uid());
+
+-- Solo el admin puede modificar gemas (nadie puede inflarse gemas desde el cliente)
+create policy "users_admin_update"
+on public.users for update
+to authenticated
+using (
+  (select email from auth.users where id = auth.uid()) = 'alex1234567890ct@gmail.com'
+);

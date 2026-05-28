@@ -1,7 +1,7 @@
 {
-  "name": "Roleplay AI",
-  "short_name": "Roleplay AI",
-  "description": "Crea personajes y roleplay sin límites",
+  "name": "Storym",
+  "short_name": "Storym",
+  "description": "Crea personajes y vive historias sin límites",
   "start_url": "/rolapp/",
   "scope": "/rolapp/",
   "display": "fullscreen",

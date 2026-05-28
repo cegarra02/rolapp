@@ -1,0 +1,11 @@
+-- Permitir al admin borrar submissions
+CREATE POLICY "admin delete submissions"
+ON submissions FOR DELETE
+TO authenticated
+USING (auth.email() = 'alex1234567890ct@gmail.com');
+
+-- Permitir al admin borrar personajes de biblioteca
+CREATE POLICY "admin delete library"
+ON characters_library FOR DELETE
+TO authenticated
+USING (auth.email() = 'alex1234567890ct@gmail.com');
