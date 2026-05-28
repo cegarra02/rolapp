@@ -42,7 +42,10 @@ function handleTagInputKey(e) {
 }
 
 function onTagInput(inp) {
-  if (inp.value.includes(' ') || inp.value.includes(',')) addTagFromInput();
+  clearTimeout(inp._tagTimer);
+  inp._tagTimer = setTimeout(() => {
+    if (inp.value.includes(' ') || inp.value.includes(',')) addTagFromInput();
+  }, 50);
 }
 
 function addTagFromInput() {
