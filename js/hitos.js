@@ -17,8 +17,13 @@ function _hitosEnabled() {
 }
 
 function _hitosSave() {
-  if (currentScene) saveScenes();
-  else if (currentChar) save();
+  if (currentScene) {
+    saveScenes();
+    syncHistory(currentScene.id, currentScene.history || [], currentScene.hitos || []);
+  } else if (currentChar) {
+    // _saveChar() guarda en el store correcto (chars o libChars) y sincroniza a Supabase
+    _saveChar();
+  }
 }
 
 function fmtDate(ts) {

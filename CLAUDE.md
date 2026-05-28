@@ -20,6 +20,7 @@ js/
   ui.js             — showScreen, goHome, openModal, closeModal, switchTab, setActiveTab
   sliders.js        — updateSlider, initSliders
   supabase.js       — Cliente Supabase, auth, gemas, deductMessageGems, submitCharToLibrary, renderUserHeader
+  sync.js           — Sincronización cross-device: _loadUserDataFromDb, syncChars, syncScenes, syncProfile, syncHistory
   api.js            — callAPI, buildSystemPrompt, buildMessages, buildPersonalityBlock
   cropper.js        — Motor completo del recortador de imágenes (touch + mouse)
   chars.js          — CRUD personajes: renderChars, openCreate, openEdit, saveChar, deleteChar
@@ -88,7 +89,7 @@ Cada `<div class="screen">` se activa con `showScreen(id, hideNav)`. Pantallas e
 - Anon key en `js/supabase.js` (no es secreta, es pública por diseño)
 - Cliente global: `supaClient` (inicializado en supabase.js con fetch personalizado)
 - Auth: email/password + Google OAuth (Google solo disponible en web, no en Android nativo)
-- Tablas: `characters_library`, `submissions`, `users`
+- Tablas: `characters_library`, `submissions`, `users`, `user_histories`
 - RLS activado en todas las tablas
 
 #### Fetch con reintentos — `_fetchWithRetry`
@@ -173,7 +174,32 @@ Estos toasts deben **eliminarse** cuando se resuelva el bug de segundo login.
 ### Tablas
 - **`characters_library`** — personajes aprobados visibles en Explorar. Campos: `id`, `name`, `tag`, `gender`, `age`, `desc`, `context`, `greeting`, `bg` (base64), `timid`, `romantic`, `pace`, `nsfw`, `status`, `author_id`, `chat_count`, `message_count`, `created_at`
 - **`submissions`** — personajes enviados por usuarios pendientes de revisión. Mismos campos + `character_data` (JSONB, NOT NULL) + `status` (pending/approved/rejected)
-- **`users`** — perfil de Supabase del usuario. Campos: `id` (= auth.uid()), `gems`
+- **`users`** — perfil de Supabase del usuario. Campos: `id` (= auth.uid()), `gems`, `profile` (JSONB), `chars_data` (JSONB, sin bg/history/hitos), `scenes_data` (JSONB, sin history/hitos)
+- **`user_histories`** — historiales de chat e hitos. PK: `(user_id, entity_id)`. `entity_id` = char id propio | `lib_<id>` para biblioteca | scene id. Max 400 mensajes por entidad. RLS: cada usuario solo ve los suyos.
+
+#### SQL para crear las tablas de sync (ejecutar en Supabase SQL Editor)
+```sql
+-- Columnas de sync en users
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS profile     JSONB DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS chars_data  JSONB DEFAULT '[]',
+  ADD COLUMN IF NOT EXISTS scenes_data JSONB DEFAULT '[]';
+
+-- Tabla de historiales
+CREATE TABLE IF NOT EXISTS user_histories (
+  user_id    UUID  NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  entity_id  TEXT  NOT NULL,
+  history    JSONB NOT NULL DEFAULT '[]',
+  hitos      JSONB NOT NULL DEFAULT '[]',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, entity_id)
+);
+ALTER TABLE user_histories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own histories"
+  ON user_histories FOR ALL TO authenticated
+  USING  (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+```
 
 ### Auth y gemas
 - `supabaseUser` — usuario actual (null si no hay sesión), global en supabase.js
@@ -294,7 +320,7 @@ Al modificar cualquier archivo JS o CSS hay que hacer **tres cosas** antes del c
 2. **Actualizar `sw.js`** — cambiar `CACHE = 'rolapp-vNN'` (siempre 2 por encima del anterior) y los `?v=NN` en ASSETS. Si se añade un JS nuevo, añadirlo también aquí.
 3. **Commit + push** de `index.html` y `sw.js` junto con los archivos modificados.
 
-**Versión actual: v115** (sw.js usa `rolapp-v129`)
+**Versión actual: v136** (sw.js usa `rolapp-v171`)
 
 El Service Worker sirve desde caché interna. Si `CACHE` no cambia, sigue devolviendo archivos viejos.
 

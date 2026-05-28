@@ -117,5 +117,6 @@ function saveProfile() {
     prefs:   document.getElementById('profilePrefs').value.trim()
   };
   localStorage.setItem('rp_profile', JSON.stringify(profile));
+  syncProfile();
   toast('Perfil guardado ✓');
 }

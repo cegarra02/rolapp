@@ -206,7 +206,7 @@ function saveChar() {
   if (!wasSubmitted && isPublicNow) {
     c.submittedToLibrary = false;
   }
-  save(); goHome();
+  save(); syncChars(); goHome();
   toast('Guardado ✓');
   if (!wasSubmitted && isPublicNow) {
     submitCharToLibrary(c).then(() => {
@@ -230,6 +230,6 @@ function deleteChar() {
 
 function confirmDelete(id) {
   chars = chars.filter(x => x.id !== id);
-  save(); closeModal(); goHome(); toast('Personaje eliminado');
+  save(); syncChars(); closeModal(); goHome(); toast('Personaje eliminado');
 }
 

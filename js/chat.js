@@ -99,8 +99,15 @@ function cancelEdit(i, orig) {
 }
 
 // Persiste currentChar en el store correcto (chars[] o libChars[] según sea de biblioteca)
+// y sincroniza el historial a Supabase (debounced 3 s).
+// Si el historial supera HISTORY_MAX, poda los mensajes más antiguos antes de guardar.
 function _saveChar() {
   if (!currentChar) return;
+  // Poda local: si el historial es demasiado largo, eliminar los más antiguos
+  if ((currentChar.history || []).length > HISTORY_MAX) {
+    currentChar.history = pruneHistory(currentChar.history);
+    history = currentChar.history; // sincronizar variable global del chat
+  }
   if (currentChar.isLibraryChar) {
     const idx = libChars.findIndex(x => x.id === currentChar.id);
     if (idx > -1) libChars[idx] = currentChar;
@@ -109,11 +116,18 @@ function _saveChar() {
   } else {
     save();
   }
+  syncHistory(currentChar.id, currentChar.history, currentChar.hitos);
 }
 
 function saveHistory() {
-  if (currentScene) { currentScene.history = history; saveScenes(); }
-  else if (currentChar) { currentChar.history = history; _saveChar(); }
+  if (currentScene) {
+    history = pruneHistory(history); // poda local si supera el límite
+    currentScene.history = history;
+    saveScenes();
+    syncHistory(currentScene.id, currentScene.history, currentScene.hitos || []);
+  } else if (currentChar) {
+    currentChar.history = history; _saveChar(); // _saveChar poda y sincroniza
+  }
 }
 
 function scrollBottom() { setTimeout(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }, 50); }
@@ -159,7 +173,7 @@ async function sendMessage() {
   inp.value = ''; inp.style.height = 'auto';
   const userMsg = {role: 'user', content: text, ts: Date.now()};
   history.push(userMsg);
-  if (currentScene) { currentScene.history = history; saveScenes(); }
+  if (currentScene) { currentScene.history = history; saveScenes(); syncHistory(currentScene.id, currentScene.history, currentScene.hitos || []); }
   else { currentChar.history = history; _saveChar(); }
   // Contar mensajes enviados a personajes de biblioteca (para ordenar por popularidad)
   if (currentChar?.isLibraryChar) {
@@ -185,7 +199,7 @@ async function sendMessage() {
       if (t && t.hitosEnabled !== false) {
         if (!t.hitos) t.hitos = [];
         t.hitos.unshift({ id: uid(), text: hitoMatch[1].trim(), ts: Date.now() });
-        if (currentScene) saveScenes(); else _saveChar();
+        if (currentScene) { saveScenes(); syncHistory(currentScene.id, currentScene.history, currentScene.hitos || []); } else _saveChar();
         setTimeout(() => showHitoNotif(hitoMatch[1].trim()), 600);
       }
     }
@@ -196,7 +210,7 @@ async function sendMessage() {
       for (const p of parts) {
         history.push({role: 'assistant', content: p.content, ts: Date.now(), speaker: p.speaker});
       }
-      currentScene.history = history; saveScenes();
+      currentScene.history = history; saveScenes(); syncHistory(currentScene.id, currentScene.history, currentScene.hitos || []);
     } else {
       history.push({role: 'assistant', content: reply, ts: Date.now(), speaker: null});
       currentChar.history = history; _saveChar();
@@ -208,7 +222,7 @@ async function sendMessage() {
   } catch (err) {
     hideTyping();
     history.push({role: 'assistant', content: `_(Error: ${err.message}. Comprueba tu API key en Mi Perfil.)_`, ts: Date.now()});
-    if (currentScene) { currentScene.history = history; saveScenes(); }
+    if (currentScene) { currentScene.history = history; saveScenes(); syncHistory(currentScene.id, currentScene.history, currentScene.hitos || []); }
     else { currentChar.history = history; _saveChar(); }
     renderMessages(); scrollBottom();
   }

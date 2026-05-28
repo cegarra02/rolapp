@@ -125,13 +125,13 @@ function saveScene() {
   };
   if (editSceneId) { const i = scenes.findIndex(x => x.id === editSceneId); if (i > -1) scenes[i] = s; else scenes.unshift(s); }
   else scenes.unshift(s);
-  saveScenes(); toast('Escena guardada ✓'); goHome();
+  saveScenes(); syncScenes(); toast('Escena guardada ✓'); goHome();
 }
 
 function deleteScene() {
   if (!editSceneId) return;
   scenes = scenes.filter(x => x.id !== editSceneId);
-  saveScenes(); goHome(); toast('Escena eliminada');
+  saveScenes(); syncScenes(); goHome(); toast('Escena eliminada');
 }
 
 function openSceneChat(id) {
@@ -152,7 +152,9 @@ function openSceneChat(id) {
   showScreen('chat', true);
   if (!history.length && s.greeting) {
     const msg = {role: 'assistant', content: s.greeting, ts: Date.now(), speaker: 'Narrador'};
-    history.push(msg); s.history = history; saveScenes(); renderMessages();
+    history.push(msg); s.history = history; saveScenes();
+    syncHistory(s.id, s.history, s.hitos || []);
+    renderMessages();
   }
   setTimeout(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }, 50);
 }

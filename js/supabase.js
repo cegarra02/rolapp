@@ -87,6 +87,7 @@ async function _applySession(session) {
     const isNew = await _ensureUserRow(session.user, localGems);
     if (isNew && localGems > 0) localStorage.removeItem('rp_gems_local');
     await _loadUserGems();
+    await _loadUserDataFromDb(); // sync chars, scenes, profile, historiales desde BD
   } else {
     supabaseUser = null;
     supabaseGems = 0;
