@@ -70,7 +70,7 @@ async function renderModeration() {
       }
       <div class="char-card-body">
         <div class="char-card-name">${esc(s.name)}</div>
-        ${s.tag ? `<span class="char-card-tag">${esc(s.tag)}</span>` : ''}
+        <div>${(s.tags?.length ? s.tags : (s.tag ? [s.tag] : [])).map(t => tagBadgeHtml(t)).join('')}</div>
       </div>
     </div>
   `).join('');
@@ -104,8 +104,8 @@ function _renderSubmissionDetail(s) {
       <div class="field-label">Nombre</div>
       <input class="edit-inp" id="modEditName" value="${esc(s.name)}">
 
-      <div class="field-label">Tag / Categoría</div>
-      <input class="edit-inp" id="modEditTag" value="${esc(s.tag || '')}">
+      <div class="field-label">Etiquetas (separadas por coma)</div>
+      <input class="edit-inp" id="modEditTag" value="${esc((s.tags?.length ? s.tags : (s.tag ? [s.tag] : [])).join(', '))}">
 
       <div class="field-label">Género</div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -158,9 +158,11 @@ function modPickGender(g) {
 async function _saveSubmissionEdit(subId) {
   const name = document.getElementById('modEditName')?.value.trim();
   if (!name) { toast('Nombre obligatorio'); return; }
+  const rawTags = (document.getElementById('modEditTag')?.value || '').split(',').map(t => t.trim()).filter(Boolean);
   const updates = {
     name,
-    tag:      document.getElementById('modEditTag')?.value.trim()      || null,
+    tags:     rawTags.length ? rawTags : null,
+    tag:      rawTags[0] || null,
     gender:   _modEditGender                                            || null,
     age:      document.getElementById('modEditAge')?.value.trim()      || null,
     desc:     document.getElementById('modEditDesc')?.value.trim()     || null,
@@ -234,7 +236,9 @@ async function _doApprove(subId, authorId) {
   if (!s) { toast('Submission no encontrada'); return; }
 
   const name     = document.getElementById('modEditName')?.value.trim()     || s.name;
-  const tag      = document.getElementById('modEditTag')?.value.trim()      || null;
+  const rawTags  = (document.getElementById('modEditTag')?.value || '').split(',').map(t => t.trim()).filter(Boolean);
+  const tag      = rawTags[0] || null;
+  const tags     = rawTags.length ? rawTags : null;
   const gender   = _modEditGender ?? s.gender;
   const age      = document.getElementById('modEditAge')?.value.trim()      || null;
   const desc     = document.getElementById('modEditDesc')?.value.trim()     || null;
@@ -243,7 +247,7 @@ async function _doApprove(subId, authorId) {
   const gems     = parseInt(document.getElementById('modEditGems')?.value || '0') || 0;
 
   const { error: insertErr } = await supaClient.from('characters_library').insert({
-    name, tag, gender, age, desc, context, greeting,
+    name, tag, tags, gender, age, desc, context, greeting,
     bg: s.bg, timid: s.timid, romantic: s.romantic, pace: s.pace, nsfw: s.nsfw,
     author_id: s.author_id, status: 'approved', chat_count: 0
   });
