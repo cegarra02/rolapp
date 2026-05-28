@@ -113,8 +113,8 @@ function _renderSubmissionDetail(s) {
   const body = document.getElementById('modDetailBody');
   if (!body) return;
 
-  body.innerHTML = `
-    <div id="modBgPreview" onclick="triggerFile('modBgFile')" style="width:100%;height:220px;background-size:cover;background-position:center top;background-color:var(--surface2);cursor:pointer;position:relative;flex-shrink:0;${s.bg ? `background-image:url('${s.bg}')` : ''}">
+  // Renderizar primero, luego inicializar gradientes
+  body.innerHTML = `<div id="modBgPreview" onclick="triggerFile('modBgFile')" style="width:100%;height:220px;background-size:cover;background-position:center top;background-color:var(--surface2);cursor:pointer;position:relative;flex-shrink:0;${s.bg ? `background-image:url('${s.bg}')` : ''}">
       <div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);border-radius:10px;padding:4px 10px;color:#fff;font-size:12px">✎ Cambiar foto</div>
     </div>
     <div class="mod-detail-form">
@@ -143,8 +143,37 @@ function _renderSubmissionDetail(s) {
       <div class="field-label">Saludo inicial</div>
       <textarea class="edit-inp edit-ta" id="modEditGreeting" rows="3">${esc(s.greeting || '')}</textarea>
 
-      <div class="mod-card-sliders" style="margin:10px 0 4px">
-        Timidez: ${s.timid} · Romance: ${s.romantic} · Ritmo: ${s.pace} · NSFW: ${s.nsfw}
+      <div class="slider-block">
+        <div class="slider-title"><span>😶</span> Timidez</div>
+        <div class="slider-row">
+          <input type="range" class="pers-slider" id="modSlTimid" min="1" max="10" value="${s.timid ?? 5}" oninput="updateSlider(this,'modValTimid')">
+          <div class="slider-val" id="modValTimid">${s.timid ?? 5}</div>
+        </div>
+        <div class="slider-labels"><span class="slider-label">Muy tímido</span><span class="slider-label right">Muy seguro</span></div>
+      </div>
+      <div class="slider-block">
+        <div class="slider-title"><span>❤️</span> Apertura romántica</div>
+        <div class="slider-row">
+          <input type="range" class="pers-slider" id="modSlRomantic" min="1" max="10" value="${s.romantic ?? 5}" oninput="updateSlider(this,'modValRomantic')">
+          <div class="slider-val" id="modValRomantic">${s.romantic ?? 5}</div>
+        </div>
+        <div class="slider-labels"><span class="slider-label">Muy cerrado</span><span class="slider-label right">Muy abierto</span></div>
+      </div>
+      <div class="slider-block">
+        <div class="slider-title"><span>🔥</span> Ritmo de escalada</div>
+        <div class="slider-row">
+          <input type="range" class="pers-slider" id="modSlPace" min="1" max="10" value="${s.pace ?? 4}" oninput="updateSlider(this,'modValPace')">
+          <div class="slider-val" id="modValPace">${s.pace ?? 4}</div>
+        </div>
+        <div class="slider-labels"><span class="slider-label">Muy lento</span><span class="slider-label right">Muy rápido</span></div>
+      </div>
+      <div class="slider-block" style="margin-bottom:14px">
+        <div class="slider-title"><span>🌶️</span> Nivel NSFW máximo</div>
+        <div class="slider-row">
+          <input type="range" class="pers-slider" id="modSlNsfw" min="1" max="10" value="${s.nsfw ?? 7}" oninput="updateSlider(this,'modValNsfw')">
+          <div class="slider-val" id="modValNsfw">${s.nsfw ?? 7}</div>
+        </div>
+        <div class="slider-labels"><span class="slider-label">Solo insinuaciones</span><span class="slider-label right">Explícito total</span></div>
       </div>
       <div class="mod-card-meta">Autor ID: ${esc(s.author_id || '—')}</div>
 
@@ -165,6 +194,10 @@ function _renderSubmissionDetail(s) {
       <button class="mod-btn-delete" onclick="_confirmDeleteSub('${s.id}')">🗑 Eliminar permanentemente</button>
     </div>
   `;
+  // Inicializar gradientes de sliders tras inyectar el HTML
+  [['modSlTimid','modValTimid'],['modSlRomantic','modValRomantic'],['modSlPace','modValPace'],['modSlNsfw','modValNsfw']].forEach(([sid, vid]) => {
+    const el = document.getElementById(sid); if (el) updateSlider(el, vid);
+  });
 }
 
 function modPickGender(g) {
@@ -186,6 +219,10 @@ async function _saveSubmissionEdit(subId) {
     desc:     document.getElementById('modEditDesc')?.value.trim()     || null,
     context:  document.getElementById('modEditContext')?.value.trim()  || null,
     greeting: document.getElementById('modEditGreeting')?.value.trim() || null,
+    timid:    parseInt(document.getElementById('modSlTimid')?.value)   || 5,
+    romantic: parseInt(document.getElementById('modSlRomantic')?.value)|| 5,
+    pace:     parseInt(document.getElementById('modSlPace')?.value)    || 4,
+    nsfw:     parseInt(document.getElementById('modSlNsfw')?.value)    || 7,
   };
   if (_modTempBg) updates.bg = _modTempBg;
   const { error } = await supaClient.from('submissions').update(updates).eq('id', subId);
@@ -265,9 +302,14 @@ async function _doApprove(subId, authorId) {
   const greeting = document.getElementById('modEditGreeting')?.value.trim() || null;
   const gems     = parseInt(document.getElementById('modEditGems')?.value || '0') || 0;
 
+  const timid    = parseInt(document.getElementById('modSlTimid')?.value)    || s.timid    || 5;
+  const romantic = parseInt(document.getElementById('modSlRomantic')?.value) || s.romantic || 5;
+  const pace     = parseInt(document.getElementById('modSlPace')?.value)     || s.pace     || 4;
+  const nsfw     = parseInt(document.getElementById('modSlNsfw')?.value)     || s.nsfw     || 7;
+
   const { error: insertErr } = await supaClient.from('characters_library').insert({
     name, tag, tags, gender, age, desc, context, greeting,
-    bg: _modTempBg || s.bg, timid: s.timid, romantic: s.romantic, pace: s.pace, nsfw: s.nsfw,
+    bg: _modTempBg || s.bg, timid, romantic, pace, nsfw,
     author_id: s.author_id, status: 'approved', chat_count: 0
   });
   if (insertErr) { toast('Error al insertar: ' + insertErr.message); return; }
