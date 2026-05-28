@@ -164,10 +164,12 @@ async function sendMessage() {
   // Contar mensajes enviados a personajes de biblioteca (para ordenar por popularidad)
   if (currentChar?.isLibraryChar) {
     const libCharId = currentChar.id.slice(4); // quita el prefijo 'lib_'
-    supaClient.rpc('increment_lib_messages', { char_id: libCharId });
-    // Actualizar caché local para que la tarjeta refleje el nuevo conteo al volver a Explorar
+    // Incremento optimista local — survives re-fetch gracias a fetchExploreChars merge
     const ec = exploreChars.find(c => c.id === libCharId);
     if (ec) ec.message_count = (ec.message_count || 0) + 1;
+    // Persistir en DB (fire and forget con logging para diagnóstico)
+    supaClient.rpc('increment_lib_messages', { char_id: libCharId })
+      .then(({ error }) => { if (error) console.error('[explore] increment_lib_messages error:', error.message, error.code); });
   }
   renderMessages(); scrollBottom();
   showTyping();

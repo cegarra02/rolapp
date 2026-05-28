@@ -21,6 +21,10 @@ function renderExploreLoading() {
 }
 
 async function fetchExploreChars() {
+  // Guardar conteos locales optimistas antes de sobreescribir con datos frescos de DB
+  const _localCounts = {};
+  exploreChars.forEach(c => { if (c.message_count) _localCounts[c.id] = c.message_count; });
+
   let q = supaClient
     .from('characters_library')
     .select('id, name, tag, tags, bg, chat_count, message_count, created_at')
@@ -51,7 +55,11 @@ async function fetchExploreChars() {
       </div>`;
     return false; // señal de error para renderExploreScreen
   }
-  exploreChars = data || [];
+  // Usar el mayor entre DB y local (preserva incrementos optimistas si DB aún no los tiene)
+  exploreChars = (data || []).map(c => ({
+    ...c,
+    message_count: Math.max(c.message_count || 0, _localCounts[c.id] || 0),
+  }));
   return true;
 }
 
