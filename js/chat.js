@@ -165,6 +165,9 @@ async function sendMessage() {
   if (currentChar?.isLibraryChar) {
     const libCharId = currentChar.id.slice(4); // quita el prefijo 'lib_'
     supaClient.rpc('increment_lib_messages', { char_id: libCharId });
+    // Actualizar caché local para que la tarjeta refleje el nuevo conteo al volver a Explorar
+    const ec = exploreChars.find(c => c.id === libCharId);
+    if (ec) ec.message_count = (ec.message_count || 0) + 1;
   }
   renderMessages(); scrollBottom();
   showTyping();

@@ -110,6 +110,8 @@ function renderExploreList() {
 function showExplore() {
   showScreen('exploreScreen', false);
   setActiveTab('explore');
+  // Re-render desde datos locales (ya actualizados por chat.js) sin hacer fetch
+  if (exploreChars.length) renderExploreList();
 }
 
 function setExploreTag(tag) {

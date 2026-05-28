@@ -202,7 +202,24 @@ async function purchaseSpecialPackage(productId) {
     if (!rcPkg) throw new Error(`Producto ${productId} no encontrado en RevenueCat`);
 
     await Purchases.purchasePackage({ aPackage: rcPkg });
-    await addGems(supabaseUser.id, pkg.gems);
+
+    // Verificación y acreditación server-side (inmune a manipulación de localStorage/reloj)
+    const { data: result, error: rpcErr } = await supaClient.rpc('claim_special_pack', {
+      p_pack_id: productId,
+      p_amount:  pkg.gems,
+    });
+    if (rpcErr) throw rpcErr;
+    if (!result?.ok) {
+      // El servidor rechazó: ya comprado esta semana (aunque localStorage estuviera limpio)
+      _markSpecialUsed(productId);        // sincronizar localStorage con estado real del servidor
+      toast('Ya has comprado este pack esta semana');
+      _renderGemShop();
+      return;
+    }
+    // Acreditación OK — actualizar estado local con el saldo devuelto por el servidor
+    supabaseGems = result.gems ?? (supabaseGems + pkg.gems);
+    localStorage.setItem('rp_gems_local', String(supabaseGems));
+    renderUserHeader();
     _markSpecialUsed(productId);
     toast(`💎 +${pkg.gems} gemas añadidas`);
     _renderGemShop();
