@@ -91,13 +91,13 @@ function renderExploreList() {
   const admin = isAdmin();
   list.innerHTML = exploreChars.map(x => {
     const tags = x.tags || (x.tag ? [x.tag] : []);
-    const stat = _fmtStat(x.message_count);
+    const stat = _fmtStat(x.message_count) || '0';
     return `
     <div class="char-card" onclick="openExploreChat('${x.id}')">
       ${x.bg
         ? `<div class="char-card-bg" style="background-image:url('${x.bg}')"></div>`
         : `<div class="char-card-bg-placeholder">${esc((x.name || '?')[0])}</div>`}
-      ${stat ? `<div class="char-card-stat">💬 ${stat}</div>` : ''}
+      <div class="char-card-stat">💬 ${stat}</div>
       <div class="char-card-body">
         <div class="char-card-name">${esc(x.name)}</div>
         <div>${tags.map(t => tagBadgeHtml(t)).join('')}</div>
