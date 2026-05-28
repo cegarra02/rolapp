@@ -25,11 +25,25 @@ const HISTORY_PRUNE_TO = 200;  // mensajes a conservar (los más recientes)
 // Las imágenes más grandes quedan solo en localStorage (nivel gratuito).
 const BG_SYNC_MAX_FREE = 400000; // caracteres base64 ≈ 300 KB imagen real
 
-const _syncTimers = {};
+const _syncTimers   = {};
+const _pendingHist  = new Map(); // entityId → { historyArr, hitosArr } para flush en background
+
 function _debounceSync(key, ms, fn) {
   clearTimeout(_syncTimers[key]);
   _syncTimers[key] = setTimeout(fn, ms);
 }
+
+// Cuando la app va a segundo plano, flusheamos inmediatamente todos los historiales
+// pendientes para que no se pierdan por el SO cancelando los timers.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden || !supabaseUser || !_pendingHist.size) return;
+  _pendingHist.forEach(({ historyArr, hitosArr }, entityId) => {
+    clearTimeout(_syncTimers['h_' + entityId]);
+    delete _syncTimers['h_' + entityId];
+    _doSyncHistory(entityId, historyArr, hitosArr);
+  });
+  _pendingHist.clear();
+});
 
 // Devuelve el array podado si supera el límite; si no, lo devuelve tal cual.
 // Es un no-op cuando arr.length ≤ HISTORY_MAX, por lo que es seguro llamarlo siempre.
@@ -235,21 +249,32 @@ function syncScenes() {
     });
 }
 
-// ── Sync historial de chat → BD (debounced 3 s) ───────────────────────────────
+// ── Sync historial de chat → BD ───────────────────────────────────────────────
 // entityId: id del char propio, 'lib_<id>', o id de escena
+
+// Función interna que hace el upsert real. La llama syncHistory (vía debounce)
+// y también el listener de visibilitychange para forzar el flush inmediato.
+function _doSyncHistory(entityId, historyArr, hitosArr) {
+  _pendingHist.delete(entityId); // ya no está pendiente: se está enviando ahora
+  supaClient.from('user_histories').upsert({
+    user_id:    supabaseUser.id,
+    entity_id:  entityId,
+    history:    pruneHistory(historyArr || []),
+    hitos:      hitosArr || [],
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,entity_id' })
+  .then(({ error }) => {
+    if (error) { console.error('[sync] history', entityId + ':', error.message, error.code); toast('⚠️ Sync historial: ' + error.message.slice(0, 50)); }
+    else          console.log('[sync] history ✓ ' + entityId);
+  });
+}
+
+// Registra el historial como pendiente y lo envía tras 1,5 s de inactividad.
+// Si la app va a segundo plano antes, visibilitychange lo flushea de inmediato.
 function syncHistory(entityId, historyArr, hitosArr) {
   if (!supabaseUser) return;
-  _debounceSync('h_' + entityId, 3000, () => {
-    supaClient.from('user_histories').upsert({
-      user_id:    supabaseUser.id,
-      entity_id:  entityId,
-      history:    pruneHistory(historyArr || []),
-      hitos:      hitosArr || [],
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,entity_id' })
-    .then(({ error }) => {
-      if (error) { console.error('[sync] history', entityId + ':', error.message, error.code); toast('⚠️ Sync historial: ' + error.message.slice(0, 50)); }
-      else          console.log('[sync] history ✓ ' + entityId);
-    });
+  _pendingHist.set(entityId, { historyArr, hitosArr }); // rastrear para flush en background
+  _debounceSync('h_' + entityId, 1500, () => {
+    _doSyncHistory(entityId, historyArr, hitosArr);
   });
 }
