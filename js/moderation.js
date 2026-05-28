@@ -35,6 +35,21 @@ async function giveGemsToSelf() {
 
 // ── Cache local de submissions ────────────────────────────────────────────────
 let _modSubs = [];
+let _modTempBg = null;
+
+function loadModBg(inp) {
+  const file = inp.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    openCropper(e.target.result, 'free', 'Ajustar fondo', result => {
+      _modTempBg = result;
+      const el = document.getElementById('modBgPreview');
+      if (el) { el.style.backgroundImage = `url(${result})`; el.style.backgroundSize = 'cover'; }
+    });
+  };
+  reader.readAsDataURL(file);
+  inp.value = '';
+}
 
 // ── Lista de submissions (grid 2 columnas) ────────────────────────────────────
 async function renderModeration() {
@@ -82,6 +97,7 @@ let _modEditGender = null;
 function openSubmissionDetail(subId) {
   const s = _modSubs.find(x => x.id === subId);
   if (!s) return;
+  _modTempBg = null;
   _renderSubmissionDetail(s);
   showScreen('modDetailScreen', true);
 }
@@ -98,7 +114,9 @@ function _renderSubmissionDetail(s) {
   if (!body) return;
 
   body.innerHTML = `
-    ${s.bg ? `<div class="mod-detail-bg" style="background-image:url('${s.bg}')"></div>` : ''}
+    <div id="modBgPreview" onclick="triggerFile('modBgFile')" style="width:100%;height:220px;background-size:cover;background-position:center top;background-color:var(--surface2);cursor:pointer;position:relative;flex-shrink:0;${s.bg ? `background-image:url('${s.bg}')` : ''}">
+      <div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);border-radius:10px;padding:4px 10px;color:#fff;font-size:12px">✎ Cambiar foto</div>
+    </div>
     <div class="mod-detail-form">
 
       <div class="field-label">Nombre</div>
@@ -169,6 +187,7 @@ async function _saveSubmissionEdit(subId) {
     context:  document.getElementById('modEditContext')?.value.trim()  || null,
     greeting: document.getElementById('modEditGreeting')?.value.trim() || null,
   };
+  if (_modTempBg) updates.bg = _modTempBg;
   const { error } = await supaClient.from('submissions').update(updates).eq('id', subId);
   if (error) { toast('Error: ' + error.message); return; }
   const idx = _modSubs.findIndex(x => x.id === subId);
@@ -248,7 +267,7 @@ async function _doApprove(subId, authorId) {
 
   const { error: insertErr } = await supaClient.from('characters_library').insert({
     name, tag, tags, gender, age, desc, context, greeting,
-    bg: s.bg, timid: s.timid, romantic: s.romantic, pace: s.pace, nsfw: s.nsfw,
+    bg: _modTempBg || s.bg, timid: s.timid, romantic: s.romantic, pace: s.pace, nsfw: s.nsfw,
     author_id: s.author_id, status: 'approved', chat_count: 0
   });
   if (insertErr) { toast('Error al insertar: ' + insertErr.message); return; }
