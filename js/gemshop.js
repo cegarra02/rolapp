@@ -85,7 +85,7 @@ function _renderGemShop() {
 
   // ── Paquetes regulares ───────────────────────────────────────────────────
   document.getElementById('gemPackagesList').innerHTML = GEM_PACKAGES.map(p => {
-    const gemsLabel  = _fmtGems(p.gems);
+    const gemsLabel  = _fmtGems(p.base || p.gems); // mostrar base, no el total
     // Mostrar % en línea de bonus solo si el badge no lo lleva ya
     const bonusPct   = p.bonus ? Math.round(p.bonus / p.base * 100) : 0;
     const pctInBonus = p.badge && !p.badge.includes('%');
