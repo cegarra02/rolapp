@@ -15,15 +15,12 @@ function renderChars() {
   list.style.display = '';
   list.innerHTML = filtered.map(x => {
     const tags = x.tags || (x.tag ? [x.tag] : []);
-    const msgCount = (x.history || []).filter(m => m.role === 'user').length;
-    const stat = _fmtStat(msgCount);
     return `
     <div class="char-card" onclick="openChat('${x.id}')">
       ${x.bg
         ? `<div class="char-card-bg" style="background-image:url('${x.bg}')"></div>`
         : `<div class="char-card-bg-placeholder">${x.name[0]}</div>`
       }
-      ${stat ? `<div class="char-card-stat">💬 ${stat}</div>` : ''}
       <div class="char-card-body">
         <div class="char-card-name">${esc(x.name)}</div>
         <div>${tags.map(t => tagBadgeHtml(t)).join('')}</div>
