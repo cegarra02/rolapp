@@ -206,9 +206,9 @@ function deductMessageGems() {
     supabaseGems -= cost;
     localStorage.setItem('rp_gems_local', String(supabaseGems)); // mantener caché sincronizada
     renderUserHeader();
-    // Persistir en Supabase async (fire and forget)
-    supaClient.from('users').update({ gems: supabaseGems }).eq('id', supabaseUser.id)
-      .then(({ error }) => { if (error) console.error('[gems] deduct update failed:', error.message, error.code); });
+    // Persistir en Supabase async vía RPC SECURITY DEFINER (fire and forget)
+    supaClient.rpc('deduct_gems', { amount: cost })
+      .then(({ error }) => { if (error) console.error('[gems] deduct_gems rpc failed:', error.message, error.code); });
     return true;
   } else {
     const current = parseInt(localStorage.getItem('rp_gems_local') || '0');
@@ -225,9 +225,9 @@ function renderUserHeader() {
     if (supabaseUser) {
       const name = supabaseUser.user_metadata?.full_name || supabaseUser.email || '';
       const initials = name.slice(0, 2).toUpperCase();
-      el.innerHTML = `<span class="uhc-gems">💎 ${gems}</span><div class="uhc-avatar" onclick="switchTab('profile')">${initials}</div>`;
+      el.innerHTML = `<span class="uhc-gems" onclick="openGemShop()">💎 ${gems}</span><div class="uhc-avatar" onclick="switchTab('profile')">${initials}</div>`;
     } else {
-      el.innerHTML = `<span class="uhc-gems">💎 ${gems}</span><button class="uhc-login" onclick="switchTab('profile')">👤</button>`;
+      el.innerHTML = `<span class="uhc-gems" onclick="openGemShop()">💎 ${gems}</span><button class="uhc-login" onclick="switchTab('profile')">👤</button>`;
     }
   });
 

@@ -14,6 +14,12 @@ initChatSwipe();
 if (!missions.length) { document.getElementById('missionsEmpty').style.display = 'block'; }
 initSupabase().catch(console.error);
 
+// Inicializar plugins nativos de monetización (solo Android nativo)
+if (window.Capacitor?.isNativePlatform?.()) {
+  initAdMob().catch(console.error);
+  initBilling().catch(console.error);
+}
+
 // Deep link para OAuth (solo en app nativa Android)
 if (window.Capacitor?.isNativePlatform?.()) {
   // Cold start: app lanzada directamente por el deep link (ej: OS mató la app mientras

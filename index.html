@@ -10,7 +10,7 @@
 <title>Roleplay AI</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c084fc'/><text x='16' y='23' text-anchor='middle' font-size='20' font-family='serif' fill='%23fff'>✦</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=126">
+<link rel="stylesheet" href="css/style.css?v=127">
 <link rel="manifest" href="manifest.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -609,28 +609,45 @@
     </div>
 
 <button class="btn-primary" onclick="saveProfile()">Guardar mi perfil</button>
-    <div class="app-version">v93</div>
+    <div class="app-version">v127</div>
   </div>
 </div>
 
+<!-- GEM SHOP BOTTOM SHEET -->
+<div class="gem-shop-overlay" id="gemShopOverlay" onclick="closeGemShop()"></div>
+<div class="gem-shop-sheet" id="gemShopSheet">
+  <div class="gem-shop-hdr">
+    <div class="gem-shop-title">💎 Tienda de Gemas</div>
+    <button class="icon-btn" onclick="closeGemShop()">✕</button>
+  </div>
+  <div class="gem-shop-balance-row">
+    <span class="gem-shop-balance-label">Tu saldo actual</span>
+    <span class="gem-shop-balance" id="gemShopBalance">0 💎</span>
+  </div>
+  <div class="gem-pkg-list" id="gemPackagesList"></div>
+  <div class="gem-shop-divider">— O GANA GRATIS —</div>
+  <button class="gem-ad-btn" id="gemAdBtn" onclick="watchRewardedAd()">📺 Ver anuncio · Ganar 4–9 💎 gratis</button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/state.js?v=126"></script>
-<script src="js/utils.js?v=126"></script>
-<script src="js/ui.js?v=126"></script>
-<script src="js/sliders.js?v=126"></script>
-<script src="js/supabase.js?v=126"></script>
-<script src="js/api.js?v=126"></script>
-<script src="js/cropper.js?v=126"></script>
-<script src="js/chars.js?v=126"></script>
-<script src="js/profile.js?v=126"></script>
-<script src="js/scenes.js?v=126"></script>
-<script src="js/inbox.js?v=126"></script>
-<script src="js/missions.js?v=126"></script>
-<script src="js/hitos.js?v=126"></script>
-<script src="js/explore.js?v=126"></script>
-<script src="js/moderation.js?v=126"></script>
-<script src="js/chat.js?v=126"></script>
-<script src="js/main.js?v=126"></script>
+<script src="js/state.js?v=127"></script>
+<script src="js/utils.js?v=127"></script>
+<script src="js/ui.js?v=127"></script>
+<script src="js/sliders.js?v=127"></script>
+<script src="js/supabase.js?v=127"></script>
+<script src="js/api.js?v=127"></script>
+<script src="js/cropper.js?v=127"></script>
+<script src="js/chars.js?v=127"></script>
+<script src="js/profile.js?v=127"></script>
+<script src="js/scenes.js?v=127"></script>
+<script src="js/inbox.js?v=127"></script>
+<script src="js/missions.js?v=127"></script>
+<script src="js/hitos.js?v=127"></script>
+<script src="js/explore.js?v=127"></script>
+<script src="js/moderation.js?v=127"></script>
+<script src="js/gemshop.js?v=127"></script>
+<script src="js/chat.js?v=127"></script>
+<script src="js/main.js?v=127"></script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
