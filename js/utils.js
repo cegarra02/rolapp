@@ -68,19 +68,15 @@ function _lsSet(key, value) {
 function _saveCharsArray(key, arr) {
   if (_lsSet(key, JSON.stringify(arr))) return true;
   // Cuota llena → reintentar soltando imágenes de fondo grandes (>30 KB base64)
+  // Silencioso: las bg se conservan en memoria y, con sesión, en Supabase.
   const slim = arr.map(c => (c && c.bg && c.bg.length > 30000)
     ? Object.assign({}, c, { bg: null })
     : c);
-  if (_lsSet(key, JSON.stringify(slim))) {
-    toast('⚠️ Sin espacio: la imagen de fondo no se guardó en el dispositivo');
-    return 'degraded';
-  }
+  if (_lsSet(key, JSON.stringify(slim))) return 'degraded';
   // Último recurso: soltar TODAS las bg
   const noBg = arr.map(c => (c && c.bg) ? Object.assign({}, c, { bg: null }) : c);
-  if (_lsSet(key, JSON.stringify(noBg))) {
-    toast('⚠️ Almacenamiento lleno: imágenes de fondo no guardadas');
-    return 'degraded';
-  }
+  if (_lsSet(key, JSON.stringify(noBg))) return 'degraded';
+  // Solo avisamos si NO se pudo guardar absolutamente nada (pérdida real de datos)
   toast('⚠️ Almacenamiento lleno: no se pudo guardar');
   return false;
 }

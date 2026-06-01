@@ -207,7 +207,7 @@ function saveChar() {
     c.submittedToLibrary = false;
   }
   const saveResult = save(); syncChars(); goHome();
-  if (saveResult === true) toast('Guardado ✓'); // si degradó/falló, save() ya avisó
+  if (saveResult !== false) toast('Guardado ✓'); // solo se oculta si no se guardó nada (save() ya avisó)
   if (!wasSubmitted && isPublicNow) {
     submitCharToLibrary(c).then(() => {
       // INSERT confirmado: marcar como enviado para no duplicar en ediciones posteriores
