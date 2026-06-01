@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#16161a">
+<meta name="theme-color" content="#1B1426">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -36,7 +36,7 @@
     <div class="scenes-shortcut-arrow">›</div>
   </button>
   <div class="search-wrap">
-    <span class="search-icon">🔍</span>
+    <span class="search-icon"><i data-icon="search" data-size="17"></i></span>
     <input class="search-inp" id="searchInp" placeholder="Buscar personajes…" oninput="renderChars()">
   </div>
   <div class="chars-list" id="charsList"></div>
@@ -46,9 +46,9 @@
 <!-- CREATE / EDIT -->
 <div class="screen" id="editScreen">
   <div class="hdr">
-    <button class="icon-btn" onclick="goHome()">←</button>
+    <button class="icon-btn" onclick="goHome()"><i data-icon="arrowLeft"></i></button>
     <div class="hdr-title" id="editTitle">Nuevo personaje</div>
-    <button class="icon-btn" id="saveBtn" onclick="saveChar()">✓</button>
+    <button class="icon-btn" id="saveBtn" onclick="saveChar()"><i data-icon="check"></i></button>
   </div>
   <div class="edit-scroll">
     <!-- Photos -->
@@ -279,7 +279,7 @@
 <!-- SCENES SCREEN -->
 <div class="screen" id="scenesScreen">
   <div class="hdr">
-    <button class="icon-btn" onclick="goHome()">←</button>
+    <button class="icon-btn" onclick="goHome()"><i data-icon="arrowLeft"></i></button>
     <div style="flex:1">
       <div class="hdr-title">Escenas</div>
       <div class="hdr-sub">Roleplay grupal</div>
@@ -292,9 +292,9 @@
 <!-- SCENE CREATE -->
 <div class="screen" id="sceneScreen">
   <div class="hdr">
-    <button class="icon-btn" onclick="goHome()">←</button>
+    <button class="icon-btn" onclick="goHome()"><i data-icon="arrowLeft"></i></button>
     <div class="hdr-title" id="sceneTitle">Nueva escena grupal</div>
-    <button class="icon-btn" onclick="saveScene()">✓</button>
+    <button class="icon-btn" onclick="saveScene()"><i data-icon="check"></i></button>
   </div>
   <div class="edit-scroll">
     <div class="section-label">Nombre de la escena</div>
@@ -360,7 +360,7 @@
 <!-- EXPLORE SCREEN -->
 <div class="screen" id="exploreScreen">
   <div class="hdr">
-    <div class="home-logo"><i data-icon="masks" data-size="20"></i></div>
+    <div class="home-logo"><i data-icon="search" data-size="20"></i></div>
     <div style="flex:1">
       <div class="hdr-title">Explorar</div>
       <div class="hdr-sub">Personajes de la comunidad</div>
@@ -369,11 +369,11 @@
     <div class="user-header-chip" id="headerChipExplore"></div>
   </div>
   <div class="explore-search-wrap">
-    <span class="search-icon">🔍</span>
+    <span class="search-icon"><i data-icon="search" data-size="17"></i></span>
     <input class="search-inp" id="exploreSearchInp" placeholder="Buscar personajes…" oninput="onExploreSearch(this.value)">
   </div>
   <div class="explore-controls">
-    <button class="explore-filter-btn" id="exploreFilterBtn" onclick="toggleExploreFilters()">⚙ Filtros</button>
+    <button class="explore-filter-btn" id="exploreFilterBtn" onclick="toggleExploreFilters()"><i data-icon="sliders" data-size="15"></i> Filtros</button>
     <div class="explore-sort-group">
       <button class="esort-btn active" id="esort-new" onclick="setExploreSort('new')">Nuevos</button>
       <button class="esort-btn" id="esort-popular" onclick="setExploreSort('popular')">Populares</button>
@@ -384,8 +384,8 @@
       <div class="explore-filter-label">Género</div>
       <div class="explore-gender-row">
         <button class="egender-btn active" id="egender-all" onclick="setExploreGender('')">Todos</button>
-        <button class="egender-btn" id="egender-M" onclick="setExploreGender('M')">♂ Masculino</button>
-        <button class="egender-btn" id="egender-F" onclick="setExploreGender('F')">♀ Femenino</button>
+        <button class="egender-btn" id="egender-M" onclick="setExploreGender('M')"><i data-icon="male" data-size="15"></i> Masculino</button>
+        <button class="egender-btn" id="egender-F" onclick="setExploreGender('F')"><i data-icon="female" data-size="15"></i> Femenino</button>
       </div>
     </div>
     <div>
@@ -399,7 +399,7 @@
 <!-- MODERATION SCREEN -->
 <div class="screen" id="moderationScreen">
   <div class="hdr">
-    <button class="icon-btn" onclick="switchTab('profile')">←</button>
+    <button class="icon-btn" onclick="switchTab('profile')"><i data-icon="arrowLeft"></i></button>
     <div style="flex:1">
       <div class="hdr-title">Moderación</div>
       <div class="hdr-sub">Submissions pendientes</div>
@@ -409,7 +409,7 @@
     <div class="mod-gems-bar-label">💎 Mis gemas: <strong id="modMyGems">—</strong></div>
     <div class="mod-gems-bar-controls">
       <input type="number" id="modSelfGemsInp" placeholder="Cantidad" min="1" max="9999" style="width:100px;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px">
-      <button onclick="giveGemsToSelf()" style="padding:6px 14px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:14px;cursor:pointer">+ Añadir</button>
+      <button onclick="giveGemsToSelf()" style="padding:6px 14px;border-radius:8px;background:var(--accent);color:#2A142A;border:none;font-size:14px;font-weight:700;cursor:pointer">+ Añadir</button>
     </div>
   </div>
   <div class="chars-list" id="modList" style="padding-top:12px"></div>
@@ -418,7 +418,7 @@
 <!-- MODERATION DETAIL SCREEN -->
 <div class="screen" id="modDetailScreen">
   <div class="hdr">
-    <button class="icon-btn" onclick="showMod()">←</button>
+    <button class="icon-btn" onclick="showMod()"><i data-icon="arrowLeft"></i></button>
     <div style="flex:1">
       <div class="hdr-title" id="modDetailName">Submission</div>
       <div class="hdr-sub">Revisión de personaje</div>
@@ -431,7 +431,7 @@
 <!-- LIBRARY DETAIL SCREEN (admin) -->
 <div class="screen" id="libDetailScreen">
   <div class="hdr">
-    <button class="icon-btn" onclick="showExplore()">←</button>
+    <button class="icon-btn" onclick="showExplore()"><i data-icon="arrowLeft"></i></button>
     <div style="flex:1">
       <div class="hdr-title" id="libDetailName">Personaje</div>
       <div class="hdr-sub">Gestionar personaje de biblioteca</div>
@@ -472,7 +472,7 @@
       <div class="hdr-title">Misiones</div>
       <div class="hdr-sub" id="missionsSubtitle">Completa retos en tus roleplays</div>
     </div>
-    <button class="icon-btn" id="missionsToggleBtn" onclick="toggleMissionsEnabled()" title="Pausar detección automática">⏸</button>
+    <button class="icon-btn" id="missionsToggleBtn" onclick="toggleMissionsEnabled()" title="Pausar detección automática"><i data-icon="pause"></i></button>
   </div>
   <div class="missions-screen-scroll">
     <!-- Stats -->
@@ -554,9 +554,9 @@
     <div class="home-logo"><i data-icon="user" data-size="20"></i></div>
     <div style="flex:1">
       <div class="hdr-title">Mi Perfil</div>
-      <div class="hdr-sub">Tu identidad en Storym</div>
+      <div class="hdr-sub">Tu identidad en el roleplay</div>
     </div>
-    <button class="icon-btn" onclick="saveProfile()">✓</button>
+    <button class="icon-btn" onclick="saveProfile()"><i data-icon="check"></i></button>
   </div>
   <div class="edit-scroll">
     <!-- Auth section -->
@@ -611,7 +611,7 @@
     </div>
 
 <button class="btn-primary" onclick="saveProfile()">Guardar mi perfil</button>
-    <div class="app-version">v142</div>
+    <div class="app-version">v143</div>
   </div>
 </div>
 
@@ -619,41 +619,41 @@
 <div class="gem-shop-overlay" id="gemShopOverlay" onclick="closeGemShop()"></div>
 <div class="gem-shop-sheet" id="gemShopSheet">
   <div class="gem-shop-hdr">
-    <div class="gem-shop-title">💎 Tienda de Gemas</div>
-    <button class="icon-btn" onclick="closeGemShop()">✕</button>
+    <div class="gem-shop-title"><i data-icon="gem" data-size="20"></i> Tienda de Gemas</div>
+    <button class="icon-btn" onclick="closeGemShop()"><i data-icon="x"></i></button>
   </div>
   <div class="gem-shop-balance-row">
     <span class="gem-shop-balance-label">Tu saldo actual</span>
     <span class="gem-shop-balance" id="gemShopBalance">0 💎</span>
   </div>
   <div class="gem-pkg-list" id="gemPackagesList"></div>
-  <div class="gem-shop-section-hdr">⚡ Packs Especiales — 1 compra por semana</div>
+  <div class="gem-shop-section-hdr"><i data-icon="zap" data-size="15"></i> Packs Especiales — 1 compra por semana</div>
   <div class="gem-specials-list" id="gemSpecialsList"></div>
   <div class="gem-shop-divider">— O GANA GRATIS —</div>
-  <button class="gem-ad-btn" id="gemAdBtn" onclick="watchRewardedAd()">📺 Ver anuncio · Ganar 4–9 💎 gratis</button>
+  <button class="gem-ad-btn" id="gemAdBtn" onclick="watchRewardedAd()"><i data-icon="play" data-size="18"></i> Ver anuncio · Ganar 4–9 gemas gratis</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/state.js?v=143"></script>
+<script src="js/utils.js?v=143"></script>
+<script src="js/ui.js?v=143"></script>
 <script src="js/icons.js?v=143"></script>
-<script src="js/state.js?v=142"></script>
-<script src="js/utils.js?v=142"></script>
-<script src="js/ui.js?v=142"></script>
-<script src="js/sliders.js?v=142"></script>
-<script src="js/supabase.js?v=142"></script>
-<script src="js/sync.js?v=142"></script>
-<script src="js/api.js?v=142"></script>
-<script src="js/cropper.js?v=142"></script>
-<script src="js/chars.js?v=142"></script>
-<script src="js/profile.js?v=142"></script>
-<script src="js/scenes.js?v=142"></script>
-<script src="js/inbox.js?v=142"></script>
-<script src="js/missions.js?v=142"></script>
-<script src="js/hitos.js?v=142"></script>
-<script src="js/explore.js?v=142"></script>
-<script src="js/moderation.js?v=142"></script>
-<script src="js/gemshop.js?v=142"></script>
-<script src="js/chat.js?v=142"></script>
-<script src="js/main.js?v=142"></script>
+<script src="js/sliders.js?v=143"></script>
+<script src="js/supabase.js?v=143"></script>
+<script src="js/sync.js?v=143"></script>
+<script src="js/api.js?v=143"></script>
+<script src="js/cropper.js?v=143"></script>
+<script src="js/chars.js?v=143"></script>
+<script src="js/profile.js?v=143"></script>
+<script src="js/scenes.js?v=143"></script>
+<script src="js/inbox.js?v=143"></script>
+<script src="js/missions.js?v=143"></script>
+<script src="js/hitos.js?v=143"></script>
+<script src="js/explore.js?v=143"></script>
+<script src="js/moderation.js?v=143"></script>
+<script src="js/gemshop.js?v=143"></script>
+<script src="js/chat.js?v=143"></script>
+<script src="js/main.js?v=143"></script>
 <script src="js/rewards.js?v=143"></script>
 <script>
 if ('serviceWorker' in navigator) {
