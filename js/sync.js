@@ -130,6 +130,16 @@ async function _loadUserDataFromDb() {
     // ── 4. Historiales de personajes de biblioteca ─────────────────────────
     _mergeDbLibHistories(hMap);
 
+    // ── 4b. Subida inicial (local → BD) ────────────────────────────────────
+    // El sync solo sube al crear/editar. Si hay personajes o escenas locales
+    // que NO están en la BD (creados antes de tener sesión, o en un dispositivo
+    // que no se re-guardó), súbelos ahora para que la nube quede completa.
+    // Solo se sube cuando hay datos local-only → idempotente, no machaca la BD.
+    const dbCharIds  = new Set((db.chars_data  || []).map(c => c && c.id));
+    const dbSceneIds = new Set((db.scenes_data || []).map(s => s && s.id));
+    if (chars.some(c => !dbCharIds.has(c.id)))  syncChars();
+    if (scenes.some(s => !dbSceneIds.has(s.id))) syncScenes();
+
     // ── 5. Refrescar UI con datos recién cargados ──────────────────────────
     // renderChars/renderScenesScreen no se habían llamado aún con los datos de BD
     if (typeof renderChars === 'function') renderChars();
