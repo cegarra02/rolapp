@@ -52,8 +52,41 @@ function exploreTagChipHtml(tag, active) {
   return `<span class="explore-tag-chip${active ? ' active' : ''}" style="background:${active ? activeBg : bg};border-color:${active ? activeBd : bd};color:${col}" onclick="setExploreTag(decodeURIComponent('${encodeURIComponent(tag)}'))">${esc(tag)}</span>`;
 }
 
-function save() { localStorage.setItem('rp_chars', JSON.stringify(chars)); }
-function saveLibChars() { localStorage.setItem('rp_lib_chars', JSON.stringify(libChars)); }
+// Escritura segura en localStorage. Devuelve true si persistió, false si falló.
+function _lsSet(key, value) {
+  try { localStorage.setItem(key, value); return true; }
+  catch (e) { return false; }
+}
+
+// Guarda un array de personajes en localStorage tolerando la cuota llena (móvil ~5 MB).
+// Las imágenes de fondo (base64) son lo que más ocupa: si no cabe, se reintenta
+// sin las bg pesadas. Estas se conservan en MEMORIA (la sesión actual sigue
+// mostrándolas) y, para usuarios con sesión, en Supabase (se restauran al recargar
+// vía _mergeDbChars). Así el texto, ediciones y mensajes SIEMPRE se persisten.
+// Devuelve true si guardó completo, 'degraded' si guardó sin imágenes pesadas,
+// false si no pudo guardar. En los dos últimos casos ya muestra un toast.
+function _saveCharsArray(key, arr) {
+  if (_lsSet(key, JSON.stringify(arr))) return true;
+  // Cuota llena → reintentar soltando imágenes de fondo grandes (>30 KB base64)
+  const slim = arr.map(c => (c && c.bg && c.bg.length > 30000)
+    ? Object.assign({}, c, { bg: null })
+    : c);
+  if (_lsSet(key, JSON.stringify(slim))) {
+    toast('⚠️ Sin espacio: la imagen de fondo no se guardó en el dispositivo');
+    return 'degraded';
+  }
+  // Último recurso: soltar TODAS las bg
+  const noBg = arr.map(c => (c && c.bg) ? Object.assign({}, c, { bg: null }) : c);
+  if (_lsSet(key, JSON.stringify(noBg))) {
+    toast('⚠️ Almacenamiento lleno: imágenes de fondo no guardadas');
+    return 'degraded';
+  }
+  toast('⚠️ Almacenamiento lleno: no se pudo guardar');
+  return false;
+}
+
+function save() { return _saveCharsArray('rp_chars', chars); }
+function saveLibChars() { return _saveCharsArray('rp_lib_chars', libChars); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function esc(s) { return String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function formatMsg(txt) {

@@ -1,4 +1,15 @@
-function saveScenes() { localStorage.setItem('rp_scenes', JSON.stringify(scenes)); }
+function saveScenes() {
+  // Tolerante a cuota: si no cabe, reintenta soltando imágenes de fondo pesadas.
+  if (_lsSet('rp_scenes', JSON.stringify(scenes))) return true;
+  const slim = scenes.map(s => (s && s.bg && s.bg.length > 30000)
+    ? Object.assign({}, s, { bg: null }) : s);
+  if (_lsSet('rp_scenes', JSON.stringify(slim))) {
+    toast('⚠️ Sin espacio: imagen de fondo de la escena no guardada');
+    return true;
+  }
+  toast('⚠️ Almacenamiento lleno: no se pudo guardar la escena');
+  return false;
+}
 
 function renderScenesScreen() {
   const list = document.getElementById('scenesList');
