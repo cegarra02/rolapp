@@ -208,6 +208,9 @@ function saveChar() {
   }
   const saveResult = save(); syncChars(); goHome();
   if (saveResult !== false) toast('Guardado ✓'); // solo se oculta si no se guardó nada (save() ya avisó)
+  // Si hay sesión y la foto es base64 nueva, súbela a Supabase Storage en segundo
+  // plano y reemplázala por su URL (libera localStorage y la respalda cross-device).
+  if (typeof offloadCharBg === 'function') offloadCharBg(c.id);
   if (!wasSubmitted && isPublicNow) {
     submitCharToLibrary(c).then(() => {
       // INSERT confirmado: marcar como enviado para no duplicar en ediciones posteriores

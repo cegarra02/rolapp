@@ -143,6 +143,11 @@ async function _loadUserDataFromDb() {
     if (chars.some(c => !dbCharIds.has(c.id)))  syncChars();
     if (scenes.some(s => !dbSceneIds.has(s.id))) syncScenes();
 
+    // ── 4c. Migrar fotos base64 → Supabase Storage (segundo plano) ─────────
+    // Sube a Storage las imágenes que aún estén embebidas como base64 y las
+    // reemplaza por su URL. Libera localStorage y las respalda cross-device.
+    if (typeof migrateBgsToStorage === 'function') migrateBgsToStorage();
+
     // ── 5. Refrescar UI con datos recién cargados ──────────────────────────
     // renderChars/renderScenesScreen no se habían llamado aún con los datos de BD
     if (typeof renderChars === 'function') renderChars();
