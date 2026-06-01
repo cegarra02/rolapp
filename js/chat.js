@@ -19,7 +19,7 @@ function renderMessages() {
     if (isUser) {
       if (style.userBg && op !== undefined) inlineStyle += `background:${hexToRgba(style.userBg, op)};`;
       else if (style.userBg)                inlineStyle += `background:${style.userBg};`;
-      else if (op !== undefined)            inlineStyle += `background:linear-gradient(135deg,rgba(168,85,247,${op}),rgba(109,40,217,${op}));`;
+      else if (op !== undefined)            inlineStyle += `background:linear-gradient(135deg,rgba(255,126,157,${op}),rgba(182,107,224,${op}));`;
       if (style.userColor) inlineStyle += `color:${style.userColor};`;
     } else {
       if (style.botBg && op !== undefined)  inlineStyle += `background:${hexToRgba(style.botBg, op)};`;
@@ -262,7 +262,7 @@ function updateStylePreview() {
   const op  = parseInt(document.getElementById('csBubbleOpacity')?.value || 58) / 100;
   const botBg    = document.getElementById('csBotBg')?.value    || '#0a0a0e';
   const botColor = document.getElementById('csBotColor')?.value  || '#ffffff';
-  const userBg   = document.getElementById('csUserBg')?.value   || '#7c3aed';
+  const userBg   = document.getElementById('csUserBg')?.value   || '#FF7E9D';
   const userColor= document.getElementById('csUserColor')?.value || '#ffffff';
   const fs = document.getElementById('csFontSize')?.value || 14;
   const bot  = document.getElementById('cs-preview-bot');
@@ -280,7 +280,7 @@ function openChatStyleModal() {
     const opPct = style.bubbleOpacity !== undefined ? Math.round(style.bubbleOpacity * 100) : 58;
     const botBg    = style.botBg    || '#0a0a0e';
     const botColor = style.botColor || '#ffffff';
-    const userBg   = style.userBg   || '#7c3aed';
+    const userBg   = style.userBg   || '#FF7E9D';
     const userColor= style.userColor|| '#ffffff';
     const fs       = style.fontSize || 14;
     mb.innerHTML = `

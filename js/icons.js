@@ -67,7 +67,7 @@
     bell:     '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
   };
   // emoji → icon-name fallback map (so leftover emoji still convert if wrapped)
-  var EMOJI = { '🔍':'search','🧭':'compass','🎭':'masks','💬':'message','👤':'user','⚔':'swords','⚔️':'swords','➕':'plus','✓':'check','✕':'x','❌':'x','←':'arrowLeft','⋮':'dots','➤':'send','✎':'edit','✏️':'edit','💎':'gem','🎁':'gift','👑':'crown','📺':'play','⚡':'zap','📌':'flag','🏅':'award','ℹ️':'info','🛡️':'shield','🔄':'refresh','⏸':'pause','⚠️':'alert','🖼️':'image','🗑️':'trash','🎨':'palette','🌐':'globe','⚙':'sliders','⚙️':'sliders','♂':'male','♀':'female','⏳':'hourglass','🔥':'flame','❤️':'heart','😶':'user','🌶️':'sparkles','✦':'sparkles','🔔':'bell','⭐':'star' };
+  var EMOJI = { '🔍':'search','🧭':'compass','🎭':'masks','💬':'message','👤':'user','⚔':'swords','⚔️':'swords','🗡️':'swords','🗡':'swords','➕':'plus','✓':'check','💾':'check','✕':'x','❌':'x','←':'arrowLeft','⋮':'dots','➤':'send','✎':'edit','✏️':'edit','💎':'gem','🎁':'gift','👑':'crown','📺':'play','⚡':'zap','📌':'flag','🏅':'award','ℹ️':'info','🛡️':'shield','🔄':'refresh','⏸':'pause','⚠️':'alert','🖼️':'image','🗑':'trash','🗑️':'trash','🎨':'palette','🌐':'globe','⚙':'sliders','⚙️':'sliders','♂':'male','♀':'female','⏳':'hourglass','🔥':'flame','❤️':'heart','😶':'user','🌶️':'sparkles','✦':'sparkles','🔔':'bell','⭐':'star' };
 
   function svg(name, opts) {
     opts = opts || {};
@@ -96,31 +96,47 @@
     convertEmoji(root || document.body);
   }
 
-  // Convert standalone-emoji text nodes (e.g. emoji injected by JS modules:
-  // nav glyphs, slider icons, card badges) into line icons — WITHOUT touching
-  // user content (chat bubbles, inputs) or mixed text like "💎 +5 gemas".
-  var SKIP = '.bubble,.messages,.msg,.chat-input,input,textarea,[contenteditable],.rw-toast,.toast,script,style';
+  // Convert emoji → line icons inside any text node (incl. mixed labels like
+  // "✎ Editar", "📌 Hitos", "💬 123") WITHOUT touching user content (chat
+  // bubbles, inputs) or toasts. Surrounding text is preserved.
+  var SKIP = '.bubble,.messages,.msg,.chat-input,.bubble-time,input,textarea,[contenteditable],.rw-toast,.toast,#toast,script,style';
+  var EKEYS = Object.keys(EMOJI).sort(function (a, b) { return b.length - a.length; });
+  var ERE = new RegExp('(' + EKEYS.map(function (e) {
+    return e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }).join('|') + ')', 'g');
+
   function convertEmoji(root) {
-    if (!root || !root.ownerDocument && root.nodeType !== 1 && root.nodeType !== 9) return;
+    if (!root || (root.nodeType !== 1 && root.nodeType !== 9)) return;
+    if (root.nodeType === 1 && root.closest && root.closest(SKIP)) return;
     var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode: function (n) {
-        var txt = n.nodeValue.trim();
-        if (!txt || !EMOJI[txt]) return NodeFilter.FILTER_REJECT;
-        if (n.parentElement && n.parentElement.closest(SKIP)) return NodeFilter.FILTER_REJECT;
-        if (n.parentElement && n.parentElement.dataset.iconDone) return NodeFilter.FILTER_REJECT;
+        if (!n.nodeValue || !ERE.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
+        var p = n.parentElement;
+        if (!p || p.dataset.iconDone || p.closest(SKIP)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
     });
     var nodes = [], cur;
     while ((cur = walker.nextNode())) nodes.push(cur);
     nodes.forEach(function (n) {
-      var name = EMOJI[n.nodeValue.trim()];
-      var span = document.createElement('span');
-      span.className = 'icon';
-      span.dataset.iconDone = '1';
-      var sz = parseInt(getComputedStyle(n.parentElement).fontSize, 10) || 20;
-      span.innerHTML = svg(name, { size: sz });
-      n.parentNode.replaceChild(span, n);
+      var text = n.nodeValue;
+      ERE.lastIndex = 0;
+      if (!ERE.test(text)) return;
+      var sz = parseInt(getComputedStyle(n.parentElement).fontSize, 10) || 18;
+      var frag = document.createDocumentFragment();
+      var last = 0, m;
+      ERE.lastIndex = 0;
+      while ((m = ERE.exec(text)) !== null) {
+        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+        var span = document.createElement('span');
+        span.className = 'icon';
+        span.dataset.iconDone = '1';
+        span.innerHTML = svg(EMOJI[m[0]], { size: sz });
+        frag.appendChild(span);
+        last = m.index + m[0].length;
+      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      n.parentNode.replaceChild(frag, n);
     });
   }
 

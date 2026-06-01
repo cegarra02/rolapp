@@ -82,8 +82,8 @@ function renderExploreTags() {
   if (!el) return;
   const todosActive = !exploreActiveTags.length;
   const todosStyle = todosActive
-    ? 'background:rgba(168,85,247,.42);border-color:rgba(168,85,247,.85);color:rgba(168,85,247,.95)'
-    : 'background:rgba(168,85,247,.22);border-color:rgba(168,85,247,.55);color:rgba(168,85,247,.95)';
+    ? 'background:rgba(255,126,157,.40);border-color:rgba(255,126,157,.85);color:rgba(255,158,125,.98)'
+    : 'background:rgba(255,126,157,.20);border-color:rgba(255,126,157,.50);color:rgba(255,158,125,.95)';
   el.innerHTML =
     `<span class="explore-tag-chip${todosActive ? ' active' : ''}" style="${todosStyle}" onclick="setExploreTag('')">Todos</span>` +
     exploreTags.map(t => exploreTagChipHtml(t, exploreActiveTags.includes(t))).join('');

@@ -14,7 +14,7 @@ function drawPreview() {
     ctx.arc(cx, cy, r, 0, Math.PI * 2, true);
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fill();
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(192,132,252,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,126,157,0.95)'; ctx.lineWidth = 2; ctx.stroke();
     ctx.restore();
   } else {
     ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
@@ -24,7 +24,7 @@ function drawPreview() {
     ctx.moveTo(0, H / 3); ctx.lineTo(W, H / 3);
     ctx.moveTo(0, 2 * H / 3); ctx.lineTo(W, 2 * H / 3);
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(192,132,252,0.5)'; ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,126,157,0.6)'; ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, W - 2, H - 2);
   }
 }
