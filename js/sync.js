@@ -21,9 +21,12 @@
 const HISTORY_MAX      = 400;  // mensajes antes de lanzar la poda
 const HISTORY_PRUNE_TO = 200;  // mensajes a conservar (los más recientes)
 
-// bg se sincroniza si está por debajo de este límite (~300 KB imagen real).
-// Las imágenes más grandes quedan solo en localStorage (nivel gratuito).
-const BG_SYNC_MAX_FREE = 400000; // caracteres base64 ≈ 300 KB imagen real
+// bg se sincroniza a Supabase si está por debajo de este límite. Así las fotos
+// se respaldan en la nube y se restauran en otros dispositivos (vía _mergeDbChars).
+// Subido a ~1 MB base64 (≈ 750 KB de imagen) para cubrir fotos normales: antes
+// estaba en 300 KB y las más grandes no se respaldaban → desaparecían al soltarse
+// de localStorage por falta de espacio.
+const BG_SYNC_MAX_FREE = 1000000; // caracteres base64 ≈ 750 KB imagen real
 
 const _syncTimers   = {};
 const _pendingHist  = new Map(); // entityId → { historyArr, hitosArr } para flush en background

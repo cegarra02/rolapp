@@ -11,7 +11,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='4' y1='3' x2='28' y2='29' gradientUnits='userSpaceOnUse'><stop stop-color='%23FFC56B'/><stop offset='.52' stop-color='%23FF7E9D'/><stop offset='1' stop-color='%23B66BE0'/></linearGradient></defs><rect width='32' height='32' rx='9' fill='url(%23g)'/><path fill='%23fff' fill-rule='evenodd' d='M10 8h12a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-4l-4 4v-4h-4a4 4 0 0 1-4-4v-6a4 4 0 0 1 4-4z M16 11l1.2 3.5 3.5 1.2-3.5 1.2L16 20.4l-1.2-3.5-3.5-1.2 3.5-1.2z'/></svg>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=150">
+<link rel="stylesheet" href="css/style.css?v=151">
 <link rel="manifest" href="manifest.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -647,7 +647,7 @@
     <button class="logout-btn" onclick="(window.signOut||window.logout||function(){try{localStorage.removeItem('storym_onboarded');}catch(e){}location.reload();})()">
       <i data-icon="logout" data-size="18"></i> Cerrar sesión
     </button>
-    <div class="app-version">v150</div>
+    <div class="app-version">v151</div>
   </div>
 </div>
 
@@ -670,27 +670,27 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/state.js?v=150"></script>
-<script src="js/utils.js?v=150"></script>
-<script src="js/ui.js?v=150"></script>
-<script src="js/icons.js?v=150"></script>
-<script src="js/sliders.js?v=150"></script>
-<script src="js/supabase.js?v=150"></script>
-<script src="js/sync.js?v=150"></script>
-<script src="js/api.js?v=150"></script>
-<script src="js/cropper.js?v=150"></script>
-<script src="js/chars.js?v=150"></script>
-<script src="js/profile.js?v=150"></script>
-<script src="js/scenes.js?v=150"></script>
-<script src="js/inbox.js?v=150"></script>
-<script src="js/missions.js?v=150"></script>
-<script src="js/hitos.js?v=150"></script>
-<script src="js/explore.js?v=150"></script>
-<script src="js/moderation.js?v=150"></script>
-<script src="js/gemshop.js?v=150"></script>
-<script src="js/chat.js?v=150"></script>
-<script src="js/main.js?v=150"></script>
-<script src="js/rewards.js?v=150"></script>
+<script src="js/state.js?v=151"></script>
+<script src="js/utils.js?v=151"></script>
+<script src="js/ui.js?v=151"></script>
+<script src="js/icons.js?v=151"></script>
+<script src="js/sliders.js?v=151"></script>
+<script src="js/supabase.js?v=151"></script>
+<script src="js/sync.js?v=151"></script>
+<script src="js/api.js?v=151"></script>
+<script src="js/cropper.js?v=151"></script>
+<script src="js/chars.js?v=151"></script>
+<script src="js/profile.js?v=151"></script>
+<script src="js/scenes.js?v=151"></script>
+<script src="js/inbox.js?v=151"></script>
+<script src="js/missions.js?v=151"></script>
+<script src="js/hitos.js?v=151"></script>
+<script src="js/explore.js?v=151"></script>
+<script src="js/moderation.js?v=151"></script>
+<script src="js/gemshop.js?v=151"></script>
+<script src="js/chat.js?v=151"></script>
+<script src="js/main.js?v=151"></script>
+<script src="js/rewards.js?v=151"></script>
 <script>
 // ── Onboarding de primera vez ───────────────────────────────
 function pickLang(l){try{localStorage.setItem('storym_lang',l);}catch(e){}var es=document.getElementById('langES'),en=document.getElementById('langEN');if(es)es.classList.toggle('active',l==='es');if(en)en.classList.toggle('active',l==='en');if(window.setLanguage)try{setLanguage(l);}catch(e){}}
@@ -709,29 +709,54 @@ function onbGoogle(){ try{localStorage.setItem('storym_onboarded','1');}catch(e)
 })();
 </script>
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
-    // Forzar comprobación activa de actualizaciones en cada carga
-    reg.update().catch(() => {});
-    reg.addEventListener('updatefound', () => {
-      const sw = reg.installing;
-      if (!sw) return;
-      sw.addEventListener('statechange', () => {
-        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-          // Nueva versión instalada y lista — skipWaiting en sw.js la activará
-          toast('🔄 Nueva versión disponible, actualizando…');
+(function () {
+  // En Capacitor (Android nativo) los archivos ya vienen en el bundle local.
+  // Un Service Worker solo cachea versiones viejas y, al cerrar y reabrir la app,
+  // sirve la estética anterior (bug grave). Por eso aquí NO se registra y, además,
+  // se desregistra cualquier SW previo y se borran sus cachés para deshacer el daño.
+  var isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (isNative) {
+    if (window.caches && caches.keys) {
+      caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); }).catch(function () {});
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (rs) {
+        var hadSW = rs.length > 0;
+        rs.forEach(function (r) { r.unregister(); });
+        // Si un SW viejo aún controla esta carga (sirviendo archivos pre-rework),
+        // recargar UNA vez tras desregistrarlo para que la app sirva el bundle nuevo.
+        var controlled = !!navigator.serviceWorker.controller;
+        if (hadSW && controlled && !sessionStorage.getItem('_swPurged')) {
+          try { sessionStorage.setItem('_swPurged', '1'); } catch (e) {}
+          setTimeout(function () { location.reload(); }, 100);
         }
+      }).catch(function () {});
+    }
+    return; // nada de SW en nativo
+  }
+
+  // Web (PWA en navegador): registro normal del Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+      reg.update().catch(function () {});
+      reg.addEventListener('updatefound', function () {
+        var sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener('statechange', function () {
+          if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+            toast('🔄 Nueva versión disponible, actualizando…');
+          }
+        });
       });
     });
-  });
-  // Cuando el nuevo SW toma el control, recargar para servir los archivos nuevos
-  let _swReloading = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (_swReloading) return;
-    _swReloading = true;
-    location.reload();
-  });
-}
+    var _swReloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (_swReloading) return;
+      _swReloading = true;
+      location.reload();
+    });
+  }
+})();
 </script>
 </body>
 </html>
