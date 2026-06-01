@@ -80,13 +80,15 @@ async function fetchExploreTags() {
 function renderExploreTags() {
   const el = document.getElementById('exploreTagsRow');
   if (!el) return;
-  const todosActive = !exploreActiveTags.length;
-  const todosStyle = todosActive
-    ? 'background:rgba(255,126,157,.40);border-color:rgba(255,126,157,.85);color:rgba(255,158,125,.98)'
-    : 'background:rgba(255,126,157,.20);border-color:rgba(255,126,157,.50);color:rgba(255,158,125,.95)';
+  const q = (document.getElementById('expTagSearch')?.value || '').toLowerCase();
+  const list = exploreTags.filter(t => t.toLowerCase().includes(q));
   el.innerHTML =
-    `<span class="explore-tag-chip${todosActive ? ' active' : ''}" style="${todosStyle}" onclick="setExploreTag('')">Todos</span>` +
-    exploreTags.map(t => exploreTagChipHtml(t, exploreActiveTags.includes(t))).join('');
+    `<span class="explore-tag-chip exp-tag-todos${!exploreActiveTags.length ? ' active' : ''}" onclick="setExploreTag('')">Todos</span>` +
+    list.map(t => exploreTagChipHtml(t, exploreActiveTags.includes(t))).join('') +
+    (list.length ? '' : '<div class="exp-tag-empty">Sin etiquetas</div>');
+  const lbl = document.getElementById('expTagsLabel');
+  if (lbl) lbl.textContent = exploreActiveTags.length ? `Etiquetas (${exploreActiveTags.length})` : 'Etiquetas';
+  document.getElementById('expTagsBtn')?.classList.toggle('has-sel', exploreActiveTags.length > 0);
 }
 
 function renderExploreList() {
@@ -108,7 +110,7 @@ function renderExploreList() {
       <div class="char-card-stat">💬 ${stat}</div>
       <div class="char-card-body">
         <div class="char-card-name">${esc(x.name)}</div>
-        <div>${tags.map(t => tagBadgeHtml(t)).join('')}</div>
+        ${tagsMiniHtml(tags)}
       </div>
       ${admin ? `<div class="char-card-edit" onclick="event.stopPropagation();openLibDetail('${x.id}')">✎</div>` : ''}
     </div>`;
@@ -135,25 +137,40 @@ function setExploreTag(tag) {
 
 function setExploreSort(val) {
   exploreSort = val;
-  document.querySelectorAll('.esort-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('esort-' + val)?.classList.add('active');
+  const lbl = document.getElementById('expSortLabel');
+  if (lbl) lbl.textContent = val === 'popular' ? 'Populares' : 'Nuevos';
+  document.querySelectorAll('#expSortPanel .exp-dd-item').forEach(b => b.classList.toggle('active', b.dataset.sort === val));
+  closeExpDropdowns();
   renderExploreScreen();
 }
 
+// Toggle de sexo: vuelve a pulsar el activo para deseleccionar (= Todos)
 function setExploreGender(g) {
-  exploreGender = g;
-  ['all','M','F'].forEach(x => document.getElementById('egender-' + x)?.classList.remove('active'));
-  document.getElementById('egender-' + (g || 'all'))?.classList.add('active');
+  exploreGender = (exploreGender === g) ? '' : g;
+  document.getElementById('egender-M')?.classList.toggle('active', exploreGender === 'M');
+  document.getElementById('egender-F')?.classList.toggle('active', exploreGender === 'F');
   renderExploreScreen();
 }
 
-function toggleExploreFilters() {
-  _exploreFiltersOpen = !_exploreFiltersOpen;
-  const panel = document.getElementById('exploreFiltersPanel');
-  const btn   = document.getElementById('exploreFilterBtn');
-  if (panel) panel.classList.toggle('open', _exploreFiltersOpen);
-  if (btn)   btn.classList.toggle('active', _exploreFiltersOpen);
+// Desplegables compactos (Ordenar / Etiquetas)
+function toggleExpDropdown(which) {
+  const sortP = document.getElementById('expSortPanel'), tagsP = document.getElementById('expTagsPanel');
+  const sortB = document.getElementById('expSortBtn'),   tagsB = document.getElementById('expTagsBtn');
+  const openSort = which === 'sort' && !sortP.classList.contains('open');
+  const openTags = which === 'tags' && !tagsP.classList.contains('open');
+  sortP.classList.toggle('open', openSort); sortB.classList.toggle('open', openSort);
+  tagsP.classList.toggle('open', openTags); tagsB.classList.toggle('open', openTags);
+  if (openTags) setTimeout(() => document.getElementById('expTagSearch')?.focus(), 60);
 }
+function closeExpDropdowns() {
+  ['expSortPanel','expTagsPanel','expSortBtn','expTagsBtn'].forEach(id => document.getElementById(id)?.classList.remove('open'));
+}
+// cerrar al tocar fuera
+document.addEventListener('click', e => {
+  if (!e.target.closest('.explore-controls') && !e.target.closest('.exp-dd-panel')) closeExpDropdowns();
+});
+// compat: la función antigua ya no se usa
+function toggleExploreFilters() {}
 
 function onExploreSearch(val) {
   exploreSearch = val;

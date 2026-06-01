@@ -23,7 +23,7 @@ function renderChars() {
       }
       <div class="char-card-body">
         <div class="char-card-name">${esc(x.name)}</div>
-        <div>${tags.map(t => tagBadgeHtml(t)).join('')}</div>
+        ${tagsMiniHtml(tags)}
       </div>
       <div class="char-card-edit" onclick="event.stopPropagation();openEdit('${x.id}')">✎</div>
     </div>`;

@@ -20,6 +20,25 @@ function tagBadgeHtml(tag) {
   const [bg, bd, col] = _tagPalette(tag);
   return `<span class="char-card-tag" style="background:${bg};border-color:${bd};color:${col}">${esc(tag)}</span>`;
 }
+// Etiquetas en tarjeta: muestra las que quepan en una fila + chip "+n"
+function tagsMiniHtml(tags) {
+  if (!tags || !tags.length) return '';
+  const MAXW = 150;            // ancho útil aprox. de la fila de chips (px)
+  const MORE = 36;             // espacio reservado para el chip "+n"
+  const chipW = t => t.length * 6.6 + 22;
+  let used = 0, shown = [];
+  for (let i = 0; i < tags.length; i++) {
+    const w = chipW(tags[i]) + (shown.length ? 5 : 0);
+    const reserve = (i < tags.length - 1) ? MORE : 0;
+    if (shown.length && used + w > MAXW - reserve) break;
+    used += w; shown.push(tags[i]);
+  }
+  if (!shown.length) shown.push(tags[0]);
+  const extra = tags.length - shown.length;
+  return `<div class="card-tags-mini">` +
+    shown.map(t => tagBadgeHtml(t)).join('') +
+    (extra > 0 ? `<span class="char-card-tag tag-more">+${extra}</span>` : '') + `</div>`;
+}
 // Chip editable para el formulario de creación (con ×)
 function tagChipHtml(tag) {
   const [bg, bd, col] = _tagPalette(tag);
