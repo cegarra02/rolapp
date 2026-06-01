@@ -284,3 +284,7 @@ async function _grantAdGems(amount) {
   }
   renderUserHeader();
 }
+
+// Función pública para que otros módulos (rewards, etc.) acrediten gemas
+// sin depender de los detalles de Supabase o localStorage.
+async function grantGems(amount) { return _grantAdGems(amount); }

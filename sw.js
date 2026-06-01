@@ -1,8 +1,9 @@
-const CACHE = 'storym-v183';
+const CACHE = 'storym-v185';
 const ASSETS = [
   '/rolapp/',
   '/rolapp/index.html',
-  '/rolapp/css/style.css?v=142',
+  '/rolapp/css/style.css?v=143',
+  '/rolapp/js/icons.js?v=143',
   '/rolapp/js/state.js?v=142',
   '/rolapp/js/utils.js?v=142',
   '/rolapp/js/ui.js?v=142',
@@ -22,6 +23,7 @@ const ASSETS = [
   '/rolapp/js/gemshop.js?v=142',
   '/rolapp/js/chat.js?v=142',
   '/rolapp/js/main.js?v=142',
+  '/rolapp/js/rewards.js?v=143',
   '/rolapp/manifest.json',
   '/rolapp/icon-192.png',
   '/rolapp/icon-512.png'
