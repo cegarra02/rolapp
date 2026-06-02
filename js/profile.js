@@ -37,7 +37,6 @@ function renderAuthSection() {
           </div>
         </div>
         <div class="auth-gems-badge">💎 <strong>${gems}</strong> gemas</div>
-        <button class="auth-btn auth-btn-logout" style="margin-top:10px" onclick="doSignOut()">Cerrar sesión</button>
       </div>`;
     renderModEntry();
   } else {
@@ -60,6 +59,8 @@ function renderAuthSection() {
 
 // Fila de moderación (abajo, solo admin) con contador de pendientes
 async function renderModEntry() {
+  const card = document.getElementById('profileSettingsCard');
+  if (card) card.style.display = (typeof supabaseUser !== 'undefined' && supabaseUser) ? 'block' : 'none';
   const row = document.getElementById('modEntryRow');
   if (!row) return;
   if (typeof isAdmin !== 'function' || !isAdmin()) { row.style.display = 'none'; return; }

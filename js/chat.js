@@ -15,7 +15,7 @@ function renderMessages() {
   container.innerHTML = history.map((m, i) => {
     const isUser = m.role === 'user';
     let inlineStyle = '';
-    const op = style.bubbleOpacity;
+    const op = isUser ? (style.userOpacity !== undefined ? style.userOpacity : style.bubbleOpacity) : (style.botOpacity !== undefined ? style.botOpacity : style.bubbleOpacity);
     if (isUser) {
       if (style.userBg && op !== undefined) inlineStyle += `background:${hexToRgba(style.userBg, op)};`;
       else if (style.userBg)                inlineStyle += `background:${style.userBg};`;
@@ -258,95 +258,76 @@ function _csColorItem(label, inputId, swatchId, defaultVal) {
     </div>`;
 }
 
+var CS_USER_COLORS = ['#FF7E9D','#B66BE0','#6E8BFF','#5FC79E','#FF9E7D','#E85D9A'];
+var CS_BOT_COLORS  = ['#322440','#2e2638','#3a2030','#203038','#2a2a2a','#0a0a0e'];
+function _csSwatches(group, colors, current){
+  return colors.map(function(c){
+    var sel = (c.toLowerCase()===(current||'').toLowerCase());
+    return '<button type="button" class="cs-swatch'+(sel?' sel':'')+'" data-group="'+group+'" data-color="'+c+'" style="background:'+c+'" onclick="csPick(this)"></button>';
+  }).join('');
+}
+function csPick(btn){
+  var group = btn.getAttribute('data-group');
+  var color = btn.getAttribute('data-color');
+  var box = document.getElementById('csSwatch_'+group);
+  if(box){ box.querySelectorAll('.cs-swatch').forEach(function(b){ b.classList.remove('sel'); }); }
+  btn.classList.add('sel');
+  document.getElementById('csVal_'+group).value = color;
+  updateStylePreview();
+}
+
 function updateStylePreview() {
-  const op  = parseInt(document.getElementById('csBubbleOpacity')?.value || 58) / 100;
-  const botBg    = document.getElementById('csBotBg')?.value    || '#0a0a0e';
-  const botColor = document.getElementById('csBotColor')?.value  || '#ffffff';
-  const userBg   = document.getElementById('csUserBg')?.value   || '#FF7E9D';
-  const userColor= document.getElementById('csUserColor')?.value || '#ffffff';
-  const fs = document.getElementById('csFontSize')?.value || 14;
-  const bot  = document.getElementById('cs-preview-bot');
-  const user = document.getElementById('cs-preview-user');
-  if (bot)  { bot.style.background  = hexToRgba(botBg, op);  bot.style.color  = botColor;  bot.style.fontSize  = fs + 'px'; }
-  if (user) { user.style.background = hexToRgba(userBg, op); user.style.color = userColor; user.style.fontSize = fs + 'px'; }
+  var botBg  = document.getElementById('csVal_bot').value;
+  var userBg = document.getElementById('csVal_user').value;
+  var fs  = parseInt(document.getElementById('csFontSize').value);
+  var bOp = parseInt(document.getElementById('csBotOpacity').value)/100;
+  var uOp = parseInt(document.getElementById('csUserOpacity').value)/100;
+  var bot = document.getElementById('cs-preview-bot');
+  var user = document.getElementById('cs-preview-user');
+  if(bot){ bot.style.background = hexToRgba(botBg, bOp); bot.style.fontSize = fs+'px'; }
+  if(user){ user.style.background = hexToRgba(userBg, uOp); user.style.fontSize = fs+'px'; }
 }
 
 function openChatStyleModal() {
   closeModal();
-  setTimeout(() => {
-    openModal('🎨 Estilo del chat', []);
-    const mb = document.getElementById('modalBody');
-    const style = (currentScene || currentChar)?.chatStyle || {};
-    const opPct = style.bubbleOpacity !== undefined ? Math.round(style.bubbleOpacity * 100) : 58;
-    const botBg    = style.botBg    || '#0a0a0e';
-    const botColor = style.botColor || '#ffffff';
-    const userBg   = style.userBg   || '#FF7E9D';
-    const userColor= style.userColor|| '#ffffff';
-    const fs       = style.fontSize || 14;
-    mb.innerHTML = `
-      <div class="cs-preview">
-        <div class="cs-preview-bot-wrap">
-          <div class="bubble-speaker" style="display:inline-block">${esc((currentScene || currentChar)?.name || 'Personaje')}</div>
-          <div class="cs-preview-bubble" id="cs-preview-bot"
-            style="background:${hexToRgba(botBg,opPct/100)};color:${botColor};font-size:${fs}px">
-            ¡Hola! Esto es un ejemplo de texto en burbuja.
-          </div>
-        </div>
-        <div class="cs-preview-user-wrap">
-          <div class="cs-preview-bubble cs-preview-bubble-user" id="cs-preview-user"
-            style="background:${hexToRgba(userBg,opPct/100)};color:${userColor};font-size:${fs}px">
-            Esto es tu burbuja.
-          </div>
-        </div>
-      </div>
-
-      <div class="cs-section-title">Personaje</div>
-      <div class="cs-color-row">
-        ${_csColorItem('Fondo', 'csBotBg', 'csBotBgSwatch', botBg)}
-        ${_csColorItem('Texto', 'csBotColor', 'csBotColorSwatch', botColor)}
-      </div>
-
-      <div class="cs-section-title" style="margin-top:14px">Jugador</div>
-      <div class="cs-color-row">
-        ${_csColorItem('Fondo', 'csUserBg', 'csUserBgSwatch', userBg)}
-        ${_csColorItem('Texto', 'csUserColor', 'csUserColorSwatch', userColor)}
-      </div>
-
-      <div class="cs-sliders">
-        <div class="cs-slider-row">
-          <div class="cs-slider-hdr">
-            <span>Opacidad</span>
-            <span class="cs-slider-val" id="csBubbleOpacityLabel">${opPct}%</span>
-          </div>
-          <input type="range" class="cs-slider" id="csBubbleOpacity" min="30" max="100" value="${opPct}"
-            oninput="document.getElementById('csBubbleOpacityLabel').textContent=this.value+'%';updateStylePreview()">
-        </div>
-        <div class="cs-slider-row">
-          <div class="cs-slider-hdr">
-            <span>Tamaño de fuente</span>
-            <span class="cs-slider-val" id="csFontSizeLabel">${fs}px</span>
-          </div>
-          <input type="range" class="cs-slider" id="csFontSize" min="11" max="20" value="${fs}"
-            oninput="document.getElementById('csFontSizeLabel').textContent=this.value+'px';updateStylePreview()">
-        </div>
-      </div>
-
-      <div class="cs-btns">
-        <button class="btn-primary" style="flex:1" onclick="saveChatStyle()">Guardar</button>
-        <button class="cs-reset-btn" onclick="resetChatStyle()">Restablecer</button>
-      </div>
-    `;
+  setTimeout(function(){
+    openModal('Estilo del chat', []);
+    var hdr = document.querySelector('#genericModal .modal-title, #modalTitle');
+    var mb = document.getElementById('modalBody');
+    var name = (currentScene || currentChar) && (currentScene || currentChar).name || 'Personaje';
+    var style = ((currentScene || currentChar) && (currentScene || currentChar).chatStyle) || {};
+    var botBg  = style.botBg  || '#322440';
+    var userBg = style.userBg || '#FF7E9D';
+    var fs  = style.fontSize || 14;
+    var bOp = style.botOpacity  !== undefined ? style.botOpacity  : (style.bubbleOpacity !== undefined ? style.bubbleOpacity : 0.58);
+    var uOp = style.userOpacity !== undefined ? style.userOpacity : (style.bubbleOpacity !== undefined ? style.bubbleOpacity : 1);
+    mb.innerHTML =
+      '<input type="hidden" id="csVal_bot" value="'+botBg+'"><input type="hidden" id="csVal_user" value="'+userBg+'">'
+      + '<div class="cs-field"><div class="cs-field-label">Color de tus burbujas</div><div class="cs-swatch-row" id="csSwatch_user">'+_csSwatches('user',CS_USER_COLORS,userBg)+'</div></div>'
+      + '<div class="cs-field"><div class="cs-field-label">Color de las burbujas de '+esc(name)+'</div><div class="cs-swatch-row" id="csSwatch_bot">'+_csSwatches('bot',CS_BOT_COLORS,botBg)+'</div></div>'
+      + '<div class="cs-field"><div class="cs-slider-hdr"><span>Tamaño de fuente</span><span class="cs-slider-val" id="csFontSizeLabel">'+fs+'px</span></div>'
+      + '<input type="range" class="cs-slider" id="csFontSize" min="12" max="19" step="1" value="'+fs+'" oninput="document.getElementById(\'csFontSizeLabel\').textContent=this.value+\'px\';updateStylePreview()"></div>'
+      + '<div class="cs-field"><div class="cs-slider-hdr"><span>Transparencia de '+esc(name)+'</span><span class="cs-slider-val" id="csBotOpacityLabel">'+Math.round(bOp*100)+'%</span></div>'
+      + '<input type="range" class="cs-slider" id="csBotOpacity" min="30" max="100" value="'+Math.round(bOp*100)+'" oninput="document.getElementById(\'csBotOpacityLabel\').textContent=this.value+\'%\';updateStylePreview()"></div>'
+      + '<div class="cs-field"><div class="cs-slider-hdr"><span>Transparencia de tus burbujas</span><span class="cs-slider-val" id="csUserOpacityLabel">'+Math.round(uOp*100)+'%</span></div>'
+      + '<input type="range" class="cs-slider" id="csUserOpacity" min="30" max="100" value="'+Math.round(uOp*100)+'" oninput="document.getElementById(\'csUserOpacityLabel\').textContent=this.value+\'%\';updateStylePreview()"></div>'
+      + '<div class="cs-preview"><div class="cs-section-title">Vista previa</div>'
+      + '<div class="cs-preview-bot-wrap"><div class="cs-preview-bubble" id="cs-preview-bot" style="background:'+hexToRgba(botBg,bOp)+';color:#F4EAF2;font-size:'+fs+'px"><em style="opacity:.6">sonríe </em><strong>"Te esperaba."</strong></div></div>'
+      + '<div class="cs-preview-user-wrap"><div class="cs-preview-bubble cs-preview-bubble-user" id="cs-preview-user" style="background:'+hexToRgba(userBg,uOp)+';color:#231019;font-size:'+fs+'px">Y yo a ti.</div></div></div>'
+      + '<div class="cs-btns"><button class="btn-primary" style="flex:1" onclick="saveChatStyle()">Guardar</button><button class="cs-reset-btn" onclick="resetChatStyle()">Restablecer</button></div>';
+    if(window.STORYM&&STORYM.scanIcons)STORYM.scanIcons(mb);
   }, 50);
 }
 
 function saveChatStyle() {
-  const s = {
-    botBg:         document.getElementById('csBotBg').value,
-    botColor:      document.getElementById('csBotColor').value,
-    userBg:        document.getElementById('csUserBg').value,
-    userColor:     document.getElementById('csUserColor').value,
-    bubbleOpacity: parseInt(document.getElementById('csBubbleOpacity').value) / 100,
-    fontSize:      parseInt(document.getElementById('csFontSize').value)
+  var s = {
+    botBg:       document.getElementById('csVal_bot').value,
+    userBg:      document.getElementById('csVal_user').value,
+    botColor:    '#F4EAF2',
+    userColor:   '#231019',
+    botOpacity:  parseInt(document.getElementById('csBotOpacity').value)/100,
+    userOpacity: parseInt(document.getElementById('csUserOpacity').value)/100,
+    fontSize:    parseInt(document.getElementById('csFontSize').value)
   };
   if (currentScene) { currentScene.chatStyle = s; saveScenes(); }
   else if (currentChar) { currentChar.chatStyle = s; _saveChar(); }
@@ -386,13 +367,27 @@ function openChat(id) {
 
 function openChatMenu() {
   const isLib = !!(currentChar?.isLibraryChar);
-  openModal('Opciones del chat', [
-    ...(!isLib && !currentScene ? [{label: '✎  Editar personaje', action: `editFromChat()`}] : []),
-    {label: '📌  Hitos',            action: `openMilestonesModal()`},
-    {label: '🎨  Estilo del chat',   action: `openChatStyleModal()`},
-    {label: '🗑  Limpiar historial', action: `clearHistory()`},
-    {label: '✕  Cancelar',          action: 'closeModal()'}
-  ]);
+  closeChatMenu();
+  const items = [
+    ...(!isLib && !currentScene ? [['edit', 'Editar personaje', 'editFromChat()', '']] : []),
+    ['flag', 'Hitos', 'openMilestonesModal()', 'coral'],
+    ['palette', 'Estilo del chat', 'openChatStyleModal()', 'violet'],
+    ['broom', 'Limpiar historial', 'clearHistory()', 'pink'],
+    ['x', 'Cancelar', 'closeChatMenu()', 'muted'],
+  ];
+  const back = document.createElement('div');
+  back.className = 'chat-menu-back'; back.id = 'chatMenuBack'; back.onclick = closeChatMenu;
+  const menu = document.createElement('div');
+  menu.className = 'chat-menu'; menu.id = 'chatMenu';
+  menu.innerHTML = items.map(function(it){ return '<button class="chat-menu-item" onclick="closeChatMenu();'+it[2]+'"><span class="chat-menu-ic '+it[3]+'"><i data-icon="'+it[0]+'" data-size="18"></i></span>'+it[1]+'</button>'; }).join('');
+  document.body.appendChild(back);
+  document.body.appendChild(menu);
+  if (window.STORYM && STORYM.scanIcons) STORYM.scanIcons(menu);
+}
+
+function closeChatMenu() {
+  var m=document.getElementById("chatMenu"); if(m) m.remove();
+  var b=document.getElementById("chatMenuBack"); if(b) b.remove();
 }
 
 function updateChatMissionsBtn() {

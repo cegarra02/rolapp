@@ -24,6 +24,7 @@ function renderScenesScreen() {
     const bg = sceneChars.find(ch => ch.bg);
     return `<div class="scene-card" onclick="openSceneChat('${s.id}')">
       ${bg ? `<div class="scene-card-bg" style="background-image:url('${bg.bg}')"></div>` : '<div class="scene-card-nochars">⚡</div>'}
+      <div class="scene-card-count"><i data-icon="users" data-size="12"></i> ${sceneChars.length}</div>
       <div class="scene-card-body">
         <div class="scene-card-name">${esc(s.name)}</div>
         <div class="scene-card-chars">${sceneChars.map(ch => ch.name).join(' · ') || 'Sin personajes'}</div>

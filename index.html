@@ -11,7 +11,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='4' y1='3' x2='28' y2='29' gradientUnits='userSpaceOnUse'><stop stop-color='%23FFC56B'/><stop offset='.52' stop-color='%23FF7E9D'/><stop offset='1' stop-color='%23B66BE0'/></linearGradient></defs><rect width='32' height='32' rx='9' fill='url(%23g)'/><path fill='%23fff' fill-rule='evenodd' d='M10 8h12a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-4l-4 4v-4h-4a4 4 0 0 1-4-4v-6a4 4 0 0 1 4-4z M16 11l1.2 3.5 3.5 1.2-3.5 1.2L16 20.4l-1.2-3.5-3.5-1.2 3.5-1.2z'/></svg>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=153">
+<link rel="stylesheet" href="css/style.css?v=154">
 <link rel="manifest" href="manifest.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -468,16 +468,16 @@
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav" id="bottomNav">
   <div class="nav-tab" id="tabExplore" onclick="switchTab('explore')">
-    <div class="nav-icon">🔍</div>
+    <div class="nav-icon"><i data-icon="compass" data-size="23"></i></div>
     <div class="nav-label">Explorar</div>
   </div>
   <div class="nav-tab active" id="tabChars" onclick="switchTab('chars')">
-    <div class="nav-icon">🎭</div>
+    <div class="nav-icon"><i data-icon="users" data-size="23"></i></div>
     <div class="nav-label">Personajes</div>
   </div>
   <button class="nav-create" onclick="navCreate()" aria-label="Crear"><i data-icon="plus" data-size="26" data-stroke="2.6"></i></button>
   <div class="nav-tab" id="tabChats" onclick="switchTab('chats')">
-    <div class="nav-icon">💬</div>
+    <div class="nav-icon"><i data-icon="message" data-size="23"></i></div>
     <div class="nav-label">Chat</div>
   </div>
   <div class="nav-tab" id="tabMissions" onclick="switchTab('missions')" style="display:none">
@@ -485,7 +485,7 @@
     <div class="nav-label">Misiones</div>
   </div>
   <div class="nav-tab" id="tabProfile" onclick="switchTab('profile')">
-    <div class="nav-icon">👤</div>
+    <div class="nav-icon"><i data-icon="user" data-size="23"></i></div>
     <div class="nav-label">Mi Perfil</div>
   </div>
 </nav>
@@ -576,13 +576,10 @@
 
 <!-- PROFILE SCREEN -->
 <div class="screen" id="profileScreen">
-  <div class="hdr">
-    <div class="home-logo"><i data-icon="user" data-size="20"></i></div>
+  <div class="hdr hdr-plain">
     <div style="flex:1">
-      <div class="hdr-title">Mi Perfil</div>
-      <div class="hdr-sub">Tu identidad en el roleplay</div>
+      <div class="hdr-title" style="font-size:23px">Mi Perfil</div>
     </div>
-    <button class="icon-btn" onclick="saveProfile()"><i data-icon="check"></i></button>
   </div>
   <div class="edit-scroll">
     <!-- Auth section -->
@@ -638,23 +635,32 @@
 
 <button class="btn-primary" onclick="saveProfile()">Guardar mi perfil</button>
 
-    <div class="section-label" style="margin-top:20px">Idioma</div>
-    <div class="lang-pick">
-      <button class="lang-btn active" id="langES" onclick="pickLang('es')"><i data-icon="globe" data-size="16"></i> Español</button>
-      <button class="lang-btn" id="langEN" onclick="pickLang('en')"><i data-icon="globe" data-size="16"></i> English</button>
-    </div>
-
-    <div id="modEntryRow" style="display:none">
-      <div class="section-label" style="margin-top:20px">Administración</div>
-      <button class="settings-row" onclick="openModeration()">
-        <span class="settings-row-ic"><i data-icon="shield" data-size="18"></i></span>
+    <div class="settings-card" id="profileSettingsCard" style="display:none">
+      <div class="settings-row" onclick="openAppearancePicker()">
+        <span class="settings-row-ic apc"><i data-icon="moon" data-size="18"></i></span>
+        <span class="settings-row-label">Apariencia</span>
+        <span class="settings-row-value" id="appearanceValue">Crepúsculo</span>
+        <span class="settings-row-chev"><i data-icon="chevronR" data-size="18"></i></span>
+      </div>
+      <div class="settings-row" onclick="openLangPicker()">
+        <span class="settings-row-ic lng"><i data-icon="globe" data-size="18"></i></span>
+        <span class="settings-row-label">Idioma</span>
+        <span class="settings-row-value" id="langValue">Español</span>
+        <span class="settings-row-chev"><i data-icon="chevronR" data-size="18"></i></span>
+      </div>
+      <div id="modEntryRow" class="settings-row" onclick="openModeration()" style="display:none">
+        <span class="settings-row-ic adm"><i data-icon="shield" data-size="18"></i></span>
         <span class="settings-row-label">Panel de moderación</span>
         <span class="mod-count" id="modPendingCount" style="display:none">0</span>
         <span class="settings-row-chev"><i data-icon="chevronR" data-size="18"></i></span>
-      </button>
+      </div>
+      <div class="settings-row settings-row-danger" onclick="doSignOut()">
+        <span class="settings-row-ic dgr"><i data-icon="logout" data-size="18"></i></span>
+        <span class="settings-row-label">Cerrar sesión</span>
+      </div>
     </div>
 
-    <div class="app-version">v153</div>
+    <div class="app-version">v154</div>
   </div>
 </div>
 
@@ -677,32 +683,38 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/state.js?v=153"></script>
-<script src="js/utils.js?v=153"></script>
-<script src="js/ui.js?v=153"></script>
-<script src="js/icons.js?v=153"></script>
-<script src="js/sliders.js?v=153"></script>
-<script src="js/supabase.js?v=153"></script>
-<script src="js/storage.js?v=153"></script>
-<script src="js/sync.js?v=153"></script>
-<script src="js/api.js?v=153"></script>
-<script src="js/cropper.js?v=153"></script>
-<script src="js/chars.js?v=153"></script>
-<script src="js/profile.js?v=153"></script>
-<script src="js/scenes.js?v=153"></script>
-<script src="js/inbox.js?v=153"></script>
-<script src="js/missions.js?v=153"></script>
-<script src="js/hitos.js?v=153"></script>
-<script src="js/explore.js?v=153"></script>
-<script src="js/moderation.js?v=153"></script>
-<script src="js/gemshop.js?v=153"></script>
-<script src="js/chat.js?v=153"></script>
-<script src="js/main.js?v=153"></script>
-<script src="js/rewards.js?v=153"></script>
+<script src="js/state.js?v=154"></script>
+<script src="js/utils.js?v=154"></script>
+<script src="js/ui.js?v=154"></script>
+<script src="js/icons.js?v=154"></script>
+<script src="js/sliders.js?v=154"></script>
+<script src="js/supabase.js?v=154"></script>
+<script src="js/storage.js?v=154"></script>
+<script src="js/sync.js?v=154"></script>
+<script src="js/api.js?v=154"></script>
+<script src="js/cropper.js?v=154"></script>
+<script src="js/chars.js?v=154"></script>
+<script src="js/profile.js?v=154"></script>
+<script src="js/scenes.js?v=154"></script>
+<script src="js/inbox.js?v=154"></script>
+<script src="js/missions.js?v=154"></script>
+<script src="js/hitos.js?v=154"></script>
+<script src="js/explore.js?v=154"></script>
+<script src="js/moderation.js?v=154"></script>
+<script src="js/gemshop.js?v=154"></script>
+<script src="js/chat.js?v=154"></script>
+<script src="js/main.js?v=154"></script>
+<script src="js/rewards.js?v=154"></script>
 <script>
 // ── Onboarding de primera vez ───────────────────────────────
 function navCreate(){ var sc=document.getElementById('scenesScreen'); if(sc&&sc.classList.contains('active')){ if(window.openSceneCreate)openSceneCreate(); } else if(window.openCreate){ openCreate(); } }
-function pickLang(l){try{localStorage.setItem('storym_lang',l);}catch(e){}var es=document.getElementById('langES'),en=document.getElementById('langEN');if(es)es.classList.toggle('active',l==='es');if(en)en.classList.toggle('active',l==='en');if(window.setLanguage)try{setLanguage(l);}catch(e){}}
+var STORYM_LANGS = [['es','Español'],['en','English']];
+var STORYM_APPEARANCES = [['dusk','Crepúsculo']];
+function pickLang(l){ try{localStorage.setItem('storym_lang',l);}catch(e){} var lv=document.getElementById('langValue'); var f=STORYM_LANGS.find(function(x){return x[0]===l;}); if(lv&&f)lv.textContent=f[1]; if(window.setLanguage)try{setLanguage(l);}catch(e){} }
+function _closePicker(){var o=document.getElementById('storymPicker');if(o){o.querySelector('.picker-overlay').classList.remove('open');o.querySelector('.picker-sheet').classList.remove('open');setTimeout(function(){o.remove();},300);}}
+function _openPicker(title,options,current,onPick){ _closePicker(); var wrap=document.createElement('div');wrap.id='storymPicker'; wrap.innerHTML='<div class="picker-overlay"></div><div class="picker-sheet"><div class="picker-grip"></div><div class="picker-title">'+title+'</div><div class="picker-list">'+options.map(function(o){return '<button class="picker-item'+(o[0]===current?' sel':'')+'" data-val="'+o[0]+'">'+o[1]+'<span class="picker-check"><i data-icon=\"check\" data-size=\"16\"></i></span></button>';}).join('')+'</div></div>'; document.body.appendChild(wrap); wrap.querySelector('.picker-overlay').onclick=_closePicker; wrap.querySelectorAll('.picker-item').forEach(function(b){b.onclick=function(){onPick(b.getAttribute('data-val'));_closePicker();};}); if(window.STORYM&&STORYM.scanIcons)STORYM.scanIcons(wrap); setTimeout(function(){wrap.querySelector('.picker-overlay').classList.add('open');wrap.querySelector('.picker-sheet').classList.add('open');},16); }
+function openLangPicker(){var cur=(localStorage.getItem('storym_lang')||'es');_openPicker('Idioma',STORYM_LANGS,cur,pickLang);}
+function openAppearancePicker(){_openPicker('Apariencia',STORYM_APPEARANCES,'dusk',function(){});}
 (function(){try{var l=localStorage.getItem('storym_lang')||'es';document.addEventListener('DOMContentLoaded',function(){pickLang(l);});}catch(e){}})();
 function onbGuest(){ try{localStorage.setItem('storym_onboarded','1');}catch(e){} var o=document.getElementById('onboardingScreen'); if(o){o.classList.add('onb-hide'); setTimeout(()=>o.style.display='none',350);} }
 function onbGoogle(){ try{localStorage.setItem('storym_onboarded','1');}catch(e){} if(window.signInWithGoogleRedirect) return signInWithGoogleRedirect(); if(window.google?.accounts?.id) try{google.accounts.id.prompt();}catch(e){} onbGuest(); }

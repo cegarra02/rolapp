@@ -226,10 +226,11 @@ function renderUserHeader() {
     if (supabaseUser) {
       const name = supabaseUser.user_metadata?.full_name || supabaseUser.email || '';
       const initials = name.slice(0, 2).toUpperCase();
-      el.innerHTML = `<span class="uhc-gems" onclick="openGemShop()">💎 ${gems}</span><div class="uhc-avatar" onclick="switchTab('profile')">${initials}</div>`;
+      el.innerHTML = `<span class="uhc-gems" onclick="openGemShop()"><i data-icon="gem" data-size="15"></i> ${gems}</span><div class="uhc-avatar" onclick="switchTab('profile')">${initials}</div>`;
     } else {
-      el.innerHTML = `<span class="uhc-gems" onclick="openGemShop()">💎 ${gems}</span><button class="uhc-login" onclick="switchTab('profile')">👤</button>`;
+      el.innerHTML = `<span class="uhc-gems" onclick="openGemShop()"><i data-icon="gem" data-size="15"></i> ${gems}</span>`;
     }
+    if (window.STORYM && STORYM.scanIcons) STORYM.scanIcons(el);
   });
 
   // Sync profile gems badge if already rendered
