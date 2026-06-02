@@ -107,12 +107,12 @@ function renderExploreList() {
       ${x.bg
         ? `<div class="char-card-bg" style="background-image:url('${x.bg}')"></div>`
         : `<div class="char-card-bg-placeholder">${esc((x.name || '?')[0])}</div>`}
-      <div class="char-card-stat">💬 ${stat}</div>
+      <div class="char-card-stat stat-right"><i data-icon="flame" data-size="12"></i> ${stat}</div>
       <div class="char-card-body">
         <div class="char-card-name">${esc(x.name)}</div>
         ${tagsMiniHtml(tags)}
       </div>
-      ${admin ? `<div class="char-card-edit" onclick="event.stopPropagation();openLibDetail('${x.id}')">✎</div>` : ''}
+      ${admin ? `<div class="char-card-edit edit-left" onclick="event.stopPropagation();openLibDetail('${x.id}')">✎</div>` : ''}
     </div>`;
   }).join('');
 }

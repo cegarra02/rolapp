@@ -11,7 +11,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='4' y1='3' x2='28' y2='29' gradientUnits='userSpaceOnUse'><stop stop-color='%23FFC56B'/><stop offset='.52' stop-color='%23FF7E9D'/><stop offset='1' stop-color='%23B66BE0'/></linearGradient></defs><rect width='32' height='32' rx='9' fill='url(%23g)'/><path fill='%23fff' fill-rule='evenodd' d='M10 8h12a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-4l-4 4v-4h-4a4 4 0 0 1-4-4v-6a4 4 0 0 1 4-4z M16 11l1.2 3.5 3.5 1.2-3.5 1.2L16 20.4l-1.2-3.5-3.5-1.2 3.5-1.2z'/></svg>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=152">
+<link rel="stylesheet" href="css/style.css?v=153">
 <link rel="manifest" href="manifest.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -51,20 +51,15 @@
     </div>
     <div class="user-header-chip" id="headerChipHome"></div>
   </div>
-  <button class="scenes-shortcut" onclick="switchTab('scenes')">
-    <div class="scenes-shortcut-icon">⚡</div>
-    <div style="flex:1">
-      <div class="scenes-shortcut-label">Escenas grupales</div>
-      <div class="scenes-shortcut-sub">Roleplay con múltiples personajes</div>
-    </div>
-    <div class="scenes-shortcut-arrow">›</div>
-  </button>
+  <div class="subtabs">
+    <button class="subtab active" id="subtabChars" onclick="switchTab('chars')">Personajes</button>
+    <button class="subtab" id="subtabScenes" onclick="switchTab('scenes')">Escenas grupales</button>
+  </div>
   <div class="search-wrap">
     <span class="search-icon"><i data-icon="search" data-size="17"></i></span>
     <input class="search-inp" id="searchInp" placeholder="Buscar personajes…" oninput="renderChars()">
   </div>
   <div class="chars-list" id="charsList"></div>
-  <button class="fab" onclick="openCreate()" style="font-size:32px;line-height:1;padding-bottom:2px">+</button>
 </div>
 
 <!-- CREATE / EDIT -->
@@ -303,14 +298,18 @@
 <!-- SCENES SCREEN -->
 <div class="screen" id="scenesScreen">
   <div class="hdr">
-    <button class="icon-btn" onclick="goHome()"><i data-icon="arrowLeft"></i></button>
+    <div class="home-logo"><svg class="brand-glyph" viewBox="0 0 40 40" aria-hidden="true"><path fill-rule="evenodd" d="M11 9 H29 A5 5 0 0 1 34 14 V24 A5 5 0 0 1 29 29 H22 L16 34 V29 H11 A5 5 0 0 1 6 24 V14 A5 5 0 0 1 11 9 Z M20 12.5 L21.8 17.2 L26.5 19 L21.8 20.8 L20 25.5 L18.2 20.8 L13.5 19 L18.2 17.2 Z"/></svg></div>
     <div style="flex:1">
-      <div class="hdr-title">Escenas</div>
-      <div class="hdr-sub">Roleplay grupal</div>
+      <div class="hdr-title">Storym</div>
+      <div class="hdr-sub">Sin límites, tus reglas</div>
     </div>
+    <div class="user-header-chip" id="headerChipScenes"></div>
+  </div>
+  <div class="subtabs">
+    <button class="subtab" onclick="switchTab('chars')">Personajes</button>
+    <button class="subtab active" onclick="switchTab('scenes')">Escenas grupales</button>
   </div>
   <div class="chars-list" id="scenesList" style="padding-bottom:90px"></div>
-  <button class="fab" onclick="openSceneCreate()" style="font-size:32px;line-height:1;padding-bottom:2px">+</button>
 </div>
 
 <!-- SCENE CREATE -->
@@ -476,6 +475,7 @@
     <div class="nav-icon">🎭</div>
     <div class="nav-label">Personajes</div>
   </div>
+  <button class="nav-create" onclick="navCreate()" aria-label="Crear"><i data-icon="plus" data-size="26" data-stroke="2.6"></i></button>
   <div class="nav-tab" id="tabChats" onclick="switchTab('chats')">
     <div class="nav-icon">💬</div>
     <div class="nav-label">Chat</div>
@@ -640,14 +640,21 @@
 
     <div class="section-label" style="margin-top:20px">Idioma</div>
     <div class="lang-pick">
-      <button class="lang-btn active" id="langES" onclick="pickLang('es')"><span class="lang-flag">ES</span> Español</button>
-      <button class="lang-btn" id="langEN" onclick="pickLang('en')"><span class="lang-flag">EN</span> English</button>
+      <button class="lang-btn active" id="langES" onclick="pickLang('es')"><i data-icon="globe" data-size="16"></i> Español</button>
+      <button class="lang-btn" id="langEN" onclick="pickLang('en')"><i data-icon="globe" data-size="16"></i> English</button>
     </div>
 
-    <button class="logout-btn" onclick="(window.signOut||window.logout||function(){try{localStorage.removeItem('storym_onboarded');}catch(e){}location.reload();})()">
-      <i data-icon="logout" data-size="18"></i> Cerrar sesión
-    </button>
-    <div class="app-version">v152</div>
+    <div id="modEntryRow" style="display:none">
+      <div class="section-label" style="margin-top:20px">Administración</div>
+      <button class="settings-row" onclick="openModeration()">
+        <span class="settings-row-ic"><i data-icon="shield" data-size="18"></i></span>
+        <span class="settings-row-label">Panel de moderación</span>
+        <span class="mod-count" id="modPendingCount" style="display:none">0</span>
+        <span class="settings-row-chev"><i data-icon="chevronR" data-size="18"></i></span>
+      </button>
+    </div>
+
+    <div class="app-version">v153</div>
   </div>
 </div>
 
@@ -670,30 +677,31 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/state.js?v=152"></script>
-<script src="js/utils.js?v=152"></script>
-<script src="js/ui.js?v=152"></script>
-<script src="js/icons.js?v=152"></script>
-<script src="js/sliders.js?v=152"></script>
-<script src="js/supabase.js?v=152"></script>
-<script src="js/storage.js?v=152"></script>
-<script src="js/sync.js?v=152"></script>
-<script src="js/api.js?v=152"></script>
-<script src="js/cropper.js?v=152"></script>
-<script src="js/chars.js?v=152"></script>
-<script src="js/profile.js?v=152"></script>
-<script src="js/scenes.js?v=152"></script>
-<script src="js/inbox.js?v=152"></script>
-<script src="js/missions.js?v=152"></script>
-<script src="js/hitos.js?v=152"></script>
-<script src="js/explore.js?v=152"></script>
-<script src="js/moderation.js?v=152"></script>
-<script src="js/gemshop.js?v=152"></script>
-<script src="js/chat.js?v=152"></script>
-<script src="js/main.js?v=152"></script>
-<script src="js/rewards.js?v=152"></script>
+<script src="js/state.js?v=153"></script>
+<script src="js/utils.js?v=153"></script>
+<script src="js/ui.js?v=153"></script>
+<script src="js/icons.js?v=153"></script>
+<script src="js/sliders.js?v=153"></script>
+<script src="js/supabase.js?v=153"></script>
+<script src="js/storage.js?v=153"></script>
+<script src="js/sync.js?v=153"></script>
+<script src="js/api.js?v=153"></script>
+<script src="js/cropper.js?v=153"></script>
+<script src="js/chars.js?v=153"></script>
+<script src="js/profile.js?v=153"></script>
+<script src="js/scenes.js?v=153"></script>
+<script src="js/inbox.js?v=153"></script>
+<script src="js/missions.js?v=153"></script>
+<script src="js/hitos.js?v=153"></script>
+<script src="js/explore.js?v=153"></script>
+<script src="js/moderation.js?v=153"></script>
+<script src="js/gemshop.js?v=153"></script>
+<script src="js/chat.js?v=153"></script>
+<script src="js/main.js?v=153"></script>
+<script src="js/rewards.js?v=153"></script>
 <script>
 // ── Onboarding de primera vez ───────────────────────────────
+function navCreate(){ var sc=document.getElementById('scenesScreen'); if(sc&&sc.classList.contains('active')){ if(window.openSceneCreate)openSceneCreate(); } else if(window.openCreate){ openCreate(); } }
 function pickLang(l){try{localStorage.setItem('storym_lang',l);}catch(e){}var es=document.getElementById('langES'),en=document.getElementById('langEN');if(es)es.classList.toggle('active',l==='es');if(en)en.classList.toggle('active',l==='en');if(window.setLanguage)try{setLanguage(l);}catch(e){}}
 (function(){try{var l=localStorage.getItem('storym_lang')||'es';document.addEventListener('DOMContentLoaded',function(){pickLang(l);});}catch(e){}})();
 function onbGuest(){ try{localStorage.setItem('storym_onboarded','1');}catch(e){} var o=document.getElementById('onboardingScreen'); if(o){o.classList.add('onb-hide'); setTimeout(()=>o.style.display='none',350);} }

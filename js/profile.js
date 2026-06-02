@@ -37,9 +37,9 @@ function renderAuthSection() {
           </div>
         </div>
         <div class="auth-gems-badge">💎 <strong>${gems}</strong> gemas</div>
-        ${isAdmin() ? `<button class="auth-btn auth-btn-google" style="margin-top:10px" onclick="openModeration()">🛡️ Panel de moderación</button>` : ''}
         <button class="auth-btn auth-btn-logout" style="margin-top:10px" onclick="doSignOut()">Cerrar sesión</button>
       </div>`;
+    renderModEntry();
   } else {
     const isNative = !!(window.Capacitor?.isNativePlatform?.());
     el.innerHTML = `
@@ -55,6 +55,23 @@ function renderAuthSection() {
       </div>`;
     if (!isNative) setTimeout(() => initGoogleSignIn('googleBtnContainer'), 100);
   }
+  renderModEntry();
+}
+
+// Fila de moderación (abajo, solo admin) con contador de pendientes
+async function renderModEntry() {
+  const row = document.getElementById('modEntryRow');
+  if (!row) return;
+  if (typeof isAdmin !== 'function' || !isAdmin()) { row.style.display = 'none'; return; }
+  row.style.display = 'block';
+  if (window.STORYM && STORYM.scanIcons) STORYM.scanIcons(row);
+  try {
+    const { count } = await supaClient
+      .from('submissions').select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+    const b = document.getElementById('modPendingCount');
+    if (b) { b.textContent = count || 0; b.style.display = count ? 'inline-flex' : 'none'; }
+  } catch (e) {}
 }
 
 function setAuthTab(tab) {
