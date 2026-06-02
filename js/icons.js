@@ -66,6 +66,7 @@
     female:   '<circle cx="12" cy="8" r="6"/><line x1="12" y1="14" x2="12" y2="22"/><line x1="9" y1="19" x2="15" y2="19"/>',
     hourglass:'<path d="M6 2h12"/><path d="M6 22h12"/><path d="M6 2c0 4 4 5.5 6 8 2-2.5 6-4 6-8"/><path d="M6 22c0-4 4-5.5 6-8 2 2.5 6 4 6 8"/>',
     bell:     '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+    moon:     '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
   };
   // emoji → icon-name fallback map (so leftover emoji still convert if wrapped)
   var EMOJI = { '🔍':'search','🧭':'compass','🎭':'masks','💬':'message','👤':'user','⚔':'swords','⚔️':'swords','🗡️':'swords','🗡':'swords','➕':'plus','✓':'check','💾':'check','✕':'x','❌':'x','←':'arrowLeft','⋮':'dots','➤':'send','✎':'edit','✏️':'edit','💎':'gem','🎁':'gift','👑':'crown','📺':'play','⚡':'zap','📌':'flag','🏅':'award','ℹ️':'info','🛡️':'shield','🔄':'refresh','⏸':'pause','⚠️':'alert','🖼️':'image','🗑':'trash','🗑️':'trash','🎨':'palette','🌐':'globe','⚙':'sliders','⚙️':'sliders','♂':'male','♀':'female','⏳':'hourglass','🔥':'flame','❤️':'heart','😶':'user','🌶️':'sparkles','✦':'sparkles','🔔':'bell','⭐':'star' };

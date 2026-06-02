@@ -11,7 +11,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='4' y1='3' x2='28' y2='29' gradientUnits='userSpaceOnUse'><stop stop-color='%23FFC56B'/><stop offset='.52' stop-color='%23FF7E9D'/><stop offset='1' stop-color='%23B66BE0'/></linearGradient></defs><rect width='32' height='32' rx='9' fill='url(%23g)'/><path fill='%23fff' fill-rule='evenodd' d='M10 8h12a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-4l-4 4v-4h-4a4 4 0 0 1-4-4v-6a4 4 0 0 1 4-4z M16 11l1.2 3.5 3.5 1.2-3.5 1.2L16 20.4l-1.2-3.5-3.5-1.2 3.5-1.2z'/></svg>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=154">
+<link rel="stylesheet" href="css/style.css?v=155">
 <link rel="manifest" href="manifest.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -184,7 +184,8 @@
     <!-- Custom player profile -->
     <div class="field-card">
       <div class="custom-profile-toggle">
-        <div>
+        <span class="cpt-ic"><i data-icon="settings" data-size="18"></i></span>
+        <div style="flex:1;min-width:0">
           <div class="custom-profile-toggle-label">Perfil del jugador personalizado</div>
           <div class="custom-profile-toggle-sub">Usa datos distintos a "Mi Perfil" en este chat</div>
         </div>
@@ -208,7 +209,8 @@
     <!-- Public toggle (only visible when logged in) -->
     <div class="field-card" id="publicToggleCard" style="display:none">
       <div class="custom-profile-toggle" style="border-top:none;padding-top:0">
-        <div>
+        <span class="cpt-ic"><i data-icon="compass" data-size="18"></i></span>
+        <div style="flex:1;min-width:0">
           <div class="custom-profile-toggle-label">Hacer público</div>
           <div class="custom-profile-toggle-sub">Enviar a la biblioteca de la comunidad para revisión</div>
         </div>
@@ -341,7 +343,8 @@
     <!-- Custom player profile -->
     <div class="field-card">
       <div class="custom-profile-toggle">
-        <div>
+        <span class="cpt-ic"><i data-icon="settings" data-size="18"></i></span>
+        <div style="flex:1;min-width:0">
           <div class="custom-profile-toggle-label">Perfil del jugador personalizado</div>
           <div class="custom-profile-toggle-sub">Usa datos distintos a "Mi Perfil" en esta escena</div>
         </div>
@@ -660,7 +663,7 @@
       </div>
     </div>
 
-    <div class="app-version">v154</div>
+    <div class="app-version">v155</div>
   </div>
 </div>
 
@@ -683,28 +686,28 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/state.js?v=154"></script>
-<script src="js/utils.js?v=154"></script>
-<script src="js/ui.js?v=154"></script>
-<script src="js/icons.js?v=154"></script>
-<script src="js/sliders.js?v=154"></script>
-<script src="js/supabase.js?v=154"></script>
-<script src="js/storage.js?v=154"></script>
-<script src="js/sync.js?v=154"></script>
-<script src="js/api.js?v=154"></script>
-<script src="js/cropper.js?v=154"></script>
-<script src="js/chars.js?v=154"></script>
-<script src="js/profile.js?v=154"></script>
-<script src="js/scenes.js?v=154"></script>
-<script src="js/inbox.js?v=154"></script>
-<script src="js/missions.js?v=154"></script>
-<script src="js/hitos.js?v=154"></script>
-<script src="js/explore.js?v=154"></script>
-<script src="js/moderation.js?v=154"></script>
-<script src="js/gemshop.js?v=154"></script>
-<script src="js/chat.js?v=154"></script>
-<script src="js/main.js?v=154"></script>
-<script src="js/rewards.js?v=154"></script>
+<script src="js/state.js?v=155"></script>
+<script src="js/utils.js?v=155"></script>
+<script src="js/ui.js?v=155"></script>
+<script src="js/icons.js?v=155"></script>
+<script src="js/sliders.js?v=155"></script>
+<script src="js/supabase.js?v=155"></script>
+<script src="js/storage.js?v=155"></script>
+<script src="js/sync.js?v=155"></script>
+<script src="js/api.js?v=155"></script>
+<script src="js/cropper.js?v=155"></script>
+<script src="js/chars.js?v=155"></script>
+<script src="js/profile.js?v=155"></script>
+<script src="js/scenes.js?v=155"></script>
+<script src="js/inbox.js?v=155"></script>
+<script src="js/missions.js?v=155"></script>
+<script src="js/hitos.js?v=155"></script>
+<script src="js/explore.js?v=155"></script>
+<script src="js/moderation.js?v=155"></script>
+<script src="js/gemshop.js?v=155"></script>
+<script src="js/chat.js?v=155"></script>
+<script src="js/main.js?v=155"></script>
+<script src="js/rewards.js?v=155"></script>
 <script>
 // ── Onboarding de primera vez ───────────────────────────────
 function navCreate(){ var sc=document.getElementById('scenesScreen'); if(sc&&sc.classList.contains('active')){ if(window.openSceneCreate)openSceneCreate(); } else if(window.openCreate){ openCreate(); } }

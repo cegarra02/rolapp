@@ -259,7 +259,7 @@ function _csColorItem(label, inputId, swatchId, defaultVal) {
 }
 
 var CS_USER_COLORS = ['#FF7E9D','#B66BE0','#6E8BFF','#5FC79E','#FF9E7D','#E85D9A'];
-var CS_BOT_COLORS  = ['#322440','#2e2638','#3a2030','#203038','#2a2a2a','#0a0a0e'];
+var CS_BOT_COLORS  = ['#3A2A52','#2A3A6E','#5A2A3A','#1F5A4A','#5A4A1F','#1A1A22'];
 function _csSwatches(group, colors, current){
   return colors.map(function(c){
     var sel = (c.toLowerCase()===(current||'').toLowerCase());

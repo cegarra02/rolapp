@@ -26,18 +26,21 @@ function renderAuthSection() {
     const email = supabaseUser.email || '';
     const name  = supabaseUser.user_metadata?.full_name || email;
     const initials = name.slice(0, 2).toUpperCase();
+    const pic   = supabaseUser.user_metadata?.avatar_url || supabaseUser.user_metadata?.picture || '';
     const gems = getDisplayGems();
+    const admin = (typeof isAdmin === 'function' && isAdmin());
     el.innerHTML = `
       <div class="auth-section">
         <div class="auth-user-row">
-          <div class="auth-user-avatar">${initials}</div>
+          <div class="auth-user-avatar">${pic ? `<img src="${pic}" alt="">` : initials}</div>
           <div class="auth-user-info">
-            <div class="auth-user-name">${esc(name)}</div>
+            <div class="auth-user-name">${esc(name)}${admin ? `<span class="auth-admin-badge">ADMIN</span>` : ''}</div>
             <div class="auth-user-email">${esc(email)}</div>
           </div>
+          <button class="auth-gems-chip" onclick="openGemShop()"><i data-icon="gem" data-size="15"></i> ${gems}</button>
         </div>
-        <div class="auth-gems-badge">💎 <strong>${gems}</strong> gemas</div>
       </div>`;
+    if (window.STORYM && STORYM.scanIcons) STORYM.scanIcons(el);
     renderModEntry();
   } else {
     const isNative = !!(window.Capacitor?.isNativePlatform?.());
@@ -64,7 +67,7 @@ async function renderModEntry() {
   const row = document.getElementById('modEntryRow');
   if (!row) return;
   if (typeof isAdmin !== 'function' || !isAdmin()) { row.style.display = 'none'; return; }
-  row.style.display = 'block';
+  row.style.display = 'flex';
   if (window.STORYM && STORYM.scanIcons) STORYM.scanIcons(row);
   try {
     const { count } = await supaClient
