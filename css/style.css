@@ -447,16 +447,23 @@ input[type=file]{display:none}
 .hito-confirm-no{padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer}
 /* ── USER HEADER CHIP ── */
 .user-header-chip{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.uhc-gems{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13.5px;font-weight:800;color:var(--coral,#FF9E7D);background:var(--surface);border:1px solid var(--border);padding:7px 13px;border-radius:20px}
+.uhc-gems{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13.5px;font-weight:800;color:var(--coral,#FF9E7D);background:var(--surface);border:1px solid var(--border);padding:6px 6px 6px 13px;border-radius:20px;position:relative;transition:transform .12s}
+.uhc-gems:active{transform:scale(.94)}
+.uhc-plus{width:21px;height:21px;border-radius:50%;background:var(--grad);color:var(--on-grad,#2A142A);display:flex;align-items:center;justify-content:center;margin-left:4px;flex-shrink:0}
+.uhc-plus .ic{color:var(--on-grad,#2A142A)}
 .uhc-gems .ic{color:var(--coral,#FF9E7D)}
+.uhc-gems .uhc-plus .ic{color:var(--on-grad,#2A142A)}
+/* ── rewards button — tinted when a reward is unclaimed ── */
+.rw-btn.has-reward{background:rgba(var(--accent-rgb),.16);border-color:rgba(var(--accent-rgb),.5);color:var(--accent)}
 /* ── HEADER VIP BUTTON (eye-catching) ── */
 .hdr-vip-btn{display:flex;align-items:center;gap:5px;border:none;cursor:pointer;padding:8px 14px;border-radius:20px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;letter-spacing:.3px;color:#3A2A05;background:linear-gradient(135deg,#FFD66B,#FF9E3D);box-shadow:0 4px 14px rgba(255,158,61,.45);position:relative;overflow:hidden}
 .hdr-vip-btn .ic{color:#3A2A05}
 .hdr-vip-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.7),transparent);transform:skewX(-20deg);animation:vipShine 3.2s ease-in-out infinite}
 @keyframes vipShine{0%,72%{left:-60%}86%{left:130%}100%{left:130%}}
 .hdr-vip-btn:active{transform:scale(.94)}
-.hdr-vip-btn.is-vip{background:linear-gradient(135deg,#C9A227,#8E6B12);color:#fff}
-.hdr-vip-btn.is-vip .ic{color:#FFE9A8}
+.hdr-vip-btn.is-vip{background:linear-gradient(135deg,#FFF1C4 0%,#F5C24A 42%,#C9912A 100%);color:#3A2A05;border:1px solid rgba(255,235,170,.7);box-shadow:0 4px 16px rgba(201,145,42,.5),inset 0 1px 0 rgba(255,255,255,.6);animation:vipGlow 2.8s ease-in-out infinite}
+.hdr-vip-btn.is-vip .ic{color:#5A3A05}
+@keyframes vipGlow{0%,100%{box-shadow:0 4px 16px rgba(201,145,42,.42),inset 0 1px 0 rgba(255,255,255,.6)}50%{box-shadow:0 4px 22px rgba(245,194,74,.7),inset 0 1px 0 rgba(255,255,255,.7)}}
 /* ── VIP SCREEN ── */
 #vipScreen{background:var(--bg)}
 .vip-hero{position:relative;padding:calc(var(--safe-top) + 26px) 24px 30px;text-align:center;background:radial-gradient(120% 90% at 50% -10%,rgba(255,180,80,.22),transparent 62%),linear-gradient(180deg,rgba(255,158,61,.10),transparent)}
@@ -591,36 +598,47 @@ input[type=file]{display:none}
 .gem-shop-sheet.open{transform:translateY(0);transition:transform .3s cubic-bezier(.33,1,.68,1)}
 .gem-shop-hdr{display:flex;align-items:center;padding:20px 16px 12px;gap:8px;position:sticky;top:0;background:var(--surface);z-index:1;border-bottom:1px solid var(--border)}
 .gem-shop-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700;flex:1}
-.gem-shop-balance-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2);margin:12px 16px 4px;border-radius:14px;border:1px solid var(--border)}
+.gem-shop-balance-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:linear-gradient(120deg,rgba(var(--accent-rgb),.16),rgba(var(--accent2-rgb),.14));margin:12px 16px 4px;border-radius:14px;border:1px solid rgba(var(--accent-rgb),.3)}
 .gem-shop-balance-label{font-size:13px;color:var(--muted)}
 .gem-shop-balance{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:700;color:var(--accent)}
 .gem-pkg-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 4px}
 .gem-pkg-card{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:16px 12px;cursor:pointer;text-align:center;font-family:inherit;color:var(--text);transition:transform .15s,border-color .15s;overflow:hidden;width:100%}
 .gem-pkg-card:active{transform:scale(.96)}
-.gem-pkg-featured{border-color:var(--accent);background:rgba(var(--accent-rgb),.08)}
+.gem-pkg-featured{border-color:transparent;background:linear-gradient(160deg,rgba(var(--accent-rgb),.18),rgba(var(--accent2-rgb),.12));box-shadow:0 0 0 1.5px rgba(var(--accent-rgb),.6),0 10px 26px rgba(var(--accent-rgb),.28);animation:pkgGlow 2.6s ease-in-out infinite}
+@keyframes pkgGlow{0%,100%{box-shadow:0 0 0 1.5px rgba(var(--accent-rgb),.5),0 8px 20px rgba(var(--accent-rgb),.2)}50%{box-shadow:0 0 0 1.5px rgba(var(--accent-rgb),.85),0 12px 30px rgba(var(--accent-rgb),.42)}}
+.gem-pkg-featured .gem-pkg-gems{color:var(--accent)}
 .gem-pkg-badge{position:absolute;top:0;right:0;background:var(--accent);color:#fff;font-size:9px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;padding:3px 8px;border-radius:0 18px 0 10px;letter-spacing:.5px}
 .gem-pkg-gems{font-size:22px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;margin-bottom:2px}
 .gem-pkg-name{font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px}
 .gem-pkg-price{font-size:15px;font-weight:600;color:var(--accent)}
 .gem-shop-divider{text-align:center;font-size:11px;color:var(--muted);letter-spacing:1px;padding:14px 16px 6px}
-.gem-ad-btn{display:block;width:calc(100% - 32px);margin:0 16px 8px;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;color:var(--text);font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;cursor:pointer;transition:.15s;text-align:center}
+.gem-ad-btn{display:block;width:calc(100% - 32px);margin:0 16px 8px;padding:14px;background:linear-gradient(120deg,rgba(var(--accent-rgb),.13),rgba(var(--accent2-rgb),.11));border:1px solid rgba(var(--accent-rgb),.32);border-radius:16px;color:var(--text);font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;cursor:pointer;transition:.15s;text-align:center}
 .gem-ad-btn:active:not(:disabled){background:var(--surface3)}
 .gem-ad-btn:disabled{opacity:.45;cursor:default}
 
-/* ── GEM SHOP — bonus line + special packs ── */
+/* ── GEM SHOP — bonus line + special packs (HERO) ── */
 .gem-pkg-bonus{font-size:10px;color:rgba(74,222,128,.9);margin-bottom:3px;line-height:1.3}
 .gem-shop-section-hdr{padding:16px 16px 8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted)}
-.gem-specials-list{display:flex;flex-direction:column;gap:10px;padding:0 16px 4px}
-.gem-special-card{position:relative;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.3);border-radius:18px;padding:14px 16px;cursor:pointer;font-family:inherit;color:var(--text);transition:transform .15s;overflow:hidden;width:100%;text-align:left;display:flex;align-items:center;gap:14px}
+.gem-hero-hdr{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;letter-spacing:.4px;color:#FFCF6B;text-transform:none;padding-top:14px}
+.gem-hero-hdr .ic{color:#FFB23D}
+.gem-hero-hdr-tag{margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.3px;color:#FFCF6B;background:rgba(245,158,11,.18);border:1px solid rgba(245,158,11,.4);padding:2px 9px;border-radius:11px;text-transform:none}
+.gem-specials-list{display:flex;flex-direction:column;gap:11px;padding:0 16px 6px}
+.gem-special-card{position:relative;background:linear-gradient(120deg,rgba(245,158,11,.26),rgba(217,119,6,.16));border:1.5px solid rgba(245,158,11,.6);border-radius:20px;padding:15px 17px;cursor:pointer;font-family:inherit;color:var(--text);transition:transform .15s;overflow:hidden;width:100%;text-align:left;display:flex;align-items:center;gap:14px;box-shadow:0 8px 26px rgba(245,158,11,.22)}
+.gem-special-card::before{content:'';position:absolute;top:0;left:-65%;width:42%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);transform:skewX(-20deg);animation:vipShine 3.6s ease-in-out infinite;pointer-events:none}
 .gem-special-card:active:not(:disabled){transform:scale(.98)}
-.gem-special-card:disabled{opacity:.5;cursor:default}
-.gem-special-badge{position:absolute;top:0;right:0;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:9px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;padding:3px 10px;border-radius:0 18px 0 10px;letter-spacing:.5px}
+.gem-special-card:disabled{opacity:.5;cursor:default;box-shadow:none}
+.gem-special-card:disabled::before{display:none}
+.gem-special-ic{width:46px;height:46px;border-radius:15px;background:linear-gradient(135deg,#FFD66B,#F59E0B);color:#3A2A05;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(245,158,11,.4)}
+.gem-special-ic .ic{color:#3A2A05}
+.gem-special-badge{position:absolute;top:0;right:0;background:linear-gradient(135deg,#FFD66B,#F59E0B);color:#3A2A05;font-size:9px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;padding:3px 10px;border-radius:0 19px 0 11px;letter-spacing:.4px}
 .gem-special-gems{flex:1;min-width:0}
-.gem-special-count{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:700;line-height:1.2}
-.gem-special-normal{font-size:11px;color:var(--muted);text-decoration:line-through;margin-top:2px}
+.gem-special-count{font-family:'Plus Jakarta Sans',sans-serif;font-size:21px;font-weight:800;line-height:1.15;color:#FFE3A0}
+.gem-special-extra{display:inline-block;margin-top:4px;font-size:11px;font-weight:800;color:#3A2A05;background:linear-gradient(135deg,#FFD66B,#F59E0B);padding:2px 9px;border-radius:10px;letter-spacing:.2px}
+.gem-special-normal{font-size:11px;color:var(--muted);text-decoration:line-through;margin-top:4px}
 .gem-special-right{text-align:right;flex-shrink:0}
-.gem-special-price{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;color:#f59e0b}
-.gem-special-status{font-size:10px;color:var(--muted);margin-top:3px}
+.gem-special-price{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800;color:#FFCF6B}
+.gem-special-status{font-size:10px;font-weight:700;color:#FFB23D;margin-top:4px}
+.gem-special-card:disabled .gem-special-status{color:var(--muted)}
 
 
 /* ── DUSK THEME OVERRIDES (migrated from Storym Dusk prototype) ── */
@@ -675,20 +693,23 @@ input[type=file]{display:none}
 .rw-pill{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 8px;border-radius:13px;
   background:var(--surface2);border:1px solid var(--border);position:relative;min-width:0}
 .rw-pill-day{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.3px}
-.rw-pill-ic{color:var(--coral,#FF9E7D);display:flex}
+.rw-pill-ic{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(var(--accent-rgb),.14);color:var(--coral,#FF9E7D)}
 .rw-pill-amt{font-size:12px;font-weight:800;color:var(--text)}
 .rw-pill-vip{position:absolute;top:4px;right:4px;color:#FFC56B;display:flex}
 .rw-today{background:var(--surface2);border:1px solid var(--border)}  /* state colors below */
-.rw-pill.rw-today{border-color:var(--accent);background:rgba(var(--accent-rgb),.12);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.25) inset}
+.rw-pill.rw-today{border-color:var(--accent);background:rgba(var(--accent-rgb),.12);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.25) inset;animation:rwTodayPulse 2.4s ease-in-out infinite}
+@keyframes rwTodayPulse{0%,100%{box-shadow:0 0 0 1px rgba(var(--accent-rgb),.25) inset}50%{box-shadow:0 0 0 1px rgba(var(--accent-rgb),.5) inset,0 4px 14px rgba(var(--accent-rgb),.3)}}
 .rw-pill.rw-today .rw-pill-day{color:var(--accent)}
-.rw-pill.rw-claimed{opacity:.55;background:var(--surface);border-style:dashed}
-.rw-pill.rw-claimed .rw-pill-ic{color:#7CE0A8}
+.rw-pill.rw-today .rw-pill-ic{background:var(--grad);color:var(--on-grad,#2A142A)}
+.rw-pill.rw-claimed{opacity:.7;background:var(--surface);border-style:dashed}
+.rw-pill.rw-claimed .rw-pill-ic{background:rgba(124,224,168,.18);color:#7CE0A8}
 .rw-pill.rw-missed{opacity:.4}
-.rw-pill.rw-locked{opacity:.7}
-.rw-pill.rw-locked .rw-pill-ic{color:var(--muted)}
+.rw-pill.rw-missed .rw-pill-ic{background:var(--surface3);color:var(--muted)}
+.rw-pill.rw-locked{opacity:.85}
+.rw-pill.rw-locked .rw-pill-ic{background:var(--surface3);color:var(--muted)}
 
 /* today claim panel */
-.rw-today{margin:12px 16px 4px;border-radius:18px;padding:14px}
+.rw-today{margin:12px 16px 4px;border-radius:18px;padding:14px;min-height:130px;display:flex;flex-direction:column;justify-content:center}
 .rw-today-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
 .rw-today-tag{font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--accent)}
 .rw-today-sub{font-size:12px;color:var(--muted)}
@@ -706,16 +727,24 @@ input[type=file]{display:none}
 .rw-claim-crown{position:absolute;top:8px;right:10px;display:flex;align-items:center;gap:3px;font-size:9px;font-weight:800;color:#FFC56B;letter-spacing:.5px}
 .rw-claim.rw-locked{opacity:.85}
 .rw-claim.rw-locked .rw-claim-amt{color:var(--muted)}
-.rw-today-done{display:flex;align-items:center;gap:14px;background:rgba(124,224,168,.10);border-color:rgba(124,224,168,.3)}
-.rw-today-check{width:48px;height:48px;border-radius:16px;background:rgba(124,224,168,.18);color:#7CE0A8;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rw-today-done{flex-direction:row;align-items:center;gap:14px;background:rgba(124,224,168,.10);border-color:rgba(124,224,168,.3)}
+.rw-today-check{position:relative;width:48px;height:48px;border-radius:16px;background:rgba(124,224,168,.18);color:#7CE0A8;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .rw-today-txt{display:flex;flex-direction:column;gap:2px}
 .rw-today-txt strong{font-size:15px;font-weight:800}
 .rw-today-txt span{font-size:12.5px;color:var(--muted)}
-/* single VIP claim button */
-.rw-claim-single{flex-direction:row;justify-content:center;gap:10px;padding:16px;border-color:#FFC56B;background:linear-gradient(135deg,rgba(255,197,107,.16),rgba(255,158,61,.12))}
-.rw-claim-single .rw-claim-ic{color:#FF9E3D}
-.rw-claim-single .rw-claim-amt{font-size:17px;font-weight:800}
-.rw-claim-go{margin-left:auto;padding:9px 16px;border-radius:12px;background:linear-gradient(135deg,#FFD66B,#FF9E3D);color:#3A2A05;font-weight:800;font-size:13.5px}
+/* single VIP claim button — premium gold CTA */
+.rw-today-vip{background:linear-gradient(150deg,rgba(255,197,107,.14),rgba(255,158,61,.06));border-color:rgba(255,197,107,.4)}
+.rw-vip-chip{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.5px;color:#3A2A05;background:linear-gradient(135deg,#FFD66B,#FF9E3D);padding:3px 9px;border-radius:11px}
+.rw-vip-chip .ic{color:#3A2A05}
+.rw-claim-single{position:relative;display:flex;flex-direction:row;align-items:center;gap:13px;width:100%;padding:13px 13px;border:none;border-radius:16px;cursor:pointer;font-family:inherit;color:#3A2A05;background:linear-gradient(120deg,#FFD66B,#FF9E3D);box-shadow:0 8px 22px rgba(255,158,61,.42);overflow:hidden}
+.rw-claim-single::before{content:'';position:absolute;top:0;left:-65%;width:42%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-20deg);animation:vipShine 3.4s ease-in-out infinite;pointer-events:none}
+.rw-claim-single:active{transform:scale(.97)}
+.rw-claim-single .rw-claim-ic{width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.3);color:#3A2A05;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rw-claim-info{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0}
+.rw-claim-single .rw-claim-amt{font-size:18px;font-weight:800;color:#3A2A05;letter-spacing:-.2px;line-height:1.1}
+.rw-claim-cap{font-size:11.5px;font-weight:600;color:rgba(58,42,5,.72)}
+.rw-claim-go{margin-left:auto;display:flex;align-items:center;gap:2px;padding:9px 14px;border-radius:12px;background:#3A2A05;color:#FFD98A;font-weight:800;font-size:13px;flex-shrink:0}
+.rw-claim-go .ic{color:#FFD98A}
 /* VIP gate (non-subscribers) */
 .rw-vipgate{margin:12px 16px 4px;border-radius:18px;padding:22px 18px;text-align:center;border:1px solid #FFC56B;background:linear-gradient(170deg,rgba(255,197,107,.14),rgba(255,158,61,.06))}
 .rw-vipgate-crown{width:56px;height:56px;margin:0 auto 12px;border-radius:18px;display:flex;align-items:center;justify-content:center;color:#3A2A05;background:linear-gradient(135deg,#FFD66B,#FF9E3D);box-shadow:0 8px 22px rgba(255,158,61,.4)}
@@ -728,11 +757,16 @@ input[type=file]{display:none}
 .rw-vipgate-btn:active{transform:scale(.96)}
 .rw-foot{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11.5px;color:var(--muted);padding:14px 0 4px}
 
-/* claim particle burst */
+/* claim particle burst — premium gold gems */
 .rw-burst{position:absolute;left:50%;top:46%;width:0;height:0;z-index:5;pointer-events:none}
-.rw-burst span{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--grad);
-  animation:rwBurst .8s cubic-bezier(.2,.7,.3,1) forwards}
-@keyframes rwBurst{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--x),var(--y)) scale(.2);opacity:0}}
+.rw-burst span{position:absolute;width:var(--sz,9px);height:var(--sz,9px);border-radius:2px;
+  background:linear-gradient(135deg,#FFE9A8,#FF9E3D);box-shadow:0 0 8px rgba(255,180,80,.7);
+  animation:rwBurst .85s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes rwBurst{0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}100%{transform:translate(var(--x),var(--y)) rotate(220deg) scale(.2);opacity:0}}
+@keyframes rwClaimPop{0%{transform:scale(0) rotate(-25deg);opacity:0}55%{transform:scale(1.18) rotate(6deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+.rw-today-check{animation:rwClaimPop .55s cubic-bezier(.2,1.3,.4,1)}
+@keyframes rwClaimGlow{0%{box-shadow:0 0 0 0 rgba(124,224,168,.5)}100%{box-shadow:0 0 0 22px rgba(124,224,168,0)}}
+.rw-today-done .rw-today-check::after{content:'';position:absolute;inset:0;border-radius:16px;animation:rwClaimGlow .7s ease-out}
 
 /* standalone toast fallback */
 .rw-toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:1300;background:rgba(50,36,63,.96);backdrop-filter:blur(12px);

@@ -127,13 +127,17 @@
         '<button class="rw-vipgate-btn" data-vip>' + ICON('crown', { size: 16 }) + ' Hazte VIP</button>' +
       '</div>';
     } else {
-      panel = '<div class="rw-today">' +
+      panel = '<div class="rw-today rw-today-vip">' +
         '<div class="rw-today-head"><span class="rw-today-tag">HOY · ' + today.d + '</span>' +
-        '<span class="rw-today-sub">Tu recompensa de hoy</span></div>' +
+        '<span class="rw-vip-chip">' + ICON('crown', { size: 12 }) + ' VIP</span></div>' +
         '<button class="rw-claim rw-claim-single" data-tier="vip">' +
-          '<span class="rw-claim-ic">' + ICON('gem', { size: 24 }) + '</span>' +
-          '<span class="rw-claim-amt">+' + today.n + ' gemas</span>' +
-          '<span class="rw-claim-go">Reclamar</span></button>' +
+          '<span class="rw-claim-ic">' + ICON('gem', { size: 22 }) + '</span>' +
+          '<span class="rw-claim-info">' +
+            '<span class="rw-claim-amt">+' + today.n + ' gemas</span>' +
+            '<span class="rw-claim-cap">Tu recompensa de hoy</span>' +
+          '</span>' +
+          '<span class="rw-claim-go">Reclamar ' + ICON('chevronR', { size: 15 }) + '</span>' +
+        '</button>' +
       '</div>';
     }
 
@@ -176,8 +180,11 @@
 
   // ── button + dot ──────────────────────────────────────────
   function refreshDot() {
+    var on = hasUnclaimedToday();
+    var btns = document.querySelectorAll('[data-rewards-btn]');
+    btns.forEach(function (b) { b.classList.toggle('has-reward', on); });
     if (!dot) return;
-    dot.style.display = hasUnclaimedToday() ? 'block' : 'none';
+    dot.style.display = on ? 'block' : 'none';
   }
 
   function mountButton() {
@@ -225,16 +232,18 @@
   function burst() {
     var host = document.createElement('div');
     host.className = 'rw-burst';
-    for (var i = 0; i < 14; i++) {
+    var N = 20;
+    for (var i = 0; i < N; i++) {
       var p = document.createElement('span');
-      var a = (Math.PI * 2 * i) / 14, d = 60 + Math.random() * 40;
+      var a = (Math.PI * 2 * i) / N + (Math.random() * 0.4 - 0.2), d = 55 + Math.random() * 65;
       p.style.setProperty('--x', Math.cos(a) * d + 'px');
       p.style.setProperty('--y', Math.sin(a) * d + 'px');
-      p.style.animationDelay = (Math.random() * 60) + 'ms';
+      p.style.setProperty('--sz', (6 + Math.random() * 8).toFixed(1) + 'px');
+      p.style.animationDelay = (Math.random() * 80) + 'ms';
       host.appendChild(p);
     }
     (sheet || document.body).appendChild(host);
-    setTimeout(function () { host.remove(); }, 900);
+    setTimeout(function () { host.remove(); }, 1000);
   }
 
   // expose + init

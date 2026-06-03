@@ -21,18 +21,30 @@ const AD_COOLDOWN_MS = 30 * 60 * 1000;
 let _adCooldownUntil = parseInt(localStorage.getItem('rp_ad_cooldown') || '0');
 let _adInProgress    = false;
 
-// ── Límite semanal para packs especiales ──────────────────────────────────────
+// ── Límite semanal para packs especiales (VIP: 2/sem · normal: 1/sem) ─────────
+function _specialLimit() {
+  return (typeof isVipUser === 'function' && isVipUser()) ? 2 : 1;
+}
+function _specialUses(packId) {
+  const raw = localStorage.getItem('rp_sp_' + packId) || '';
+  return raw.split(',').map(Number).filter(t => t > 0 && (Date.now() - t) < WEEK_MS);
+}
+function _specialRemaining(packId) {
+  return Math.max(0, _specialLimit() - _specialUses(packId).length);
+}
 function _specialUsedThisWeek(packId) {
-  const ts = parseInt(localStorage.getItem('rp_sp_' + packId) || '0');
-  return ts > 0 && (Date.now() - ts) < WEEK_MS;
+  return _specialRemaining(packId) <= 0;
 }
 function _markSpecialUsed(packId) {
-  localStorage.setItem('rp_sp_' + packId, String(Date.now()));
+  const arr = _specialUses(packId);
+  arr.push(Date.now());
+  localStorage.setItem('rp_sp_' + packId, arr.join(','));
 }
 function _specialDaysLeft(packId) {
-  const ts = parseInt(localStorage.getItem('rp_sp_' + packId) || '0');
-  if (!ts) return 0;
-  return Math.max(0, Math.ceil((WEEK_MS - (Date.now() - ts)) / 86400000));
+  const arr = _specialUses(packId);
+  if (!arr.length) return 0;
+  const oldest = Math.min.apply(null, arr);   // al expirar el más antiguo se libera un uso
+  return Math.max(0, Math.ceil((WEEK_MS - (Date.now() - oldest)) / 86400000));
 }
 
 // ── Inicialización de plugins nativos ─────────────────────────────────────────
@@ -106,16 +118,24 @@ function _renderGemShop() {
   document.getElementById('gemSpecialsList').innerHTML = SPECIAL_PACKAGES.map(p => {
     const used     = _specialUsedThisWeek(p.id);
     const daysLeft = used ? _specialDaysLeft(p.id) : 0;
+    const extraPct = p.normalGems ? Math.round((p.gems / p.normalGems - 1) * 100) : 0;
+    const limit    = _specialLimit();
+    const remain   = _specialRemaining(p.id);
+    const statusTxt = used
+      ? `⏳ ${daysLeft}d para renovar`
+      : (limit > 1 ? `${remain} de ${limit} esta semana` : 'Reclamar');
     return `
     <button class="gem-special-card" onclick="purchaseSpecialPackage('${p.id}')" ${used ? 'disabled' : ''}>
-      <div class="gem-special-badge">⚡ SEMANAL</div>
+      <div class="gem-special-badge">${limit > 1 ? '⚡ SEMANAL · x2 VIP' : '⚡ SEMANAL'}</div>
+      <span class="gem-special-ic"><i data-icon="gem" data-size="24"></i></span>
       <div class="gem-special-gems">
-        <div class="gem-special-count">💎 ${_fmtGems(p.gems)}</div>
-        <div class="gem-special-normal">💎 ${p.normalGems} precio habitual</div>
+        <div class="gem-special-count">${_fmtGems(p.gems)} gemas</div>
+        ${extraPct > 0 ? `<div class="gem-special-extra">+${extraPct}% extra</div>` : ''}
+        <div class="gem-special-normal">antes ${p.normalGems}</div>
       </div>
       <div class="gem-special-right">
         <div class="gem-special-price">${isNative ? p.price : '—'}</div>
-        <div class="gem-special-status">${used ? `⏳ ${daysLeft}d para renovar` : '1 compra / semana'}</div>
+        <div class="gem-special-status">${statusTxt}</div>
       </div>
     </button>`;
   }).join('');
@@ -134,6 +154,10 @@ function _renderGemShop() {
   } else {
     adBtn.textContent = '📺 Ver anuncio · Ganar 4–9 💎 gratis';
     adBtn.disabled = false;
+  }
+  if (window.STORYM && STORYM.scanIcons) {
+    STORYM.scanIcons(document.getElementById('gemSpecialsList'));
+    STORYM.scanIcons(document.getElementById('gemPackagesList'));
   }
 }
 

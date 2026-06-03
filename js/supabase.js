@@ -227,7 +227,7 @@ function renderUserHeader() {
     const vipBtn = vip
       ? `<button class="hdr-vip-btn is-vip" onclick="openVipScreen()"><i data-icon="crown" data-size="14"></i> VIP</button>`
       : `<button class="hdr-vip-btn" onclick="openVipScreen()"><i data-icon="crown" data-size="14"></i> VIP</button>`;
-    el.innerHTML = `${vipBtn}<span class="uhc-gems" onclick="openGemShop()"><i data-icon="gem" data-size="15"></i> ${gems}</span>`;
+    el.innerHTML = `${vipBtn}<span class="uhc-gems" onclick="openGemShop()"><i data-icon="gem" data-size="15"></i> ${gems}<span class="uhc-plus"><i data-icon="plus" data-size="13" data-stroke="2.8"></i></span></span>`;
     if (window.STORYM && STORYM.scanIcons) STORYM.scanIcons(el);
   });
 
