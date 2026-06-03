@@ -24,7 +24,7 @@ function copyDir(srcDir, destDir) {
 }
 
 // Archivos raíz
-for (const f of ['index.html', 'manifest.json', 'sw.js']) {
+for (const f of ['index.html', 'manifest.json', 'sw.js', 'icon-192.png', 'icon-512.png']) {
   const src = path.join(ROOT, f);
   if (fs.existsSync(src)) { copy(src, path.join(OUT, f)); console.log('✓', f); }
 }

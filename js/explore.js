@@ -83,6 +83,11 @@ async function fetchExploreChars(seq) {
     } catch (e) { error = e; data = null; } // timeout o excepción de red
     if (!error) break;                       // éxito → salir
     console.warn('explore fetch intento', attempt + 1, error.message || error);
+    // Tras el 1er fallo, refrescar la sesión por si el token de acceso ha expirado
+    // (síntoma típico: deja de cargar "tras un rato en la app"). No bloquea si falla.
+    if (attempt === 0 && supaClient.auth && supaClient.auth.refreshSession) {
+      try { await _withTimeout(supaClient.auth.refreshSession(), 5000); } catch (e) {}
+    }
     if (attempt < 3) await new Promise(r => setTimeout(r, 400 * (attempt + 1))); // 0.4s, 0.8s, 1.2s
   }
 
