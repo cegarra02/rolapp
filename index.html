@@ -11,11 +11,32 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='4' y1='3' x2='28' y2='29' gradientUnits='userSpaceOnUse'><stop stop-color='%23FFC56B'/><stop offset='.52' stop-color='%23FF7E9D'/><stop offset='1' stop-color='%23B66BE0'/></linearGradient></defs><rect width='32' height='32' rx='9' fill='url(%23g)'/><path fill='%23fff' fill-rule='evenodd' d='M10 8h12a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-4l-4 4v-4h-4a4 4 0 0 1-4-4v-6a4 4 0 0 1 4-4z M16 11l1.2 3.5 3.5 1.2-3.5 1.2L16 20.4l-1.2-3.5-3.5-1.2 3.5-1.2z'/></svg>">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=155">
+<link rel="stylesheet" href="css/style.css?v=156">
 <link rel="manifest" href="manifest.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+
+<!-- VIP SCREEN -->
+<div class="screen" id="vipScreen">
+  <div class="vip-hero">
+    <button class="vip-back" onclick="closeVipScreen()"><i data-icon="arrowLeft" data-size="22"></i></button>
+    <div class="vip-crown"><i data-icon="crown" data-size="34"></i></div>
+    <div class="vip-hero-title">Storym <span>VIP</span></div>
+    <div class="vip-hero-sub">Desbloquea la experiencia completa, sin límites.</div>
+  </div>
+  <div class="vip-scroll">
+    <div class="vip-perks">
+      <div class="vip-perk"><span class="vip-perk-ic"><i data-icon="gift" data-size="18"></i></span><div><div class="vip-perk-t">Recompensas diarias</div><div class="vip-perk-d">Reclama gemas gratis cada día de la semana</div></div></div>
+      <div class="vip-perk"><span class="vip-perk-ic"><i data-icon="gem" data-size="18"></i></span><div><div class="vip-perk-t">Gemas con descuento</div><div class="vip-perk-d">Mejores precios en todos los paquetes</div></div></div>
+      <div class="vip-perk"><span class="vip-perk-ic"><i data-icon="zap" data-size="18"></i></span><div><div class="vip-perk-t">Respuestas más rápidas</div><div class="vip-perk-d">Prioridad de generación y modelo mejorado</div></div></div>
+      <div class="vip-perk"><span class="vip-perk-ic"><i data-icon="sparkles" data-size="18"></i></span><div><div class="vip-perk-t">Personajes ilimitados</div><div class="vip-perk-d">Crea y guarda todos los que quieras</div></div></div>
+      <div class="vip-perk"><span class="vip-perk-ic"><i data-icon="crown" data-size="18"></i></span><div><div class="vip-perk-t">Insignia VIP</div><div class="vip-perk-d">Destaca en la comunidad</div></div></div>
+    </div>
+    <div class="vip-plans" id="vipStatusArea"></div>
+    <div class="vip-legal">Cancela cuando quieras. La suscripción se renueva automáticamente.</div>
+  </div>
+</div>
 
 <!-- ONBOARDING (primera vez) -->
 <div class="onb-overlay" id="onboardingScreen" style="display:none">
@@ -663,7 +684,7 @@
       </div>
     </div>
 
-    <div class="app-version">v155</div>
+    <div class="app-version">v156</div>
   </div>
 </div>
 
@@ -686,30 +707,62 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/state.js?v=155"></script>
-<script src="js/utils.js?v=155"></script>
-<script src="js/ui.js?v=155"></script>
-<script src="js/icons.js?v=155"></script>
-<script src="js/sliders.js?v=155"></script>
-<script src="js/supabase.js?v=155"></script>
-<script src="js/storage.js?v=155"></script>
-<script src="js/sync.js?v=155"></script>
-<script src="js/api.js?v=155"></script>
-<script src="js/cropper.js?v=155"></script>
-<script src="js/chars.js?v=155"></script>
-<script src="js/profile.js?v=155"></script>
-<script src="js/scenes.js?v=155"></script>
-<script src="js/inbox.js?v=155"></script>
-<script src="js/missions.js?v=155"></script>
-<script src="js/hitos.js?v=155"></script>
-<script src="js/explore.js?v=155"></script>
-<script src="js/moderation.js?v=155"></script>
-<script src="js/gemshop.js?v=155"></script>
-<script src="js/chat.js?v=155"></script>
-<script src="js/main.js?v=155"></script>
-<script src="js/rewards.js?v=155"></script>
+<script src="js/state.js?v=156"></script>
+<script src="js/utils.js?v=156"></script>
+<script src="js/ui.js?v=156"></script>
+<script src="js/icons.js?v=156"></script>
+<script src="js/sliders.js?v=156"></script>
+<script src="js/supabase.js?v=156"></script>
+<script src="js/storage.js?v=156"></script>
+<script src="js/sync.js?v=156"></script>
+<script src="js/api.js?v=156"></script>
+<script src="js/cropper.js?v=156"></script>
+<script src="js/chars.js?v=156"></script>
+<script src="js/profile.js?v=156"></script>
+<script src="js/scenes.js?v=156"></script>
+<script src="js/inbox.js?v=156"></script>
+<script src="js/missions.js?v=156"></script>
+<script src="js/hitos.js?v=156"></script>
+<script src="js/explore.js?v=156"></script>
+<script src="js/moderation.js?v=156"></script>
+<script src="js/gemshop.js?v=156"></script>
+<script src="js/chat.js?v=156"></script>
+<script src="js/main.js?v=156"></script>
+<script src="js/rewards.js?v=156"></script>
 <script>
 // ── Onboarding de primera vez ───────────────────────────────
+// ── VIP membership (fallback localStorage; conecta a tu backend en window.CONFIG_VIP) ──
+function isVipUser(){ try{ return localStorage.getItem('storym_vip')==='1'; }catch(e){ return false; } }
+function setVipUser(v){ try{ localStorage.setItem('storym_vip', v?'1':'0'); }catch(e){} if(window.renderUserHeader)renderUserHeader(); renderVipScreen(); if(window.StorymRewards&&StorymRewards.refresh)StorymRewards.refresh(); }
+function openVipScreen(){ renderVipScreen(); showScreen('vipScreen', true); }
+function closeVipScreen(){ if(window.goHome)goHome(); }
+function subscribeVip(plan){
+  // TODO: conecta aquí tu pasarela de pago real
+  setVipUser(true);
+  if(window.toast)toast('¡Bienvenido a Storym VIP! 👑');
+  renderVipScreen();
+}
+function cancelVip(){ setVipUser(false); if(window.toast)toast('Suscripción VIP cancelada'); }
+function renderVipScreen(){
+  var el=document.getElementById('vipStatusArea'); if(!el)return;
+  var vip=isVipUser();
+  if(vip){
+    el.innerHTML='<div class="vip-active-card"><div class="vip-active-badge"><i data-icon="crown" data-size="22"></i></div>'
+      +'<div class="vip-active-txt"><div class="vip-active-title">Eres Storym VIP</div><div class="vip-active-sub">Renovación mensual · activa</div></div></div>'
+      +'<button class="vip-cancel-btn" onclick="cancelVip()">Cancelar suscripción</button>';
+  } else {
+    el.innerHTML='<button class="vip-plan vip-plan-pop" onclick="subscribeVip(\'monthly\')">'
+        +'<span class="vip-plan-tag">MÁS POPULAR</span>'
+        +'<span class="vip-plan-name">Mensual</span>'
+        +'<span class="vip-plan-price">7,99 €<small>/mes</small></span>'
+        +'<span class="vip-plan-cta">Empezar ahora</span></button>'
+      +'<button class="vip-plan" onclick="subscribeVip(\'yearly\')">'
+        +'<span class="vip-plan-name">Anual</span>'
+        +'<span class="vip-plan-price">59,99 €<small>/año</small></span>'
+        +'<span class="vip-plan-save">Ahorra un 37%</span></button>';
+  }
+  if(window.STORYM&&STORYM.scanIcons)STORYM.scanIcons(el);
+}
 function navCreate(){ var sc=document.getElementById('scenesScreen'); if(sc&&sc.classList.contains('active')){ if(window.openSceneCreate)openSceneCreate(); } else if(window.openCreate){ openCreate(); } }
 var STORYM_LANGS = [['es','Español'],['en','English']];
 var STORYM_APPEARANCES = [['dusk','Crepúsculo']];

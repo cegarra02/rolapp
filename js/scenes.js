@@ -118,6 +118,7 @@ function saveScene() {
   const existing = editSceneId ? scenes.find(x => x.id === editSceneId) : null;
   const s = {
     id:       editSceneId || uid(),
+    updatedAt: Date.now(), // marca de tiempo para reconciliar sync entre dispositivos
     name,
     charIds:  pickedCharIds,
     context:  document.getElementById('sceneContext').value.trim(),

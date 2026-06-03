@@ -223,13 +223,11 @@ function deductMessageGems() {
 function renderUserHeader() {
   document.querySelectorAll('.user-header-chip').forEach(el => {
     const gems = getDisplayGems();
-    if (supabaseUser) {
-      const name = supabaseUser.user_metadata?.full_name || supabaseUser.email || '';
-      const initials = name.slice(0, 2).toUpperCase();
-      el.innerHTML = `<span class="uhc-gems" onclick="openGemShop()"><i data-icon="gem" data-size="15"></i> ${gems}</span><div class="uhc-avatar" onclick="switchTab('profile')">${initials}</div>`;
-    } else {
-      el.innerHTML = `<span class="uhc-gems" onclick="openGemShop()"><i data-icon="gem" data-size="15"></i> ${gems}</span>`;
-    }
+    const vip = (typeof isVipUser === 'function' && isVipUser());
+    const vipBtn = vip
+      ? `<button class="hdr-vip-btn is-vip" onclick="openVipScreen()"><i data-icon="crown" data-size="14"></i> VIP</button>`
+      : `<button class="hdr-vip-btn" onclick="openVipScreen()"><i data-icon="crown" data-size="14"></i> VIP</button>`;
+    el.innerHTML = `${vipBtn}<span class="uhc-gems" onclick="openGemShop()"><i data-icon="gem" data-size="15"></i> ${gems}</span>`;
     if (window.STORYM && STORYM.scanIcons) STORYM.scanIcons(el);
   });
 

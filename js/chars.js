@@ -165,6 +165,7 @@ function saveChar() {
   const isPublicNow = !!(document.getElementById('charIsPublic')?.checked && supabaseUser);
   const c = {
     id: editId || uid(),
+    updatedAt: Date.now(), // marca de tiempo para reconciliar sync entre dispositivos
     name,
     tags:     [...editTags],
     tag:      editTags[0] || '',

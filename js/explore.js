@@ -25,27 +25,40 @@ async function fetchExploreChars() {
   const _localCounts = {};
   exploreChars.forEach(c => { if (c.message_count) _localCounts[c.id] = c.message_count; });
 
-  let q = supaClient
-    .from('characters_library')
-    .select('id, name, tag, tags, bg, chat_count, message_count, created_at')
-    .eq('status', 'approved');
+  // Construye la consulta (se rehace en cada reintento)
+  const buildQuery = () => {
+    let q = supaClient
+      .from('characters_library')
+      .select('id, name, tag, tags, bg, chat_count, message_count, created_at')
+      .eq('status', 'approved');
+    if (exploreSearch) q = q.ilike('name', `%${exploreSearch}%`);
+    if (exploreActiveTags.length) {
+      const orParts = [
+        ...exploreActiveTags.map(t => `tag.eq.${t}`),
+        `tags.ov.{${exploreActiveTags.join(',')}}`
+      ].join(',');
+      q = q.or(orParts);
+    }
+    if (exploreGender) q = q.eq('gender', exploreGender);
+    q = exploreSort === 'popular'
+      ? q.order('message_count', { ascending: false })
+      : q.order('created_at', { ascending: false });
+    return q.limit(50);
+  };
 
-  if (exploreSearch) q = q.ilike('name', `%${exploreSearch}%`);
-  if (exploreActiveTags.length) {
-    const orParts = [
-      ...exploreActiveTags.map(t => `tag.eq.${t}`),
-      `tags.ov.{${exploreActiveTags.join(',')}}`
-    ].join(',');
-    q = q.or(orParts);
+  // Reintentos a nivel de Explorar (encima de _fetchWithRetry) para absorber la
+  // flakiness de red (ERR_QUIC_PROTOCOL_ERROR) que dejaba la lista vacía a menudo.
+  let data = null, error = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await buildQuery();
+    data = res.data; error = res.error;
+    if (!error) break;                 // éxito → salir
+    console.warn('explore fetch intento', attempt + 1, error.message);
+    if (attempt < 3) await new Promise(r => setTimeout(r, 400 * (attempt + 1))); // 0.4s, 0.8s, 1.2s
   }
-  if (exploreGender) q = q.eq('gender', exploreGender);
-  q = exploreSort === 'popular'
-    ? q.order('message_count', { ascending: false })
-    : q.order('created_at', { ascending: false });
 
-  const { data, error } = await q.limit(50);
   if (error) {
-    console.error('explore fetch:', error);
+    console.error('explore fetch (tras reintentos):', error);
     const list = document.getElementById('exploreList');
     if (list) list.innerHTML = `
       <div class="empty-state" style="grid-column:span 2">

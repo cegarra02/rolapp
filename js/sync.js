@@ -125,23 +125,22 @@ async function _loadUserDataFromDb() {
     }
 
     // ── 2. Personajes propios ──────────────────────────────────────────────
-    _mergeDbChars(db.chars_data || [], hMap);
+    const charsNeedPush = _mergeDbChars(db.chars_data || [], hMap);
 
     // ── 3. Escenas ─────────────────────────────────────────────────────────
-    _mergeDbScenes(db.scenes_data || [], hMap);
+    const scenesNeedPush = _mergeDbScenes(db.scenes_data || [], hMap);
 
     // ── 4. Historiales de personajes de biblioteca ─────────────────────────
     _mergeDbLibHistories(hMap);
 
-    // ── 4b. Subida inicial (local → BD) ────────────────────────────────────
-    // El sync solo sube al crear/editar. Si hay personajes o escenas locales
-    // que NO están en la BD (creados antes de tener sesión, o en un dispositivo
-    // que no se re-guardó), súbelos ahora para que la nube quede completa.
-    // Solo se sube cuando hay datos local-only → idempotente, no machaca la BD.
+    // ── 4b. Subida local → BD ──────────────────────────────────────────────
+    // Sube si hay datos LOCAL-ONLY (no están en la BD) o si algún personaje/
+    // escena local es MÁS RECIENTE que la BD (editado en este dispositivo y aún
+    // no propagado). Idempotente: solo sube cuando aporta algo nuevo a la nube.
     const dbCharIds  = new Set((db.chars_data  || []).map(c => c && c.id));
     const dbSceneIds = new Set((db.scenes_data || []).map(s => s && s.id));
-    if (chars.some(c => !dbCharIds.has(c.id)))  syncChars();
-    if (scenes.some(s => !dbSceneIds.has(s.id))) syncScenes();
+    if (charsNeedPush  || chars.some(c => !dbCharIds.has(c.id)))  syncChars();
+    if (scenesNeedPush || scenes.some(s => !dbSceneIds.has(s.id))) syncScenes();
 
     // ── 4c. Migrar fotos base64 → Supabase Storage (segundo plano) ─────────
     // Sube a Storage las imágenes que aún estén embebidas como base64 y las
@@ -163,22 +162,38 @@ async function _loadUserDataFromDb() {
   }
 }
 
-// Fusiona personajes de BD con los locales
+// Fusiona personajes de BD con los locales.
+// Reconciliación de configuración por timestamp (updatedAt): gana el más reciente.
+// history/hitos se sincronizan por tamaño (el que tenga más). bg se restaura si falta.
+// Devuelve true si algún personaje LOCAL es más nuevo que la BD → hay que subir.
 function _mergeDbChars(dbChars, hMap) {
-  if (!dbChars.length) return;
   const localById = {};
   chars.forEach(c => { localById[c.id] = c; });
-  let changed = false;
+  let changed = false, needPush = false;
 
-  dbChars.forEach(dbC => {
+  (dbChars || []).forEach(dbC => {
     const h      = hMap[dbC.id] || {};
     const dbHist = h.history || [];
     const dbHit  = h.hitos   || [];
+    const local  = localById[dbC.id];
 
-    if (localById[dbC.id]) {
-      // El personaje existe localmente.
-      const local = localById[dbC.id];
-      // Restaurar historial/hitos si la BD tiene más mensajes/hitos.
+    if (local) {
+      // ── Reconciliar CONFIG por timestamp (last-write-wins) ──────────────
+      const dbT = dbC.updatedAt || 0;
+      const lcT = local.updatedAt || 0;
+      if (dbT > lcT) {
+        // La BD es más reciente: adoptar su config, conservando history/hitos/bg locales.
+        const keepHist = local.history, keepHit = local.hitos, keepBg = local.bg;
+        Object.keys(local).forEach(k => { if (!(k in dbC)) delete local[k]; });
+        Object.assign(local, dbC);
+        local.history = keepHist || [];
+        local.hitos   = keepHit  || [];
+        if (!local.bg && keepBg) local.bg = keepBg;
+        changed = true;
+      } else if (lcT > dbT) {
+        needPush = true; // lo local es más nuevo → subirlo después
+      }
+      // ── history / hitos: el que tenga más (independiente del config) ────
       if (dbHist.length > (local.history || []).length) { local.history = dbHist; changed = true; }
       if (dbHit.length  > (local.hitos   || []).length) { local.hitos   = dbHit;  changed = true; }
       // Restaurar bg desde BD si no está disponible localmente (ej: caché borrada).
@@ -194,22 +209,36 @@ function _mergeDbChars(dbChars, hMap) {
   });
 
   if (changed) save();
+  return needPush;
 }
 
-// Fusiona escenas de BD con las locales
+// Fusiona escenas de BD con las locales (reconciliación por timestamp).
+// Devuelve true si alguna escena local es más nueva que la BD → hay que subir.
 function _mergeDbScenes(dbScenes, hMap) {
-  if (!dbScenes.length) return;
   const localById = {};
   scenes.forEach(s => { localById[s.id] = s; });
-  let changed = false;
+  let changed = false, needPush = false;
 
   dbScenes.forEach(dbS => {
     const h      = hMap[dbS.id] || {};
     const dbHist = h.history || [];
     const dbHit  = h.hitos   || [];
+    const local  = localById[dbS.id];
 
-    if (localById[dbS.id]) {
-      const local = localById[dbS.id];
+    if (local) {
+      // Reconciliar config por timestamp (igual que personajes)
+      const dbT = dbS.updatedAt || 0;
+      const lcT = local.updatedAt || 0;
+      if (dbT > lcT) {
+        const keepHist = local.history, keepHit = local.hitos;
+        Object.keys(local).forEach(k => { if (!(k in dbS)) delete local[k]; });
+        Object.assign(local, dbS);
+        local.history = keepHist || [];
+        local.hitos   = keepHit  || [];
+        changed = true;
+      } else if (lcT > dbT) {
+        needPush = true;
+      }
       if (dbHist.length > (local.history || []).length) { local.history = dbHist; changed = true; }
       if (dbHit.length  > (local.hitos   || []).length) { local.hitos   = dbHit;  changed = true; }
     } else {
@@ -221,6 +250,7 @@ function _mergeDbScenes(dbScenes, hMap) {
   });
 
   if (changed) saveScenes();
+  return needPush;
 }
 
 // Fusiona historiales de personajes de biblioteca

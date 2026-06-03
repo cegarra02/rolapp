@@ -26,23 +26,23 @@
         if (window.renderUserHeader) window.renderUserHeader();
       } catch (e) {}
     },
-    // Sin suscripción VIP por ahora → siempre false
-    isVip: function () { return false; },
-    onUpsell: function () { // qué pasa al tocar VIP sin serlo
-      toast('Hazte VIP para reclamar el premio mejorado');
-      if (window.openGemShop) window.openGemShop();
+    // VIP requerido para las recompensas semanales
+    isVip: function () { return (typeof window.isVipUser === 'function') ? window.isVipUser() : false; },
+    onUpsell: function () { // qué pasa al tocar reclamar sin ser VIP
+      close();
+      if (window.openVipScreen) window.openVipScreen();
     },
   };
 
-  // recompensa por día: [normal, vip]
+  // recompensa por día (única; ahora es una ventaja VIP)
   var WEEK = [
-    { d: 'Lun', n: 10,  v: 25  },
-    { d: 'Mar', n: 15,  v: 35  },
-    { d: 'Mié', n: 20,  v: 50  },
-    { d: 'Jue', n: 25,  v: 60  },
-    { d: 'Vie', n: 30,  v: 80  },
-    { d: 'Sáb', n: 45,  v: 110 },
-    { d: 'Dom', n: 80,  v: 200 },
+    { d: 'Lun', n: 25  },
+    { d: 'Mar', n: 35  },
+    { d: 'Mié', n: 50  },
+    { d: 'Jue', n: 60  },
+    { d: 'Vie', n: 80  },
+    { d: 'Sáb', n: 110 },
+    { d: 'Dom', n: 200 },
   ];
 
   var KEY = 'storym_rewards_v1';
@@ -101,14 +101,12 @@
 
     var pills = WEEK.map(function (r, i) {
       var s = dayState(i, st);
-      var tier = st.claimed[i];
       return '<div class="rw-pill rw-' + s + '">' +
         '<span class="rw-pill-day">' + r.d + '</span>' +
         '<span class="rw-pill-ic">' + (s === 'claimed'
           ? ICON('check', { size: 18 })
           : (s === 'locked' ? ICON('gift', { size: 16 }) : ICON('gem', { size: 16 }))) + '</span>' +
-        '<span class="rw-pill-amt">' + (tier === 'vip' ? r.v : r.n) + '</span>' +
-        (tier === 'vip' ? '<span class="rw-pill-vip">' + ICON('crown', { size: 11 }) + '</span>' : '') +
+        '<span class="rw-pill-amt">' + r.n + '</span>' +
       '</div>';
     }).join('');
 
@@ -120,21 +118,23 @@
         '<div class="rw-today-check">' + ICON('check', { size: 30 }) + '</div>' +
         '<div class="rw-today-txt"><strong>¡Premio de hoy reclamado!</strong>' +
         '<span>Vuelve mañana por +' + (WEEK[(t + 1) % 7].n) + ' gemas</span></div></div>';
+    } else if (!vip) {
+      // bloqueado: recompensas son una ventaja VIP
+      panel = '<div class="rw-vipgate">' +
+        '<div class="rw-vipgate-crown">' + ICON('crown', { size: 26 }) + '</div>' +
+        '<div class="rw-vipgate-title">Recompensas exclusivas VIP</div>' +
+        '<div class="rw-vipgate-sub">Hazte VIP para reclamar <strong>+' + today.n + ' gemas</strong> hoy y cada día de la semana.</div>' +
+        '<button class="rw-vipgate-btn" data-vip>' + ICON('crown', { size: 16 }) + ' Hazte VIP</button>' +
+      '</div>';
     } else {
       panel = '<div class="rw-today">' +
         '<div class="rw-today-head"><span class="rw-today-tag">HOY · ' + today.d + '</span>' +
-        '<span class="rw-today-sub">Elige tu recompensa</span></div>' +
-        '<div class="rw-claim-row">' +
-          '<button class="rw-claim rw-claim-normal" data-tier="normal">' +
-            '<span class="rw-claim-ic">' + ICON('gem', { size: 22 }) + '</span>' +
-            '<span class="rw-claim-amt">+' + today.n + '</span>' +
-            '<span class="rw-claim-lbl">Normal</span></button>' +
-          '<button class="rw-claim rw-claim-vip' + (vip ? '' : ' rw-locked') + '" data-tier="vip">' +
-            '<span class="rw-claim-crown">' + ICON('crown', { size: 14 }) + ' VIP</span>' +
-            '<span class="rw-claim-ic">' + ICON('gem', { size: 22 }) + '</span>' +
-            '<span class="rw-claim-amt">+' + today.v + '</span>' +
-            '<span class="rw-claim-lbl">' + (vip ? 'VIP' : 'Hazte VIP') + '</span></button>' +
-        '</div></div>';
+        '<span class="rw-today-sub">Tu recompensa de hoy</span></div>' +
+        '<button class="rw-claim rw-claim-single" data-tier="vip">' +
+          '<span class="rw-claim-ic">' + ICON('gem', { size: 24 }) + '</span>' +
+          '<span class="rw-claim-amt">+' + today.n + ' gemas</span>' +
+          '<span class="rw-claim-go">Reclamar</span></button>' +
+      '</div>';
     }
 
     sheet.innerHTML =
@@ -153,6 +153,8 @@
     sheet.querySelectorAll('.rw-claim').forEach(function (b) {
       b.addEventListener('click', function () { claim(b.getAttribute('data-tier')); });
     });
+    var vipBtn = sheet.querySelector('[data-vip]');
+    if (vipBtn) vipBtn.addEventListener('click', function () { CONFIG.onUpsell(); });
     if (window.STORYM && window.STORYM.scanIcons) window.STORYM.scanIcons(sheet);
   }
 
@@ -160,10 +162,10 @@
     var st = load();
     var t = todayIdx();
     if (st.claimed[t]) return;
-    if (tier === 'vip' && !CONFIG.isVip()) { CONFIG.onUpsell(); return; }
+    if (!CONFIG.isVip()) { CONFIG.onUpsell(); return; }
     var r = WEEK[t];
-    var amount = tier === 'vip' ? r.v : r.n;
-    st.claimed[t] = tier;
+    var amount = r.n;
+    st.claimed[t] = 'vip';
     save(st);
     CONFIG.applyGems(amount);
     burst();
