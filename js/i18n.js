@@ -199,13 +199,28 @@ const _I18N_SKIP = '.bubble,.messages,.msg,.msg-wrap,.chat-input,input,textarea,
   '.char-card-name,.scene-card-name,.scene-card-chars,.inbox-name,.inbox-preview,.chat-hdr-name,' +
   '.bubble-speaker,.uhc-gems,.hito-text,.auth-user-name,.auth-user-email,.onb-card,script,style,.ic,svg';
 
+// Normaliza para comparar etiquetas: sin tildes y en minúsculas. Las etiquetas
+// de la comunidad se guardan sin tilde ("Romantico", "Fantasia"), así que el
+// matching debe ser insensible a tildes/mayúsculas para que traduzcan igual.
+function _norm(s) {
+  try { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  catch (e) { return s.toLowerCase(); }
+}
+// Mapas normalizados (clave normalizada → traducción), construidos una vez.
+const I18N_EN_NORM = (function () { const r = {}; for (const k in I18N_EN) r[_norm(k)] = I18N_EN[k]; return r; })();
+const I18N_ES_NORM = (function () { const r = {}; for (const k in I18N_ES) r[_norm(k)] = I18N_ES[k]; return r; })();
+
 // Traduce una cadena ya recortada (trim). Devuelve la traducción o null si no aplica.
-// Primero intenta coincidencia exacta; si no, prueba los prefijos interpolados.
+// 1) coincidencia exacta  2) prefijos interpolados  3) normalizada (tildes/case).
 function _xlate(key, map, prefixes) {
   if (map[key]) return map[key];
   for (let i = 0; i < prefixes.length; i++) {
     if (key.indexOf(prefixes[i][0]) === 0) return prefixes[i][1] + key.slice(prefixes[i][0].length);
   }
+  const norm = (map === I18N_EN) ? I18N_EN_NORM : I18N_ES_NORM;
+  const hit = norm[_norm(key)];
+  // Solo aplicar el match normalizado si realmente cambia algo (evita reemplazos inútiles)
+  if (hit && hit !== key) return hit;
   return null;
 }
 
