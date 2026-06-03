@@ -117,7 +117,52 @@ const I18N_EN = {
   '¿Cómo te llamas tú en el roleplay?': 'What is your name in the roleplay?',
   'Tu aspecto, personalidad, quién eres en estas historias…': 'Your appearance, personality, who you are in these stories…',
   'Géneros favoritos, cosas que siempre quieres incluir, límites, idioma preferido…': 'Favorite genres, things you always want to include, limits, preferred language…',
+  // Sliders de personalidad
+  'Timidez': 'Shyness', 'Apertura romántica': 'Romantic openness', 'Ritmo de escalada': 'Escalation pace',
+  'Nivel NSFW máximo': 'Max NSFW level',
+  // Chip informativo bajo el perfil del jugador
+  'El personaje sabrá esto sobre ti en cada chat': 'The character will know this about you in every chat',
+  'Los personajes sabrán esto sobre ti en cada chat': 'The characters will know this about you in every chat',
+  // Botón guardar perfil
+  'Guardar perfil': 'Save profile',
+  // Menú del chat (⋮)
+  'Estilo del chat': 'Chat style', 'Limpiar historial': 'Clear history', 'Ir a Misiones': 'Go to Missions',
+  // Panel de estilo de chat
+  'Color de tus burbujas': 'Your bubble color', 'Tamaño de fuente': 'Font size',
+  'Transparencia de tus burbujas': 'Your bubble opacity', 'Vista previa': 'Preview',
+  'Restablecer': 'Reset', 'Guardar': 'Save', 'Editar': 'Edit',
+  '"Te esperaba."': '"I was waiting for you."', 'Y yo a ti.': 'And you too.', 'sonríe': 'smiles',
+  // Hitos
+  'Sistema pausado para este chat.': 'System paused for this chat.',
+  'Los hitos se generan automáticamente cuando ocurre algo importante en la conversación.': 'Milestones are generated automatically when something important happens in the conversation.',
+  // Tienda de gemas
+  'Inicio': 'Starter', 'Pro': 'Pro', 'Mega': 'Mega', 'Elite': 'Elite', 'Popular': 'Popular',
+  '+33% GRATIS': '+33% FREE', '+53% GRATIS': '+53% FREE', 'MEJOR VALOR': 'BEST VALUE',
+  'precio habitual': 'regular price', '1 compra / semana': '1 purchase / week',
+  'Cargando anuncio…': 'Loading ad…', 'Ver anuncio · Ganar 4–9': 'Watch ad · Earn 4–9', 'gratis': 'free',
+  // Recompensas
+  'Lun': 'Mon', 'Mar': 'Tue', 'Mié': 'Wed', 'Jue': 'Thu', 'Vie': 'Fri', 'Sáb': 'Sat', 'Dom': 'Sun',
+  '¡Premio de hoy reclamado!': "Today's reward claimed!", 'Elige tu recompensa': 'Choose your reward',
+  'Recompensas exclusivas VIP': 'Exclusive VIP rewards', 'Recompensas VIP': 'VIP rewards',
+  'Reclamado': 'Claimed', 'Reclamada': 'Claimed', 'gemas': 'gems',
+  // Etiquetas comunes (para que se entiendan en cada idioma)
+  'Romance': 'Romance', 'Fantasía': 'Fantasy', 'Aventura': 'Adventure', 'Drama': 'Drama',
+  'Misterio': 'Mystery', 'Histórico': 'Historical', 'Ciencia ficción': 'Sci-fi', 'Terror': 'Horror',
+  'Comedia': 'Comedy', 'Acción': 'Action', 'Anime': 'Anime', 'Original': 'Original',
+  'Fantasía oscura': 'Dark fantasy', 'Sobrenatural': 'Supernatural', 'Escolar': 'School life',
+  'Vampiros': 'Vampires', 'Magia': 'Magic', 'Amistad': 'Friendship', 'Celos': 'Jealousy',
+  'Enemigos a amantes': 'Enemies to lovers', 'Slice of life': 'Slice of life', 'Romántico': 'Romantic',
 };
+
+// Prefijos con texto interpolado (nombre, día…): traduce solo el prefijo.
+const I18N_PREFIX_EN = [
+  ['Color de las burbujas de ', 'Bubble color of '],
+  ['Transparencia de ', 'Opacity of '],
+  ['HOY · ', 'TODAY · '],
+  ['Vuelve mañana por +', 'Come back tomorrow for +'],
+  ['Generar misiones para ', 'Generate missions for '],
+];
+const I18N_PREFIX_ES = I18N_PREFIX_EN.map(p => [p[1], p[0]]);
 
 // Mapa inverso (en→es). Se omiten valores duplicados para evitar ambigüedad.
 const I18N_ES = (function () {
@@ -131,13 +176,22 @@ let _lang = (function () { try { return localStorage.getItem('storym_lang') || '
 // Traducción puntual para cadenas en JS: t('Guardado ✓')
 function t(es) { return _lang === 'en' ? (I18N_EN[es] || es) : es; }
 
-// No traducir contenido de usuario ni controles
+// No traducir contenido de usuario ni controles (las etiquetas SÍ se traducen)
 const _I18N_SKIP = '.bubble,.messages,.msg,.msg-wrap,.chat-input,input,textarea,[contenteditable],' +
   '.char-card-name,.scene-card-name,.scene-card-chars,.inbox-name,.inbox-preview,.chat-hdr-name,' +
-  '.bubble-speaker,.uhc-gems,.hito-text,.auth-user-name,.auth-user-email,.mf-chip,.explore-tag-chip,' +
-  '.tag-chip,.char-card-tag,.onb-card,script,style,.ic,svg';
+  '.bubble-speaker,.uhc-gems,.hito-text,.auth-user-name,.auth-user-email,.onb-card,script,style,.ic,svg';
 
-function _translateNode(node, map) {
+// Traduce una cadena ya recortada (trim). Devuelve la traducción o null si no aplica.
+// Primero intenta coincidencia exacta; si no, prueba los prefijos interpolados.
+function _xlate(key, map, prefixes) {
+  if (map[key]) return map[key];
+  for (let i = 0; i < prefixes.length; i++) {
+    if (key.indexOf(prefixes[i][0]) === 0) return prefixes[i][1] + key.slice(prefixes[i][0].length);
+  }
+  return null;
+}
+
+function _translateNode(node, map, prefixes) {
   if (!node || (node.nodeType !== 1 && node.nodeType !== 9)) return;
   if (node.nodeType === 1 && node.closest && node.closest(_I18N_SKIP)) return;
   // Placeholders
@@ -147,31 +201,32 @@ function _translateNode(node, map) {
   inputs.forEach(el => {
     const ph = el.getAttribute('placeholder');
     const key = ph && ph.trim();
-    if (key && map[key]) el.setAttribute('placeholder', ph.replace(key, map[key]));
+    const tr = key && _xlate(key, map, prefixes);
+    if (tr) el.setAttribute('placeholder', ph.replace(key, tr));
   });
   // Nodos de texto
   const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, {
     acceptNode: function (n) {
-      const v = n.nodeValue, key = v && v.trim();
-      if (!key || !map[key]) return NodeFilter.FILTER_REJECT;
+      const key = n.nodeValue && n.nodeValue.trim();
+      if (!key || !_xlate(key, map, prefixes)) return NodeFilter.FILTER_REJECT;
       if (n.parentElement && n.parentElement.closest(_I18N_SKIP)) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     }
   });
   const nodes = []; let cur;
   while ((cur = walker.nextNode())) nodes.push(cur);
-  nodes.forEach(n => { const key = n.nodeValue.trim(); n.nodeValue = n.nodeValue.replace(key, map[key]); });
+  nodes.forEach(n => { const key = n.nodeValue.trim(); const tr = _xlate(key, map, prefixes); if (tr) n.nodeValue = n.nodeValue.replace(key, tr); });
 }
 
 function setLanguage(lang) {
   lang = (lang === 'en') ? 'en' : 'es';
-  if (lang === _lang) { if (lang === 'en') _translateNode(document.body, I18N_EN); return; }
-  // Traducir de la lengua actual a la nueva
   const map = (lang === 'en') ? I18N_EN : I18N_ES;
+  const prefixes = (lang === 'en') ? I18N_PREFIX_EN : I18N_PREFIX_ES;
+  if (lang === _lang) { if (lang === 'en') _translateNode(document.body, I18N_EN, I18N_PREFIX_EN); return; }
   _lang = lang;
   try { localStorage.setItem('storym_lang', lang); } catch (e) {}
   document.documentElement.lang = lang;
-  _translateNode(document.body, map);
+  _translateNode(document.body, map, prefixes);
 }
 
 // Re-traducir el contenido que el JS inserta dinámicamente (solo si estamos en EN)
@@ -181,17 +236,18 @@ new MutationObserver(function (muts) {
     const added = muts[i].addedNodes;
     for (let j = 0; j < added.length; j++) {
       const n = added[j];
-      if (n.nodeType === 1) _translateNode(n, I18N_EN);
+      if (n.nodeType === 1) _translateNode(n, I18N_EN, I18N_PREFIX_EN);
       else if (n.nodeType === 3 && n.parentElement && !n.parentElement.closest(_I18N_SKIP)) {
         const key = n.nodeValue && n.nodeValue.trim();
-        if (key && I18N_EN[key]) n.nodeValue = n.nodeValue.replace(key, I18N_EN[key]);
+        const tr = key && _xlate(key, I18N_EN, I18N_PREFIX_EN);
+        if (tr) n.nodeValue = n.nodeValue.replace(key, tr);
       }
     }
   }
 }).observe(document.documentElement, { childList: true, subtree: true });
 
 // Aplicar idioma guardado al cargar
-function _i18nInit() { if (_lang === 'en') _translateNode(document.body, I18N_EN); }
+function _i18nInit() { if (_lang === 'en') _translateNode(document.body, I18N_EN, I18N_PREFIX_EN); }
 if (document.readyState !== 'loading') _i18nInit();
 else document.addEventListener('DOMContentLoaded', _i18nInit);
 
