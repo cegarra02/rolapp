@@ -63,6 +63,21 @@ function _chatLangDirective() {
   return `\n\nIMPORTANTE: Escribe TODAS tus respuestas en español.`;
 }
 
+// Traduce un texto al idioma indicado ('en'/'es') usando la API. Devuelve la
+// traducción o null si falla / no hay API key. Conserva el formato *acción* / "diálogo".
+async function translateText(text, targetLang) {
+  const apiKey = localStorage.getItem('rp_apikey') || '';
+  if (!apiKey || !text || !text.trim()) return null;
+  const langName = targetLang === 'en' ? 'English' : 'Spanish';
+  const prompt = `Translate the following roleplay message to ${langName}. Keep the *asterisks* (actions) and "quotes" (dialogue) formatting exactly. Output ONLY the translation, with no preamble or quotes around it:\n\n${text}`;
+  try {
+    const res = await anthropicFetch(apiKey, prompt, 1000);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data && data.content && data.content[0] && data.content[0].text || '').trim() || null;
+  } catch (e) { return null; }
+}
+
 function buildSystemPrompt() {
   const p = getEffectiveProfile();
   if (currentScene) {

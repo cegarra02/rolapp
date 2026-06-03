@@ -168,5 +168,6 @@ function openSceneChat(id) {
     syncHistory(s.id, s.history, s.hitos || []);
     renderMessages();
   }
+  if (typeof translateGreetingIfNeeded === 'function') translateGreetingIfNeeded();
   setTimeout(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }, 50);
 }

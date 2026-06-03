@@ -5,6 +5,28 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+// Contenido a mostrar de un mensaje: si el idioma es inglés y hay traducción
+// cacheada (m.tr.en), la usa; si no, el contenido original. (El contenido
+// almacenado nunca se altera, así el sync entre dispositivos no se corrompe.)
+function _msgContent(m) {
+  try { if ((localStorage.getItem('storym_lang') || 'es') === 'en' && m.tr && m.tr.en) return m.tr.en; } catch (e) {}
+  return m.content;
+}
+
+// Traduce el saludo inicial (primer mensaje del personaje) al inglés si el idioma
+// es inglés y aún no está traducido. Cachea la traducción y re-renderiza.
+async function translateGreetingIfNeeded() {
+  if ((function(){ try { return localStorage.getItem('storym_lang') || 'es'; } catch(e){ return 'es'; } })() !== 'en') return;
+  if (!history.length || typeof translateText !== 'function') return;
+  const g = history.find(m => m.role === 'assistant');
+  if (!g || (g.tr && g.tr.en)) return;
+  const tr = await translateText(g.content, 'en');
+  if (!tr) return;
+  g.tr = g.tr || {}; g.tr.en = tr;
+  if (currentScene) saveScenes(); else if (currentChar) _saveChar();
+  renderMessages();
+}
+
 function renderMessages() {
   const container = document.getElementById('messages');
   if (!history.length) {
@@ -32,7 +54,7 @@ function renderMessages() {
     <div class="msg-wrap ${isUser ? 'user' : 'bot'}" id="msgwrap-${i}"
          ontouchstart="handleMsgTouch(${i})" onclick="handleMsgClick(${i})">
       ${!isUser && m.speaker ? `<div class="bubble-speaker">${esc(m.speaker.replace(/:+$/, ''))}</div>` : ''}
-      <div class="bubble" id="bubble-${i}"${inlineStyle ? ` style="${inlineStyle}"` : ''}>${formatMsg(m.content)}</div>
+      <div class="bubble" id="bubble-${i}"${inlineStyle ? ` style="${inlineStyle}"` : ''}>${formatMsg(_msgContent(m))}</div>
       <div class="bubble-time">${fmtTime(m.ts)}</div>
       <div class="msg-actions" id="actions-${i}">
         <button class="msg-action-btn" onclick="event.stopPropagation();editMsg(${i})">✎ Editar</button>
@@ -362,6 +384,7 @@ function openChat(id) {
     const msg = {role: 'assistant', content: c.greeting, ts: Date.now()};
     history.push(msg); c.history = history; save(); renderMessages();
   }
+  translateGreetingIfNeeded(); // traduce el saludo si el idioma es inglés
   setTimeout(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }, 50);
 }
 

@@ -62,8 +62,13 @@ function renderAuthSection() {
 
 // Fila de moderación (abajo, solo admin) con contador de pendientes
 async function renderModEntry() {
+  const loggedIn = (typeof supabaseUser !== 'undefined' && supabaseUser);
+  // La tarjeta de ajustes (Apariencia · Idioma) se muestra SIEMPRE, también sin
+  // sesión. Solo "Cerrar sesión" depende de tener sesión.
   const card = document.getElementById('profileSettingsCard');
-  if (card) card.style.display = (typeof supabaseUser !== 'undefined' && supabaseUser) ? 'block' : 'none';
+  if (card) card.style.display = 'block';
+  const logoutRow = document.getElementById('logoutRow');
+  if (logoutRow) logoutRow.style.display = loggedIn ? 'flex' : 'none';
   const row = document.getElementById('modEntryRow');
   if (!row) return;
   if (typeof isAdmin !== 'function' || !isAdmin()) { row.style.display = 'none'; return; }

@@ -254,6 +254,7 @@ async function openExploreChat(libCharId) {
     saveLibChars();
     renderMessages();
   }
+  if (typeof translateGreetingIfNeeded === 'function') translateGreetingIfNeeded();
   setTimeout(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }, 50);
 }
 
@@ -287,8 +288,8 @@ function _renderLibDetail(data) {
       <div class="field-label">Nombre</div>
       <input class="edit-inp" id="libEditName" value="${esc(data.name)}">
 
-      <div class="field-label">Tag / Categoría</div>
-      <input class="edit-inp" id="libEditTag" value="${esc(data.tag || '')}">
+      <div class="field-label">Etiquetas (separadas por coma)</div>
+      <input class="edit-inp" id="libEditTag" value="${esc((data.tags?.length ? data.tags : (data.tag ? [data.tag] : [])).join(', '))}">
 
       <div class="field-label">Género</div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -330,9 +331,11 @@ function libPickGender(g) {
 async function _saveLibEdit(charId) {
   const name = document.getElementById('libEditName')?.value.trim();
   if (!name) { toast('Nombre obligatorio'); return; }
+  const _rawTags = (document.getElementById('libEditTag')?.value || '').split(',').map(t => t.trim()).filter(Boolean);
   const updates = {
     name,
-    tag:      document.getElementById('libEditTag')?.value.trim()      || null,
+    tags:     _rawTags.length ? _rawTags : null,
+    tag:      _rawTags[0] || null,
     gender:   _libEditGender                                            || null,
     age:      document.getElementById('libEditAge')?.value.trim()      || null,
     desc:     document.getElementById('libEditDesc')?.value.trim()     || null,
