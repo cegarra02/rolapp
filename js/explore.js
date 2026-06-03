@@ -6,12 +6,39 @@ let exploreSort  = 'new';
 let exploreGender = '';
 let _exploreFiltersOpen = false;
 
+// Secuencia para descartar resultados de cargas obsoletas (al cambiar de pestaña
+// varias veces, una petición vieja podía completar después y pisar la lista).
+let _exploreSeq = 0;
+
+// Corre una promesa con límite de tiempo. Si tarda más, rechaza con 'timeout'.
+// Imprescindible porque un fetch colgado por QUIC/HTTP3 deja el await esperando
+// para siempre y la lista nunca carga.
+function _withTimeout(promise, ms) {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))
+  ]);
+}
+
+function _exploreError() {
+  const list = document.getElementById('exploreList');
+  if (list) list.innerHTML = `
+    <div class="empty-state" style="grid-column:span 2">
+      <div class="icon">⚠️</div>
+      <p>Error al cargar. Comprueba tu conexión.</p>
+      <button class="save-btn" style="margin-top:12px;width:auto;padding:10px 24px" onclick="renderExploreScreen()">🔄 Reintentar</button>
+    </div>`;
+}
+
 async function renderExploreScreen() {
+  const seq = ++_exploreSeq;
   renderExploreLoading();
-  const [charsOk] = await Promise.all([fetchExploreChars(), fetchExploreTags()]);
-  // Solo renderizar la lista si la carga fue exitosa.
-  // Si fetchExploreChars falló, ya puso el HTML de error en #exploreList — no sobreescribir.
-  if (charsOk !== false) renderExploreList();
+  let charsOk;
+  try { [charsOk] = await Promise.all([fetchExploreChars(seq), fetchExploreTags()]); }
+  catch (e) { charsOk = false; }
+  if (seq !== _exploreSeq) return; // otra carga más nueva la sustituyó → ignorar
+  if (charsOk === false) { _exploreError(); return; }
+  renderExploreList();
   renderExploreTags();
 }
 
@@ -20,7 +47,7 @@ function renderExploreLoading() {
   if (list) list.innerHTML = '<div class="explore-loading">Cargando…</div>';
 }
 
-async function fetchExploreChars() {
+async function fetchExploreChars(seq) {
   // Guardar conteos locales optimistas antes de sobreescribir con datos frescos de DB
   const _localCounts = {};
   exploreChars.forEach(c => { if (c.message_count) _localCounts[c.id] = c.message_count; });
@@ -50,24 +77,17 @@ async function fetchExploreChars() {
   // flakiness de red (ERR_QUIC_PROTOCOL_ERROR) que dejaba la lista vacía a menudo.
   let data = null, error = null;
   for (let attempt = 0; attempt < 4; attempt++) {
-    const res = await buildQuery();
-    data = res.data; error = res.error;
-    if (!error) break;                 // éxito → salir
-    console.warn('explore fetch intento', attempt + 1, error.message);
+    try {
+      const res = await _withTimeout(buildQuery(), 8000); // 8s por intento (anti-cuelgue)
+      data = res.data; error = res.error;
+    } catch (e) { error = e; data = null; } // timeout o excepción de red
+    if (!error) break;                       // éxito → salir
+    console.warn('explore fetch intento', attempt + 1, error.message || error);
     if (attempt < 3) await new Promise(r => setTimeout(r, 400 * (attempt + 1))); // 0.4s, 0.8s, 1.2s
   }
 
-  if (error) {
-    console.error('explore fetch (tras reintentos):', error);
-    const list = document.getElementById('exploreList');
-    if (list) list.innerHTML = `
-      <div class="empty-state" style="grid-column:span 2">
-        <div class="icon">⚠️</div>
-        <p>Error al cargar. Comprueba tu conexión.</p>
-        <button class="save-btn" style="margin-top:12px;width:auto;padding:10px 24px" onclick="renderExploreScreen()">🔄 Reintentar</button>
-      </div>`;
-    return false; // señal de error para renderExploreScreen
-  }
+  if (error) { console.error('explore fetch (tras reintentos):', error.message || error); return false; }
+  if (seq !== undefined && seq !== _exploreSeq) return false; // resultado obsoleto → no aplicar
   // Usar el mayor entre DB y local (preserva incrementos optimistas si DB aún no los tiene)
   exploreChars = (data || []).map(c => ({
     ...c,
@@ -77,10 +97,13 @@ async function fetchExploreChars() {
 }
 
 async function fetchExploreTags() {
-  const { data } = await supaClient
-    .from('characters_library')
-    .select('tags, tag')
-    .eq('status', 'approved');
+  let data = null;
+  try {
+    const res = await _withTimeout(
+      supaClient.from('characters_library').select('tags, tag').eq('status', 'approved'),
+      8000);
+    data = res.data;
+  } catch (e) { return; } // timeout/red: no bloquear la carga de Explorar
   if (!data) return;
   const counts = {};
   data.forEach(r => {
