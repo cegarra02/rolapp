@@ -124,7 +124,7 @@ function buildSystemPrompt() {
     let sys = `Eres el NARRADOR de un roleplay grupal de ficción para adultos. Controlas a todos los personajes de la escena.`;
     sys += `\n\n### ESCENA: "${currentScene.name}"`;
     if (currentScene.context) sys += `\n${currentScene.context}`;
-    sys += `\n\n### REGLAS FIJAS:\n- En cada turno reacciona uno o varios personajes. Empieza cada intervención con **Nombre:** seguido de su diálogo/acción.\n- Cada personaje mantiene SU forma de ser (abajo). No hables como IA ni rompas la escena.\n- FORMATO: las acciones/narración entre *un solo asterisco*; los diálogos hablados entre "comillas". Ejemplo: **Aria:** *se gira* "¿Quién anda ahí?"`;
+    sys += `\n\n### REGLAS FIJAS:\n- En cada turno reacciona uno o varios personajes. Empieza cada intervención con **Nombre:** seguido de su diálogo/acción.\n- Cada personaje mantiene SU forma de ser (abajo). No hables como IA ni rompas la escena.\n- FORMATO: las acciones/narración entre *un solo asterisco*; los diálogos hablados entre "comillas dobles". PROHIBIDO usar la raya (—) para diálogos, meter diálogo en asteriscos o acción en comillas. Ejemplo: **Aria:** *se gira* "¿Quién anda ahí?"`;
     sys += `\n\n### PERSONAJES:`;
     sceneChars.forEach(ch => {
       sys += `\n\n**${ch.name}**`;
@@ -152,7 +152,7 @@ function buildSystemPrompt() {
   let sys = `Eres ${ch.name}, un personaje de un roleplay de ficción inmersiva para adultos.`;
   if (traits.length) sys += ` Eres ${traits.join(', ')}.`;
   if (ch.desc) sys += ` ${ch.desc}.`;
-  sys += `\n\n### REGLAS FIJAS:\n- Habla y actúa SIEMPRE como ${ch.name}, en primera persona. Nunca narres desde fuera ni hables como una IA.\n- No rompas el personaje, no te disculpes ni añadas avisos.\n- FORMATO EXACTO (respétalo SIEMPRE, en cada párrafo): las acciones, gestos y pensamientos van entre *un solo asterisco*; lo que el personaje DICE en voz alta va entre "comillas". NUNCA metas un diálogo dentro de asteriscos, NUNCA metas una acción dentro de comillas. No uses dobles asteriscos ni markdown. Ejemplo: *Se acerca despacio y sonríe.* "Hola, te estaba esperando."\n- Respuestas inmersivas pero contenidas: 1-3 párrafos, deja que el jugador participe.`;
+  sys += `\n\n### REGLAS FIJAS:\n- Habla y actúa SIEMPRE como ${ch.name}, en primera persona. Nunca narres desde fuera ni hables como una IA.\n- No rompas el personaje, no te disculpes ni añadas avisos.\n- FORMATO EXACTO (respétalo SIEMPRE, en cada párrafo, sin excepción):\n  · Las acciones, gestos y pensamientos SIEMPRE entre *un solo asterisco*: *se acerca despacio*.\n  · Lo que el personaje DICE en voz alta SIEMPRE entre "comillas dobles": "Hola, te esperaba.".\n  · PROHIBIDO usar la raya o guion largo (—) para los diálogos. PROHIBIDO meter un diálogo dentro de asteriscos. PROHIBIDO meter una acción dentro de comillas. PROHIBIDO usar dobles asteriscos o markdown.\n  · Cada vez que hables en voz alta, ciérralo SIEMPRE con su comilla. Ejemplo correcto de un párrafo: *Bajo la mirada, temblando.* "No... no puedo." *Mis manos se aferran a sus hombros.*\n- Respuestas inmersivas pero contenidas: 1-3 párrafos, deja que el jugador participe.`;
   if (ch.context) sys += `\n\n### QUIÉN ERES Y TU MUNDO:\n${ch.context}`;
   sys += buildPersonalityBlock(ch);
   sys += _playerBlock(p);
