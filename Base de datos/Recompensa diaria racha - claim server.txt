@@ -6,7 +6,7 @@
 --
 -- Racha: días consecutivos 1..7. Si el último reclamo fue AYER → avanza
 -- (tras el 7 vuelve al 1). Si hubo un hueco → vuelve al Día 1.
--- Importes Día 1..7: 10, 12, 15, 28, 20, 30, 40.
+-- Importes Día 1..7: 10, 12, 15, 18, 20, 30, 40.
 -- Requiere VIP activo (users.vip_until > now).
 -- ════════════════════════════════════════════════════════════════════════════
 
@@ -24,7 +24,7 @@ DECLARE
   v_day    INT;
   v_amount INT;
   v_new    INT;
-  amounts  INT[] := ARRAY[10, 12, 15, 28, 20, 30, 40];  -- Día 1..7
+  amounts  INT[] := ARRAY[10, 12, 15, 18, 20, 30, 40];  -- Día 1..7
 BEGIN
   SELECT last_reward_date, COALESCE(reward_streak, 0), vip_until
     INTO v_last, v_streak, v_vip
