@@ -142,7 +142,9 @@ function saveScene() {
 
 function deleteScene() {
   if (!editSceneId) return;
-  scenes = scenes.filter(x => x.id !== editSceneId);
+  const id = editSceneId;
+  scenes = scenes.filter(x => x.id !== id);
+  if (typeof addTombstone === 'function') addTombstone('scene', id); // evita resurrección al sincronizar
   saveScenes(); syncScenes(); goHome(); toast('Escena eliminada');
 }
 

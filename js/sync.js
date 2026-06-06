@@ -162,6 +162,37 @@ async function _loadUserDataFromDb() {
   }
 }
 
+// ── Tombstones: ids de personajes/escenas eliminados por el usuario ──────────
+// Sin esto, el merge desde la BD "resucita" lo borrado: un borrado deja la lista
+// local con MENOS elementos, lo que no dispara la subida a la BD, así que la BD
+// conserva el elemento y el siguiente login lo vuelve a añadir. El tombstone
+// impide re-añadirlo y fuerza la limpieza de la BD. Se guarda en localStorage y
+// en profile (deletedChars/deletedScenes) para que funcione cross-device.
+function _tombstoneKeys(kind) {
+  return kind === 'scene'
+    ? { ls: 'rp_deleted_scenes', prof: 'deletedScenes' }
+    : { ls: 'rp_deleted_chars',  prof: 'deletedChars'  };
+}
+function _tombstones(kind) {
+  const k = _tombstoneKeys(kind);
+  let local = [];
+  try { local = JSON.parse(localStorage.getItem(k.ls) || '[]'); } catch (e) {}
+  const prof = (typeof profile === 'object' && profile && Array.isArray(profile[k.prof])) ? profile[k.prof] : [];
+  return new Set([...(local || []), ...prof]);
+}
+function addTombstone(kind, id) {
+  if (!id) return;
+  const k = _tombstoneKeys(kind);
+  const set = _tombstones(kind); set.add(id);
+  const arr = Array.from(set).slice(-1000); // tope defensivo
+  try { localStorage.setItem(k.ls, JSON.stringify(arr)); } catch (e) {}
+  if (typeof profile === 'object' && profile) {
+    profile[k.prof] = arr;
+    try { localStorage.setItem('rp_profile', JSON.stringify(profile)); } catch (e) {}
+    if (supabaseUser && typeof syncProfile === 'function') syncProfile();
+  }
+}
+
 // Fusiona personajes de BD con los locales.
 // Reconciliación de configuración por timestamp (updatedAt): gana el más reciente.
 // history/hitos se sincronizan por tamaño (el que tenga más). bg se restaura si falta.
@@ -170,8 +201,16 @@ function _mergeDbChars(dbChars, hMap) {
   const localById = {};
   chars.forEach(c => { localById[c.id] = c; });
   let changed = false, needPush = false;
+  const tomb = _tombstones('char');
 
   (dbChars || []).forEach(dbC => {
+    if (!dbC || !dbC.id) return;
+    // Eliminado por el usuario: no re-añadir y marcar para limpiar la BD.
+    if (tomb.has(dbC.id)) {
+      if (localById[dbC.id]) { chars = chars.filter(c => c.id !== dbC.id); delete localById[dbC.id]; changed = true; }
+      needPush = true;
+      return;
+    }
     const h      = hMap[dbC.id] || {};
     const dbHist = h.history || [];
     const dbHit  = h.hitos   || [];
@@ -218,8 +257,15 @@ function _mergeDbScenes(dbScenes, hMap) {
   const localById = {};
   scenes.forEach(s => { localById[s.id] = s; });
   let changed = false, needPush = false;
+  const tomb = _tombstones('scene');
 
   dbScenes.forEach(dbS => {
+    if (!dbS || !dbS.id) return;
+    if (tomb.has(dbS.id)) {
+      if (localById[dbS.id]) { scenes = scenes.filter(s => s.id !== dbS.id); delete localById[dbS.id]; changed = true; }
+      needPush = true;
+      return;
+    }
     const h      = hMap[dbS.id] || {};
     const dbHist = h.history || [];
     const dbHit  = h.hitos   || [];

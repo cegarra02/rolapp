@@ -234,6 +234,7 @@ function deleteChar() {
 
 function confirmDelete(id) {
   chars = chars.filter(x => x.id !== id);
+  if (typeof addTombstone === 'function') addTombstone('char', id); // evita resurrección al sincronizar
   save(); syncChars(); closeModal(); goHome(); toast('Personaje eliminado');
 }
 
