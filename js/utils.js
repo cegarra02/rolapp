@@ -85,17 +85,45 @@ function save() { return _saveCharsArray('rp_chars', chars); }
 function saveLibChars() { return _saveCharsArray('rp_lib_chars', libChars); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function esc(s) { return String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+// Tokenizador: recorre el texto y separa en bloques que NO se anidan entre sí
+// → *acción* (cursiva/em) y "diálogo" (fuerte/strong). El problema anterior era
+// que con regex encadenados un *…* podía englobar unas comillas (o al revés) y
+// el color salía invertido/mezclado. Aquí, una vez que abre un delimitador, su
+// contenido se trata como una unidad y no se vuelve a parsear por dentro.
 function formatMsg(txt) {
-  let s = esc(txt);
-  // Se procesa por línea (antes de convertir \n) para que los marcadores no
-  // "sangren" a través de saltos de línea. Tolerante con lo que genera Mistral:
-  // **negrita** / *cursiva* y comillas rectas, tipográficas o guillemets.
-  s = s.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');   // **diálogo/énfasis** → fuerte
-  s = s.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');               // *acción/narración* → cursiva
-  s = s.replace(/"([^"\n]{1,300})"/g, '<strong>"$1"</strong>'); // "diálogo" recto
-  s = s.replace(/“([^”\n]{1,300})”/g, '<strong>“$1”</strong>'); // “diálogo” tipográfico
-  s = s.replace(/«([^»\n]{1,300})»/g, '<strong>«$1»</strong>'); // «diálogo» guillemets
-  return s.replace(/\n/g, '<br>');
+  const raw = String(txt);
+  const QOPEN = { '"': '"', '“': '”', '«': '»' };
+  let out = '', i = 0;
+  const n = raw.length;
+  while (i < n) {
+    const c = raw[i];
+    if (c === '\n') { out += '<br>'; i++; continue; }
+    // Acción: *…* o **…** (mismo estilo, cursiva). No anida comillas dentro.
+    if (c === '*') {
+      const star = (raw[i + 1] === '*') ? 2 : 1;
+      const close = star === 2 ? '**' : '*';
+      const end = raw.indexOf(close, i + star);
+      const nl  = raw.indexOf('\n', i + star);
+      if (end > i && (nl === -1 || end < nl)) {
+        out += '<em>' + esc(raw.slice(i + star, end)) + '</em>';
+        i = end + star; continue;
+      }
+    }
+    // Diálogo: "…" / “…” / «…» (fuerte). No anida asteriscos dentro.
+    if (QOPEN[c]) {
+      const cq = QOPEN[c];
+      const end = raw.indexOf(cq, i + 1);
+      const nl  = raw.indexOf('\n', i + 1);
+      if (end > i && (nl === -1 || end < nl)) {
+        out += '<strong>' + esc(raw.slice(i, end + 1)) + '</strong>';
+        i = end + 1; continue;
+      }
+    }
+    // Carácter normal
+    out += esc(c);
+    i++;
+  }
+  return out;
 }
 function fmtTime(ts) { const d = new Date(ts); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); }
 // Formatea un contador de mensajes para la tarjeta: 0→null, 1500→'1.5k', 12000→'12k'

@@ -152,7 +152,7 @@ function buildSystemPrompt() {
   let sys = `Eres ${ch.name}, un personaje de un roleplay de ficción inmersiva para adultos.`;
   if (traits.length) sys += ` Eres ${traits.join(', ')}.`;
   if (ch.desc) sys += ` ${ch.desc}.`;
-  sys += `\n\n### REGLAS FIJAS:\n- Habla y actúa SIEMPRE como ${ch.name}, en primera persona. Nunca narres desde fuera ni hables como una IA.\n- No rompas el personaje, no te disculpes ni añadas avisos.\n- FORMATO EXACTO: las acciones y la narración entre *un solo asterisco*; lo que el personaje DICE en voz alta entre "comillas". No uses **dobles asteriscos**, ni markdown, ni otros símbolos. Ejemplo: *Se acerca despacio y sonríe.* "Hola, te estaba esperando."\n- Respuestas inmersivas pero contenidas: 1-3 párrafos, deja que el jugador participe.`;
+  sys += `\n\n### REGLAS FIJAS:\n- Habla y actúa SIEMPRE como ${ch.name}, en primera persona. Nunca narres desde fuera ni hables como una IA.\n- No rompas el personaje, no te disculpes ni añadas avisos.\n- FORMATO EXACTO (respétalo SIEMPRE, en cada párrafo): las acciones, gestos y pensamientos van entre *un solo asterisco*; lo que el personaje DICE en voz alta va entre "comillas". NUNCA metas un diálogo dentro de asteriscos, NUNCA metas una acción dentro de comillas. No uses dobles asteriscos ni markdown. Ejemplo: *Se acerca despacio y sonríe.* "Hola, te estaba esperando."\n- Respuestas inmersivas pero contenidas: 1-3 párrafos, deja que el jugador participe.`;
   if (ch.context) sys += `\n\n### QUIÉN ERES Y TU MUNDO:\n${ch.context}`;
   sys += buildPersonalityBlock(ch);
   sys += _playerBlock(p);
