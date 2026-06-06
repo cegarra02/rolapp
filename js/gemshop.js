@@ -190,6 +190,23 @@ function _renderGemShop() {
   }
 }
 
+// Localiza un package de RevenueCat de forma tolerante:
+//  · getOfferings() puede devolver {offerings:{…}} o el objeto directo → ambos OK.
+//  · busca en el offering `default` (gemas) o el `current` como respaldo.
+//  · empareja por identificador de package (que controlamos nosotros) y, si no,
+//    por product.identifier — admitiendo el formato nuevo de Google `id:base`.
+async function _findGemPackage(Purchases, productId) {
+  const res = await Purchases.getOfferings();
+  const offerings = (res && res.offerings) ? res.offerings : res;
+  let off = (offerings && offerings.all && offerings.all.default) ? offerings.all.default
+          : (offerings && offerings.current);
+  const pkgs = (off && off.availablePackages) || [];
+  return pkgs.find(p => p.identifier === productId)
+      || pkgs.find(p => p.product && p.product.identifier === productId)
+      || pkgs.find(p => p.product && String(p.product.identifier || '').split(':')[0] === productId)
+      || null;
+}
+
 // ── Comprar paquete regular vía Google Play Billing ───────────────────────────
 async function purchaseGemPackage(productId) {
   if (!supabaseUser) {
@@ -210,9 +227,7 @@ async function purchaseGemPackage(productId) {
 
     await billingIdentify();  // asegura que la compra se asocia a ESTE usuario
 
-    const { offerings } = await Purchases.getOfferings();
-    const available = offerings?.current?.availablePackages || [];
-    const rcPkg = available.find(p => p.product?.identifier === productId);
+    const rcPkg = await _findGemPackage(Purchases, productId);
     if (!rcPkg) throw new Error(`Producto ${productId} no encontrado en RevenueCat`);
 
     await Purchases.purchasePackage({ aPackage: rcPkg });
@@ -254,9 +269,7 @@ async function purchaseSpecialPackage(productId) {
 
     await billingIdentify();  // asegura que la compra se asocia a ESTE usuario
 
-    const { offerings } = await Purchases.getOfferings();
-    const available = offerings?.current?.availablePackages || [];
-    const rcPkg = available.find(p => p.product?.identifier === productId);
+    const rcPkg = await _findGemPackage(Purchases, productId);
     if (!rcPkg) throw new Error(`Producto ${productId} no encontrado en RevenueCat`);
 
     await Purchases.purchasePackage({ aPackage: rcPkg });
