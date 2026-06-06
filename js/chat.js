@@ -217,9 +217,11 @@ async function sendMessage() {
     const rawReply = await callAPI(text);
     hideTyping();
 
-    // Extract and strip <hito> tag before storing or displaying
-    const hitoMatch = rawReply.match(/<hito>([^<]+)<\/hito>/i);
-    const reply = rawReply.replace(/<hito>[^<]*<\/hito>/gi, '').trim();
+    // Extraer y quitar la etiqueta <hito> antes de mostrar/guardar.
+    // Tolerante: la quita junto a asteriscos/comillas/espacios que Mistral pueda
+    // poner alrededor (p. ej. **<hito>…</hito>** o en su propia línea).
+    const hitoMatch = rawReply.match(/<hito>\s*([^<]*?)\s*<\/hito>/i);
+    const reply = rawReply.replace(/[*"\s]*<hito>[^<]*<\/hito>[*"\s]*/gi, '').trim();
     if (hitoMatch) {
       const t = currentScene || currentChar;
       if (t && t.hitosEnabled !== false) {

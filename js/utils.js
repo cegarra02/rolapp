@@ -86,10 +86,16 @@ function saveLibChars() { return _saveCharsArray('rp_lib_chars', libChars); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function esc(s) { return String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function formatMsg(txt) {
-  return esc(txt)
-    .replace(/\n/g, '<br>')
-    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
-    .replace(/"([^"\n]{1,300})"/g, '<strong>"$1"</strong>');
+  let s = esc(txt);
+  // Se procesa por línea (antes de convertir \n) para que los marcadores no
+  // "sangren" a través de saltos de línea. Tolerante con lo que genera Mistral:
+  // **negrita** / *cursiva* y comillas rectas, tipográficas o guillemets.
+  s = s.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');   // **diálogo/énfasis** → fuerte
+  s = s.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');               // *acción/narración* → cursiva
+  s = s.replace(/"([^"\n]{1,300})"/g, '<strong>"$1"</strong>'); // "diálogo" recto
+  s = s.replace(/“([^”\n]{1,300})”/g, '<strong>“$1”</strong>'); // “diálogo” tipográfico
+  s = s.replace(/«([^»\n]{1,300})»/g, '<strong>«$1»</strong>'); // «diálogo» guillemets
+  return s.replace(/\n/g, '<br>');
 }
 function fmtTime(ts) { const d = new Date(ts); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); }
 // Formatea un contador de mensajes para la tarjeta: 0→null, 1500→'1.5k', 12000→'12k'
