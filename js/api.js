@@ -63,18 +63,21 @@ function _chatLangDirective() {
   return `\n\nIMPORTANTE: Escribe TODAS tus respuestas en español.`;
 }
 
-// Traduce un texto al idioma indicado ('en'/'es') usando la API. Devuelve la
-// traducción o null si falla / no hay API key. Conserva el formato *acción* / "diálogo".
+// Traduce un texto al idioma indicado ('en'/'es') vía el Worker (OpenRouter).
+// Sin key en cliente. Devuelve la traducción o null si falla. Conserva *acción* / "diálogo".
 async function translateText(text, targetLang) {
-  const apiKey = localStorage.getItem('rp_apikey') || '';
-  if (!apiKey || !text || !text.trim()) return null;
+  if (!text || !text.trim()) return null;
   const langName = targetLang === 'en' ? 'English' : 'Spanish';
   const prompt = `Translate the following roleplay message to ${langName}. Keep the *asterisks* (actions) and "quotes" (dialogue) formatting exactly. Output ONLY the translation, with no preamble or quotes around it:\n\n${text}`;
   try {
-    const res = await anthropicFetch(apiKey, prompt, 1000);
+    const res = await fetch('https://misty-heart-cd26.alex1234567890ct.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], max_tokens: 1000 })
+    });
     if (!res.ok) return null;
     const data = await res.json();
-    return (data && data.content && data.content[0] && data.content[0].text || '').trim() || null;
+    return (data?.choices?.[0]?.message?.content || '').trim() || null;
   } catch (e) { return null; }
 }
 
@@ -181,25 +184,21 @@ function buildMessages(newText) {
 
 async function callAPI(userText) {
   const sysPrompt = buildSystemPrompt();
-  const msgs = buildMessages(userText);
+  // Formato OpenAI: system como primer mensaje + historial (user/assistant).
+  // El Worker fija modelo/clave (OpenRouter · Mistral Small) y reintenta.
+  const messages = [{ role: 'system', content: sysPrompt }, ...buildMessages(userText)];
   const res = await fetch('https://misty-heart-cd26.alex1234567890ct.workers.dev', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      system: [{ type: 'text', text: sysPrompt, cache_control: { type: 'ephemeral' } }],
-      messages: msgs
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages, max_tokens: 1000 })
   });
   if (!res.ok) {
     let errMsg = '';
-    try { const ed = await res.json(); errMsg = ed.error?.message || ''; } catch (e) {}
+    try { const ed = await res.json(); errMsg = ed.error?.message || ed.error || ''; } catch (e) {}
     throw new Error('API error ' + res.status + ' ' + errMsg);
   }
   const data = await res.json();
-  return data.content[0].text;
+  const content = data?.choices?.[0]?.message?.content;
+  if (content == null) throw new Error('Respuesta vacía del modelo');
+  return content;
 }
