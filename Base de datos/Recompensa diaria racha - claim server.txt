@@ -1,0 +1,65 @@
+-- ════════════════════════════════════════════════════════════════════════════
+-- RECOMPENSA DIARIA EN RACHA — reclamo verificado en servidor (anti-abuso)
+-- El cliente NO decide el importe ni cuándo se puede reclamar. Todo lo valida
+-- esta RPC: una sola vez por día (fecha del servidor), importe según el día de
+-- la racha, y reinicio al Día 1 si se falta un día. Editar localStorage no sirve.
+--
+-- Racha: días consecutivos 1..7. Si el último reclamo fue AYER → avanza
+-- (tras el 7 vuelve al 1). Si hubo un hueco → vuelve al Día 1.
+-- Importes Día 1..7: 10, 12, 15, 28, 20, 30, 40.
+-- Requiere VIP activo (users.vip_until > now).
+-- ════════════════════════════════════════════════════════════════════════════
+
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS reward_streak    INT  DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_reward_date DATE;
+
+CREATE OR REPLACE FUNCTION claim_daily_reward()
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_today  DATE := (now() AT TIME ZONE 'UTC')::date;
+  v_last   DATE;
+  v_streak INT;
+  v_vip    TIMESTAMPTZ;
+  v_day    INT;
+  v_amount INT;
+  v_new    INT;
+  amounts  INT[] := ARRAY[10, 12, 15, 28, 20, 30, 40];  -- Día 1..7
+BEGIN
+  SELECT last_reward_date, COALESCE(reward_streak, 0), vip_until
+    INTO v_last, v_streak, v_vip
+    FROM users WHERE id = auth.uid();
+
+  -- Requiere VIP activo (mismo criterio que isVipUser en el cliente).
+  IF v_vip IS NULL OR v_vip <= now() THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'not_vip');
+  END IF;
+
+  -- Ya reclamado hoy → no se puede otra vez.
+  IF v_last = v_today THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'already', 'day', v_streak);
+  END IF;
+
+  -- Día de la racha.
+  IF v_last = v_today - 1 THEN
+    IF v_streak >= 7 THEN v_day := 1;            -- ciclo completo → reinicia
+    ELSE                  v_day := v_streak + 1;  -- día consecutivo → avanza
+    END IF;
+  ELSE
+    v_day := 1;                                   -- primer día o racha rota
+  END IF;
+
+  v_amount := amounts[v_day];
+
+  UPDATE users
+     SET gems             = COALESCE(gems, 0) + v_amount,
+         reward_streak    = v_day,
+         last_reward_date = v_today
+   WHERE id = auth.uid()
+   RETURNING gems INTO v_new;
+
+  RETURN jsonb_build_object('ok', true, 'day', v_day, 'amount', v_amount, 'gems', v_new);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION claim_daily_reward() TO authenticated;
