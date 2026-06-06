@@ -54,11 +54,6 @@ async function handleRevenueCatWebhook(request, env) {
   const ev = body && body.event;
   if (!ev) return new Response('no event', { status: 400 });
 
-  // Solo acreditamos compras de consumibles (paquetes de gemas).
-  // 200 en los tipos que ignoramos → RevenueCat no reintenta.
-  const CREDIT_TYPES = ['NON_RENEWING_PURCHASE', 'INITIAL_PURCHASE', 'NON_SUBSCRIPTION_PURCHASE'];
-  if (!CREDIT_TYPES.includes(ev.type)) return new Response('ignored', { status: 200 });
-
   const userId    = ev.app_user_id || '';
   const productId = ev.product_id || '';
   const eventId   = ev.id || ((ev.transaction_id || '') + ':' + productId);
@@ -67,6 +62,18 @@ async function handleRevenueCatWebhook(request, env) {
   if (!userId || userId.indexOf('$RCAnonymousID:') === 0) {
     return new Response('anon user, skipped', { status: 200 });
   }
+
+  // ── ¿Es un evento de VIP (suscripción)? ─────────────────────────────────────
+  // Detectamos por el entitlement 'vip' o por el product_id (vip_*).
+  const ents = Array.isArray(ev.entitlement_ids) ? ev.entitlement_ids
+             : (ev.entitlement_id ? [ev.entitlement_id] : []);
+  const isVip = ents.indexOf('vip') !== -1 || productId.indexOf('vip') === 0;
+
+  if (isVip) return handleVipEvent(ev, userId, env);
+
+  // ── Si no, es una compra de gemas (consumible) ──────────────────────────────
+  const GEM_CREDIT_TYPES = ['NON_RENEWING_PURCHASE', 'NON_SUBSCRIPTION_PURCHASE'];
+  if (GEM_CREDIT_TYPES.indexOf(ev.type) === -1) return new Response('ignored', { status: 200 });
   if (!productId || !eventId) return new Response('missing fields', { status: 200 });
 
   let result;
@@ -90,6 +97,36 @@ async function handleRevenueCatWebhook(request, env) {
     return new Response('rpc unauthorized', { status: 500 });
   }
   // ok:true / duplicate / unknown_product → 200 (no reintentar).
+  return new Response(JSON.stringify(result || {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+}
+
+// Evento de suscripción VIP → actualiza users.vip_until con la expiración que
+// reporta RevenueCat. Cubre alta, renovación, cancelación (sigue activo hasta la
+// fecha) y expiración (fecha pasada → deja de ser VIP). Eventos sin expiración
+// (p.ej. BILLING_ISSUE inicial) se ignoran con 200.
+async function handleVipEvent(ev, userId, env) {
+  const VIP_TYPES = ['INITIAL_PURCHASE', 'RENEWAL', 'PRODUCT_CHANGE', 'UNCANCELLATION',
+                     'CANCELLATION', 'EXPIRATION', 'SUBSCRIPTION_EXTENDED', 'SUBSCRIPTION_PAUSED'];
+  if (VIP_TYPES.indexOf(ev.type) === -1) return new Response('vip ignored', { status: 200 });
+
+  const expMs = Number(ev.expiration_at_ms);
+  if (!expMs || isNaN(expMs)) return new Response('vip no expiration', { status: 200 });
+
+  let result;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/set_vip`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + SUPA_ANON },
+      body: JSON.stringify({ p_secret: env.RC_SECRET, p_user_id: userId, p_expiration_ms: expMs }),
+    });
+    if (!r.ok) return new Response('db error: ' + (await r.text()), { status: 500 });
+    result = await r.json();
+  } catch (e) {
+    return new Response('fetch error: ' + (e && e.message), { status: 500 });
+  }
+  if (result && result.ok === false && result.error === 'unauthorized') {
+    return new Response('rpc unauthorized', { status: 500 });
+  }
   return new Response(JSON.stringify(result || {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 

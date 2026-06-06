@@ -1,0 +1,49 @@
+-- ════════════════════════════════════════════════════════════════════════════
+-- VIP (suscripción) — verificación server-side
+-- A diferencia de las gemas (consumible → saldo), el VIP es una SUSCRIPCIÓN.
+-- La verdad de "está activo ahora" la tiene RevenueCat (entitlement 'vip'), que
+-- conoce renovaciones, cancelaciones y reembolsos. Aquí guardamos un ESPEJO
+-- (users.vip_until) que el webhook mantiene al día, para que el VIP funcione
+-- también en web y en otros dispositivos sin consultar al plugin nativo.
+--
+-- isVipUser() en el cliente = (vip_until > now). Si caduca, deja de ser VIP solo.
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- Fecha de expiración del VIP (NULL = nunca ha sido VIP). VIP activo = vip_until > now().
+ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_until TIMESTAMPTZ;
+
+-- RPC para el webhook: fija la expiración del VIP. Gateada por el secreto compartido.
+-- Idempotente por naturaleza (solo escribe un timestamp). En cancelación, RevenueCat
+-- envía la expiración futura (sigue VIP hasta esa fecha); en EXPIRATION envía una
+-- fecha pasada → deja de ser VIP automáticamente.
+CREATE OR REPLACE FUNCTION set_vip(
+  p_secret        TEXT,
+  p_user_id       UUID,
+  p_expiration_ms BIGINT
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_secret TEXT;
+  v_until  TIMESTAMPTZ;
+BEGIN
+  SELECT value INTO v_secret FROM app_secrets WHERE key = 'rc_webhook';
+  IF v_secret IS NULL OR p_secret IS NULL OR p_secret <> v_secret THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'unauthorized');
+  END IF;
+
+  v_until := to_timestamp(p_expiration_ms / 1000.0);
+
+  UPDATE users SET vip_until = v_until WHERE id = p_user_id;
+  IF NOT FOUND THEN
+    -- El usuario aún no existe en 'users' → abortar para que RevenueCat reintente.
+    RAISE EXCEPTION 'user_not_found';
+  END IF;
+
+  RETURN jsonb_build_object('ok', true, 'vip_until', v_until);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION set_vip(TEXT, UUID, BIGINT) TO anon;
+
+-- ⚠️ Importante: los productos VIP (vip_monthly, vip_yearly) NO van en gem_products.
+--    El VIP no acredita gemas; activa el entitlement. Si en el futuro quieres que el
+--    VIP además regale gemas al renovar, se añadiría una lógica aparte.
