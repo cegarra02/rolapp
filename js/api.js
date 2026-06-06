@@ -66,6 +66,12 @@ function _chatLangDirective() {
 // Traduce un texto al idioma indicado ('en'/'es') vía el Worker (OpenRouter).
 // Sin key en cliente. Devuelve la traducción o null si falla. Conserva *acción* / "diálogo".
 async function translateText(text, targetLang) {
+  // Desactivado: el Worker ahora exige sesión y descuenta gemas en cada llamada,
+  // así que no traducimos el saludo automáticamente (evita cobrar/forzar login por
+  // ello). Los mensajes nuevos de la IA ya salen en el idioma elegido vía el
+  // system prompt (_chatLangDirective).
+  return null;
+  /* eslint-disable no-unreachable */
   if (!text || !text.trim()) return null;
   const langName = targetLang === 'en' ? 'English' : 'Spanish';
   const prompt = `Translate the following roleplay message to ${langName}. Keep the *asterisks* (actions) and "quotes" (dialogue) formatting exactly. Output ONLY the translation, with no preamble or quotes around it:\n\n${text}`;
@@ -185,13 +191,28 @@ function buildMessages(newText) {
 async function callAPI(userText) {
   const sysPrompt = buildSystemPrompt();
   // Formato OpenAI: system como primer mensaje + historial (user/assistant).
-  // El Worker fija modelo/clave (OpenRouter · Mistral Small) y reintenta.
+  // El Worker fija modelo/clave (OpenRouter · Mistral Small), descuenta gemas en
+  // servidor y reintenta. Se envía el JWT de Supabase para que el Worker
+  // identifique al usuario y descuente gemas legítimas.
   const messages = [{ role: 'system', content: sysPrompt }, ...buildMessages(userText)];
-  const res = await fetch('https://misty-heart-cd26.alex1234567890ct.workers.dev', {
+
+  let token = '';
+  try { const { data } = await supaClient.auth.getSession(); token = data?.session?.access_token || ''; } catch (e) {}
+  if (!token) { const e = new Error('Inicia sesión para chatear'); e.code = 'NO_AUTH'; throw e; }
+
+  const doFetch = (tok) => fetch('https://misty-heart-cd26.alex1234567890ct.workers.dev', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
     body: JSON.stringify({ messages, max_tokens: 1000 })
   });
+
+  let res = await doFetch(token);
+  // Token caducado → refrescar sesión y reintentar una vez
+  if (res.status === 401) {
+    try { const { data } = await supaClient.auth.refreshSession(); const t2 = data?.session?.access_token; if (t2) res = await doFetch(t2); } catch (e) {}
+  }
+  if (res.status === 402) { const e = new Error('Sin gemas suficientes'); e.code = 'NO_GEMS'; throw e; }
+  if (res.status === 401) { const e = new Error('Inicia sesión para chatear'); e.code = 'NO_AUTH'; throw e; }
   if (!res.ok) {
     let errMsg = '';
     try { const ed = await res.json(); errMsg = ed.error?.message || ed.error || ''; } catch (e) {}

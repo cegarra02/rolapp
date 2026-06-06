@@ -1,0 +1,42 @@
+-- ════════════════════════════════════════════════════════════════════════
+-- GEMAS EN SERVIDOR (autoridad real, llamadas desde el Cloudflare Worker)
+-- Ejecutar en Supabase → SQL Editor.
+--
+-- El Worker descuenta gemas con deduct_gems ANTES de llamar a OpenRouter, y
+-- usa refund_gems si OpenRouter falla. Ambas funcionan con el JWT del usuario
+-- (auth.uid()), así que solo afectan al saldo de quien hace la petición.
+-- ════════════════════════════════════════════════════════════════════════
+
+-- Descuento ATÓMICO: el UPDATE con "gems >= amount" + RETURNING evita la
+-- condición de carrera (no hay SELECT-luego-UPDATE). Si no había saldo
+-- suficiente, no actualiza ninguna fila y devuelve -1.
+CREATE OR REPLACE FUNCTION deduct_gems(amount int)
+RETURNS int LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE new_gems int;
+BEGIN
+  IF amount IS NULL OR amount <= 0 THEN RETURN -1; END IF;
+  UPDATE public.users
+     SET gems = gems - amount
+   WHERE id = auth.uid() AND gems >= amount
+  RETURNING gems INTO new_gems;
+  IF new_gems IS NULL THEN RETURN -1; END IF;  -- saldo insuficiente / sin usuario
+  RETURN new_gems;                             -- nuevo saldo
+END;
+$$;
+
+-- Reembolso (best-effort, si la IA falla tras descontar).
+CREATE OR REPLACE FUNCTION refund_gems(amount int)
+RETURNS int LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE new_gems int;
+BEGIN
+  IF amount IS NULL OR amount <= 0 THEN RETURN -1; END IF;
+  UPDATE public.users
+     SET gems = gems + amount
+   WHERE id = auth.uid()
+  RETURNING gems INTO new_gems;
+  RETURN COALESCE(new_gems, -1);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION deduct_gems TO authenticated;
+GRANT EXECUTE ON FUNCTION refund_gems TO authenticated;

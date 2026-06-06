@@ -186,7 +186,11 @@ async function sendMessage() {
   const inp = document.getElementById('chatInp');
   const text = inp.value.trim(); if (!text) return;
 
-  // Coste por mensaje: 7 gemas
+  // Chatear requiere sesión: las gemas legítimas viven en el servidor y el Worker
+  // las verifica/descuenta. Sin sesión, no se puede enviar.
+  if (!supabaseUser) { toast('Inicia sesión para chatear'); switchTab('profile'); return; }
+
+  // Coste por mensaje: 7 gemas (descuento optimista; el servidor es la autoridad)
   if (!deductMessageGems()) {
     toast(`💎 No tienes gemas suficientes (necesitas ${MESSAGE_GEM_COST})`);
     return;
@@ -243,7 +247,24 @@ async function sendMessage() {
     // checkMissionCompletion(text, reply); // misiones ocultas temporalmente
   } catch (err) {
     hideTyping();
-    history.push({role: 'assistant', content: `_(Error: ${err.message}. Comprueba tu API key en Mi Perfil.)_`, ts: Date.now()});
+    // En cualquier error el servidor NO descontó (402/401) o ya reembolsó (fallo de
+    // OpenRouter) → devolvemos el descuento optimista a la UI.
+    if (typeof refundMessageGems === 'function') refundMessageGems();
+
+    if (err.code === 'NO_GEMS' || err.code === 'NO_AUTH') {
+      // Quitar el mensaje del usuario que se añadió de forma optimista
+      if (history.length && history[history.length - 1].role === 'user') {
+        history.pop();
+        if (currentScene) { currentScene.history = history; saveScenes(); }
+        else if (currentChar) { currentChar.history = history; _saveChar(); }
+      }
+      renderMessages();
+      if (err.code === 'NO_AUTH') { toast('Inicia sesión para chatear'); switchTab('profile'); }
+      else toast(`💎 No tienes gemas suficientes (necesitas ${MESSAGE_GEM_COST})`);
+      return;
+    }
+
+    history.push({role: 'assistant', content: `_(Error: ${err.message})_`, ts: Date.now()});
     if (currentScene) { currentScene.history = history; saveScenes(); syncHistory(currentScene.id, currentScene.history, currentScene.hitos || []); }
     else { currentChar.history = history; _saveChar(); }
     renderMessages(); scrollBottom();

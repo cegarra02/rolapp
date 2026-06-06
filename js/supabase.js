@@ -200,24 +200,27 @@ const MESSAGE_GEM_COST = 7;
 // Descuenta las gemas del mensaje de forma síncrona (usando la caché local)
 // y persiste el nuevo saldo en Supabase/localStorage en segundo plano.
 // Devuelve true si hay saldo suficiente, false si no.
+// Descuento OPTIMISTA solo para la UI. El descuento REAL (autoritativo) lo hace
+// el Cloudflare Worker en el servidor (RPC deduct_gems) al llamar a la IA, usando
+// el JWT del usuario. Por eso aquí ya NO se llama a la RPC (evita doble descuento).
+// Chatear requiere sesión: las gemas legítimas viven en Supabase.
 function deductMessageGems() {
   const cost = MESSAGE_GEM_COST;
-  if (supabaseUser) {
-    if (supabaseGems < cost) return false;
-    supabaseGems -= cost;
-    localStorage.setItem('rp_gems_local', String(supabaseGems)); // mantener caché sincronizada
-    renderUserHeader();
-    // Persistir en Supabase async vía RPC SECURITY DEFINER (fire and forget)
-    supaClient.rpc('deduct_gems', { amount: cost })
-      .then(({ error }) => { if (error) console.error('[gems] deduct_gems rpc failed:', error.message, error.code); });
-    return true;
-  } else {
-    const current = parseInt(localStorage.getItem('rp_gems_local') || '0');
-    if (current < cost) return false;
-    localStorage.setItem('rp_gems_local', String(current - cost));
-    renderUserHeader();
-    return true;
-  }
+  if (!supabaseUser) return false;          // sin sesión no se puede chatear
+  if (supabaseGems < cost) return false;    // gate rápido de UI (autoridad = servidor)
+  supabaseGems -= cost;
+  localStorage.setItem('rp_gems_local', String(supabaseGems));
+  renderUserHeader();
+  return true;
+}
+
+// Devuelve el descuento optimista cuando el envío falla (el servidor no descontó
+// o ya reembolsó). Solo toca la caché local de UI.
+function refundMessageGems() {
+  if (!supabaseUser) return;
+  supabaseGems += MESSAGE_GEM_COST;
+  localStorage.setItem('rp_gems_local', String(supabaseGems));
+  renderUserHeader();
 }
 
 function renderUserHeader() {
