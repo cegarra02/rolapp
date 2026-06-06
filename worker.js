@@ -112,6 +112,7 @@ async function handleVipEvent(ev, userId, env) {
   const expMs = Number(ev.expiration_at_ms);
   if (!expMs || isNaN(expMs)) return new Response('vip no expiration', { status: 200 });
 
+  // 1) Actualizar la expiración del VIP (users.vip_until).
   let result;
   try {
     const r = await fetch(`${SUPA_URL}/rest/v1/rpc/set_vip`, {
@@ -127,6 +128,26 @@ async function handleVipEvent(ev, userId, env) {
   if (result && result.ok === false && result.error === 'unauthorized') {
     return new Response('rpc unauthorized', { status: 500 });
   }
+
+  // 2) Perk "300 gemas al mes": acreditar el bono en cada alta/renovación.
+  //    Reutiliza credit_purchase (importe en gem_products, idempotente por event_id).
+  if (ev.type === 'INITIAL_PURCHASE' || ev.type === 'RENEWAL') {
+    const eventId = ev.id || ((ev.transaction_id || '') + ':vipbonus');
+    try {
+      const g = await fetch(`${SUPA_URL}/rest/v1/rpc/credit_purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + SUPA_ANON },
+        body: JSON.stringify({ p_secret: env.RC_SECRET, p_user_id: userId, p_product_id: 'vip_gems_bonus', p_event_id: eventId }),
+      });
+      if (!g.ok) return new Response('vip bonus db error: ' + (await g.text()), { status: 500 });
+      const gj = await g.json();
+      if (gj && gj.ok === false && gj.error === 'unauthorized') return new Response('rpc unauthorized', { status: 500 });
+      result = { ok: true, vip: result, bonus: gj };
+    } catch (e) {
+      return new Response('vip bonus fetch error: ' + (e && e.message), { status: 500 });
+    }
+  }
+
   return new Response(JSON.stringify(result || {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 

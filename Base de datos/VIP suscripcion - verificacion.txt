@@ -44,6 +44,12 @@ $$;
 
 GRANT EXECUTE ON FUNCTION set_vip(TEXT, UUID, BIGINT) TO anon;
 
--- ⚠️ Importante: los productos VIP (vip_monthly, vip_yearly) NO van en gem_products.
---    El VIP no acredita gemas; activa el entitlement. Si en el futuro quieres que el
---    VIP además regale gemas al renovar, se añadiría una lógica aparte.
+-- ⚠️ Los productos VIP (vip_monthly, vip_yearly) NO van en gem_products: no se
+--    "compran" como gemas, activan el entitlement.
+
+-- Perk VIP "300 gemas al mes": el webhook acredita este bono en cada alta/renovación
+-- (INITIAL_PURCHASE / RENEWAL) reutilizando credit_purchase (idempotente por event_id).
+-- El importe se decide aquí, en el servidor, NO en el cliente.
+INSERT INTO gem_products (product_id, gems) VALUES
+  ('vip_gems_bonus', 300)
+ON CONFLICT (product_id) DO UPDATE SET gems = EXCLUDED.gems;

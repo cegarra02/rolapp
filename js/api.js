@@ -140,7 +140,8 @@ function buildSystemPrompt() {
       sys += buildPersonalityBlock(ch);
     });
     sys += _playerBlock(p);
-    const sceneHitos = (currentScene.hitos || []);
+    // Perk VIP "más memoria": se recuerdan más hitos (los más recientes primero).
+    const sceneHitos = (currentScene.hitos || []).slice(0, _isVip() ? 40 : 12);
     if (sceneHitos.length) sys += `\n\n### MEMORIA (lo importante ya vivido, tenlo en cuenta):\n${sceneHitos.map(h => `- ${h.text}`).join('\n')}`;
     sys += _NOCENSOR;
     if (currentScene.hitosEnabled !== false) sys += _hitoInstruction(sceneHitos);
@@ -160,7 +161,8 @@ function buildSystemPrompt() {
   if (ch.context) sys += `\n\n### QUIÉN ERES Y TU MUNDO:\n${ch.context}`;
   sys += buildPersonalityBlock(ch);
   sys += _playerBlock(p);
-  const charHitos = (ch.hitos || []);
+  // Perk VIP "más memoria": se recuerdan más hitos (los más recientes primero).
+  const charHitos = (ch.hitos || []).slice(0, _isVip() ? 40 : 12);
   if (charHitos.length) sys += `\n\n### MEMORIA (lo importante ya vivido, tenlo en cuenta):\n${charHitos.map(h => `- ${h.text}`).join('\n')}`;
   sys += _NOCENSOR;
   if (ch.hitosEnabled !== false) sys += _hitoInstruction(charHitos);
@@ -168,16 +170,24 @@ function buildSystemPrompt() {
   return sys;
 }
 
+// VIP: ¿el usuario tiene suscripción activa? (perk "más memoria")
+function _isVip() { try { return typeof isVipUser === 'function' && isVipUser(); } catch (e) { return false; } }
+
 function buildMessages(newText) {
   const msgs = [];
+  // Perk VIP "más memoria": ventana de contexto más amplia y menos truncado.
+  const vip      = _isVip();
+  const recentN  = vip ? 10  : 6;    // mensajes recientes enviados completos
+  const olderN   = vip ? 40  : 20;   // ventana total (los previos van resumidos)
+  const truncN   = vip ? 180 : 100;  // longitud del resumen de cada mensaje viejo
   const allHistory = history.slice(0, -1);
-  const recentHistory = allHistory.slice(-6);
-  const olderHistory = allHistory.slice(-20, -6).filter(m => m.role === 'assistant' || m.role === 'user');
+  const recentHistory = allHistory.slice(-recentN);
+  const olderHistory = allHistory.slice(-olderN, -recentN).filter(m => m.role === 'assistant' || m.role === 'user');
 
   if (olderHistory.length > 0) {
     const contextLines = olderHistory.map(m => {
       const role = m.role === 'user' ? 'Jugador' : (m.speaker || 'Personaje');
-      const text = m.content.length > 100 ? m.content.slice(0, 100) + '…' : m.content;
+      const text = m.content.length > truncN ? m.content.slice(0, truncN) + '…' : m.content;
       return `${role}: ${text}`;
     }).join('\n');
     msgs.push({role: 'user', content: `[Mensajes anteriores]\n${contextLines}`});
