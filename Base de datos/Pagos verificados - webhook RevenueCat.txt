@@ -1,0 +1,111 @@
+-- ════════════════════════════════════════════════════════════════════════════
+-- PAGOS VERIFICADOS SERVER-SIDE
+-- Google Play (pago real) → RevenueCat (valida recibo) → webhook al Cloudflare
+-- Worker (con secreto compartido) → credit_purchase → gemas al usuario correcto.
+--
+-- CLAVE DE SEGURIDAD: el cliente NUNCA acredita gemas de compra. El importe se
+-- decide en el SERVIDOR a partir del product_id (tabla gem_products). Así, ni
+-- manipulando localStorage ni llamando RPCs desde la consola se consiguen gemas.
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- 1. Mapa producto → gemas (fuente de verdad del importe). Si cambias precios o
+--    cantidades, actualiza AQUÍ, no en el cliente.
+CREATE TABLE IF NOT EXISTS gem_products (
+  product_id TEXT PRIMARY KEY,
+  gems       INT  NOT NULL CHECK (gems > 0)
+);
+ALTER TABLE gem_products ENABLE ROW LEVEL SECURITY;   -- sin políticas: solo SECURITY DEFINER
+
+INSERT INTO gem_products (product_id, gems) VALUES
+  ('gems_150',      150),
+  ('gems_360',      360),
+  ('gems_1200',     1200),
+  ('gems_2300',     2300),
+  ('gems_5200',     5200),
+  ('specials_240',  240),
+  ('specials_1200', 1200),
+  ('specials_3000', 3000)
+ON CONFLICT (product_id) DO UPDATE SET gems = EXCLUDED.gems;
+
+-- 2. Eventos de compra procesados (idempotencia). RevenueCat reintenta el webhook
+--    si no recibe 2xx; el PK por event_id evita acreditar dos veces lo mismo.
+CREATE TABLE IF NOT EXISTS purchase_events (
+  event_id   TEXT PRIMARY KEY,          -- id único del evento de RevenueCat
+  user_id    UUID NOT NULL,
+  product_id TEXT NOT NULL,
+  gems       INT  NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE purchase_events ENABLE ROW LEVEL SECURITY; -- sin políticas para clientes
+
+-- 3. Secretos privados (ningún cliente puede leerlos; solo SECURITY DEFINER).
+CREATE TABLE IF NOT EXISTS app_secrets (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+ALTER TABLE app_secrets ENABLE ROW LEVEL SECURITY;     -- sin políticas: nadie lee vía API
+
+-- ⚠️ EJECUTA ESTA LÍNEA con tu propio secreto largo y aleatorio. El MISMO valor
+--    irá en: (a) RevenueCat dashboard → webhook → Authorization header, y
+--            (b) Cloudflare Worker → variable secreta RC_SECRET.
+-- INSERT INTO app_secrets (key, value)
+--   VALUES ('rc_webhook', 'PON_AQUI_UN_SECRETO_LARGO_Y_ALEATORIO')
+--   ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+
+-- 4. RPC de acreditación — la llama SOLO el Worker (gateada por secreto compartido).
+--    Importe tomado de gem_products; idempotente por event_id.
+CREATE OR REPLACE FUNCTION credit_purchase(
+  p_secret     TEXT,
+  p_user_id    UUID,
+  p_product_id TEXT,
+  p_event_id   TEXT
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_secret TEXT;
+  v_gems   INT;
+  v_new    INT;
+BEGIN
+  SELECT value INTO v_secret FROM app_secrets WHERE key = 'rc_webhook';
+  IF v_secret IS NULL OR p_secret IS NULL OR p_secret <> v_secret THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'unauthorized');
+  END IF;
+
+  -- Idempotencia: si ya procesamos este evento, no volver a acreditar.
+  IF EXISTS (SELECT 1 FROM purchase_events WHERE event_id = p_event_id) THEN
+    RETURN jsonb_build_object('ok', true, 'duplicate', true);
+  END IF;
+
+  SELECT gems INTO v_gems FROM gem_products WHERE product_id = p_product_id;
+  IF v_gems IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'unknown_product');
+  END IF;
+
+  -- Registrar evento primero: si dos webhooks corren a la vez, el PK aborta el
+  -- segundo (y todo el bloque hace rollback), evitando doble crédito.
+  INSERT INTO purchase_events (event_id, user_id, product_id, gems)
+    VALUES (p_event_id, p_user_id, p_product_id, v_gems);
+
+  UPDATE users SET gems = COALESCE(gems, 0) + v_gems
+    WHERE id = p_user_id
+    RETURNING gems INTO v_new;
+
+  IF v_new IS NULL THEN
+    -- El usuario aún no existe en 'users': abortar (rollback) para que RevenueCat
+    -- reintente el webhook más tarde, cuando la fila ya exista.
+    RAISE EXCEPTION 'user_not_found';
+  END IF;
+
+  RETURN jsonb_build_object('ok', true, 'gems', v_new, 'added', v_gems);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION credit_purchase(TEXT, UUID, TEXT, TEXT) TO anon;
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- NOTA sobre packs especiales y anuncios:
+--  · Los packs especiales (specials_*) ahora también se acreditan por webhook.
+--    El límite "1/semana" es solo una restricción de UI en el cliente; si el
+--    usuario compra igualmente, recibe sus gemas (pagó por ellas).
+--  · Las gemas por anuncio (add_gems_from_ad) siguen confiando en el cliente.
+--    Para blindarlas haría falta AdMob Server-Side Verification (otra fase).
+-- ════════════════════════════════════════════════════════════════════════════

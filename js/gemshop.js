@@ -68,7 +68,36 @@ async function initBilling() {
       apiKey: 'goog_MsQFVavHArbkGnfqoOgrRLJiISh',
     });
     console.log('[Billing] RevenueCat inicializado');
+    await billingIdentify();
   } catch (e) { console.warn('[Billing] init error:', e?.message); }
+}
+
+// Asocia las compras de RevenueCat al usuario de Supabase. IMPRESCINDIBLE: el
+// webhook usa este app_user_id para saber a quién acreditar las gemas. Sin esto
+// RevenueCat usaría un id anónimo y el webhook descartaría la compra.
+async function billingIdentify() {
+  if (!window.Capacitor?.isNativePlatform?.()) return;
+  const { Purchases } = window.Capacitor.Plugins || {};
+  if (!Purchases || !supabaseUser?.id) return;
+  try { await Purchases.logIn({ appUserID: supabaseUser.id }); }
+  catch (e) { console.warn('[Billing] logIn:', e?.message); }
+}
+
+// Tras una compra, las gemas las acredita el WEBHOOK (server-side), de forma
+// asíncrona. Sondeamos el saldo del servidor hasta verlo subir (~12s máx). Si
+// tarda más, las gemas aparecerán igualmente al refrescar/reabrir la app.
+async function _awaitGemCredit() {
+  const before = supabaseGems;
+  for (let i = 0; i < 8; i++) {
+    await new Promise(r => setTimeout(r, 1500));
+    await refreshGems();
+    if (supabaseGems > before) {
+      toast(`💎 +${supabaseGems - before} gemas añadidas`);
+      return true;
+    }
+  }
+  toast('💎 Compra recibida. Tus gemas aparecerán en unos instantes.');
+  return false;
 }
 
 // ── Bottom sheet ──────────────────────────────────────────────────────────────
@@ -179,6 +208,8 @@ async function purchaseGemPackage(productId) {
     const { Purchases } = window.Capacitor.Plugins;
     if (!Purchases) throw new Error('billing plugin no disponible');
 
+    await billingIdentify();  // asegura que la compra se asocia a ESTE usuario
+
     const { offerings } = await Purchases.getOfferings();
     const available = offerings?.current?.availablePackages || [];
     const rcPkg = available.find(p => p.product?.identifier === productId);
@@ -186,9 +217,10 @@ async function purchaseGemPackage(productId) {
 
     await Purchases.purchasePackage({ aPackage: rcPkg });
 
-    // Para producción: webhook RevenueCat → Supabase Edge Function → addGems
-    await addGems(supabaseUser.id, pkg.gems);
-    toast(`💎 +${pkg.gems} gemas añadidas`);
+    // Las gemas las acredita el webhook verificado (server-side). No acreditamos
+    // nada en el cliente: solo esperamos a que el saldo del servidor suba.
+    toast('⏳ Procesando compra…');
+    await _awaitGemCredit();
     _renderGemShop();
   } catch (e) {
     const msg = e?.message || '';
@@ -220,6 +252,8 @@ async function purchaseSpecialPackage(productId) {
     const { Purchases } = window.Capacitor.Plugins;
     if (!Purchases) throw new Error('billing plugin no disponible');
 
+    await billingIdentify();  // asegura que la compra se asocia a ESTE usuario
+
     const { offerings } = await Purchases.getOfferings();
     const available = offerings?.current?.availablePackages || [];
     const rcPkg = available.find(p => p.product?.identifier === productId);
@@ -227,25 +261,12 @@ async function purchaseSpecialPackage(productId) {
 
     await Purchases.purchasePackage({ aPackage: rcPkg });
 
-    // Verificación y acreditación server-side (inmune a manipulación de localStorage/reloj)
-    const { data: result, error: rpcErr } = await supaClient.rpc('claim_special_pack', {
-      p_pack_id: productId,
-      p_amount:  pkg.gems,
-    });
-    if (rpcErr) throw rpcErr;
-    if (!result?.ok) {
-      // El servidor rechazó: ya comprado esta semana (aunque localStorage estuviera limpio)
-      _markSpecialUsed(productId);        // sincronizar localStorage con estado real del servidor
-      toast('Ya has comprado este pack esta semana');
-      _renderGemShop();
-      return;
-    }
-    // Acreditación OK — actualizar estado local con el saldo devuelto por el servidor
-    supabaseGems = result.gems ?? (supabaseGems + pkg.gems);
-    localStorage.setItem('rp_gems_local', String(supabaseGems));
-    renderUserHeader();
+    // Las gemas las acredita el webhook verificado (importe decidido en servidor).
+    // El límite "1/semana" es solo un gate de UI; lo marcamos para deshabilitar
+    // el botón hasta la próxima semana.
     _markSpecialUsed(productId);
-    toast(`💎 +${pkg.gems} gemas añadidas`);
+    toast('⏳ Procesando compra…');
+    await _awaitGemCredit();
     _renderGemShop();
   } catch (e) {
     const msg = e?.message || '';

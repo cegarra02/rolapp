@@ -29,9 +29,69 @@ export default {
     }
 
     if (request.method !== 'POST') return corsResponse(JSON.stringify({ error: { message: 'Method not allowed' } }), 405);
+
+    // Webhook de RevenueCat (server-to-server): acredita gemas tras compra real.
+    const url = new URL(request.url);
+    if (url.pathname.replace(/\/+$/, '').endsWith('/rc-webhook')) return handleRevenueCatWebhook(request, env);
+
     return handleChat(request, env);
   }
 };
+
+// ─────────────── WEBHOOK RevenueCat → acreditación verificada ─────────────────
+// Cadena de confianza: Google Play (pago) → RevenueCat (valida recibo) → este
+// webhook (secreto compartido) → credit_purchase (importe decidido en servidor).
+// El cliente NO acredita nada de compras: solo refresca su saldo.
+async function handleRevenueCatWebhook(request, env) {
+  // RevenueCat envía el secreto en el header Authorization (configurado en su panel).
+  const auth = request.headers.get('Authorization') || '';
+  if (!env.RC_SECRET || auth !== env.RC_SECRET) {
+    return new Response('unauthorized', { status: 401 });
+  }
+
+  let body;
+  try { body = await request.json(); } catch (e) { return new Response('bad json', { status: 400 }); }
+  const ev = body && body.event;
+  if (!ev) return new Response('no event', { status: 400 });
+
+  // Solo acreditamos compras de consumibles (paquetes de gemas).
+  // 200 en los tipos que ignoramos → RevenueCat no reintenta.
+  const CREDIT_TYPES = ['NON_RENEWING_PURCHASE', 'INITIAL_PURCHASE', 'NON_SUBSCRIPTION_PURCHASE'];
+  if (!CREDIT_TYPES.includes(ev.type)) return new Response('ignored', { status: 200 });
+
+  const userId    = ev.app_user_id || '';
+  const productId = ev.product_id || '';
+  const eventId   = ev.id || ((ev.transaction_id || '') + ':' + productId);
+
+  // Ignorar IDs anónimos de RevenueCat (no se hizo logIn con el uid de Supabase).
+  if (!userId || userId.indexOf('$RCAnonymousID:') === 0) {
+    return new Response('anon user, skipped', { status: 200 });
+  }
+  if (!productId || !eventId) return new Response('missing fields', { status: 200 });
+
+  let result;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/credit_purchase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + SUPA_ANON },
+      body: JSON.stringify({ p_secret: env.RC_SECRET, p_user_id: userId, p_product_id: productId, p_event_id: eventId }),
+    });
+    if (!r.ok) {
+      // Excepción en la RPC (p.ej. user_not_found) → 500 para que RevenueCat reintente.
+      return new Response('db error: ' + (await r.text()), { status: 500 });
+    }
+    result = await r.json();
+  } catch (e) {
+    return new Response('fetch error: ' + (e && e.message), { status: 500 });
+  }
+
+  if (result && result.ok === false && result.error === 'unauthorized') {
+    // Secreto de BD mal configurado → 500 para reintentar tras corregirlo.
+    return new Response('rpc unauthorized', { status: 500 });
+  }
+  // ok:true / duplicate / unknown_product → 200 (no reintentar).
+  return new Response(JSON.stringify(result || {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+}
 
 // ───────────────────────── CHAT (gemas en servidor) ──────────────────────────
 async function handleChat(request, env) {
