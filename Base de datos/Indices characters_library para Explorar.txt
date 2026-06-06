@@ -1,0 +1,25 @@
+-- ════════════════════════════════════════════════════════════════════════
+-- ÍNDICES para characters_library (acelera Explorar a escala)
+-- Ejecutar en Supabase → SQL Editor. Sin estos, Explorar hace scans completos.
+-- ════════════════════════════════════════════════════════════════════════
+
+-- status se filtra SIEMPRE (=approved); combinarlo con el orden cubre las dos
+-- vistas principales (Nuevos = created_at, Populares = message_count).
+CREATE INDEX IF NOT EXISTS idx_charlib_status_created
+  ON public.characters_library (status, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_charlib_status_msgcount
+  ON public.characters_library (status, message_count DESC);
+
+-- Filtro por sexo
+CREATE INDEX IF NOT EXISTS idx_charlib_gender
+  ON public.characters_library (gender);
+
+-- Filtro por etiquetas (operador && / overlaps sobre el array tags)
+CREATE INDEX IF NOT EXISTS idx_charlib_tags
+  ON public.characters_library USING gin (tags);
+
+-- Búsqueda por nombre con ilike '%texto%' → índice trigram
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS idx_charlib_name_trgm
+  ON public.characters_library USING gin (name gin_trgm_ops);

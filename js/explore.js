@@ -47,54 +47,54 @@ function renderExploreLoading() {
   if (list) list.innerHTML = '<div class="explore-loading">Cargando…</div>';
 }
 
+const EXPLORE_WORKER = 'https://misty-heart-cd26.alex1234567890ct.workers.dev';
+
+// Carga la lista pública desde el Worker (CACHEADA ~60s en el edge): miles de
+// aperturas con el mismo filtro = ~1 consulta a Supabase. Devuelve el array o null.
+async function _exploreFromWorker() {
+  const p = new URLSearchParams({ explore: '1' });
+  if (exploreSearch) p.set('q', exploreSearch);
+  if (exploreActiveTags.length) p.set('tags', exploreActiveTags.join(','));
+  if (exploreGender) p.set('gender', exploreGender);
+  p.set('sort', exploreSort === 'popular' ? 'popular' : 'new');
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await _withTimeout(fetch(EXPLORE_WORKER + '?' + p.toString()), 8000);
+      if (res.ok) { const j = await res.json(); if (Array.isArray(j)) return j; }
+    } catch (e) { /* reintenta */ }
+    if (attempt < 2) await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+  }
+  return null;
+}
+
+// Fallback: consulta directa a Supabase (por si el Worker aún no está desplegado).
+async function _exploreFromSupabase() {
+  let q = supaClient.from('characters_library')
+    .select('id, name, tag, tags, bg, chat_count, message_count, created_at')
+    .eq('status', 'approved');
+  if (exploreSearch) q = q.ilike('name', `%${exploreSearch}%`);
+  if (exploreActiveTags.length) {
+    const orParts = [...exploreActiveTags.map(t => `tag.eq.${t}`), `tags.ov.{${exploreActiveTags.join(',')}}`].join(',');
+    q = q.or(orParts);
+  }
+  if (exploreGender) q = q.eq('gender', exploreGender);
+  q = exploreSort === 'popular' ? q.order('message_count', { ascending: false }) : q.order('created_at', { ascending: false });
+  try {
+    const res = await _withTimeout(q.limit(50), 8000);
+    return res.error ? null : (res.data || []);
+  } catch (e) { return null; }
+}
+
 async function fetchExploreChars(seq) {
-  // Guardar conteos locales optimistas antes de sobreescribir con datos frescos de DB
   const _localCounts = {};
   exploreChars.forEach(c => { if (c.message_count) _localCounts[c.id] = c.message_count; });
 
-  // Construye la consulta (se rehace en cada reintento)
-  const buildQuery = () => {
-    let q = supaClient
-      .from('characters_library')
-      .select('id, name, tag, tags, bg, chat_count, message_count, created_at')
-      .eq('status', 'approved');
-    if (exploreSearch) q = q.ilike('name', `%${exploreSearch}%`);
-    if (exploreActiveTags.length) {
-      const orParts = [
-        ...exploreActiveTags.map(t => `tag.eq.${t}`),
-        `tags.ov.{${exploreActiveTags.join(',')}}`
-      ].join(',');
-      q = q.or(orParts);
-    }
-    if (exploreGender) q = q.eq('gender', exploreGender);
-    q = exploreSort === 'popular'
-      ? q.order('message_count', { ascending: false })
-      : q.order('created_at', { ascending: false });
-    return q.limit(50);
-  };
+  let data = await _exploreFromWorker();
+  if (!data) data = await _exploreFromSupabase(); // fallback si el Worker no responde
 
-  // Reintentos a nivel de Explorar (encima de _fetchWithRetry) para absorber la
-  // flakiness de red (ERR_QUIC_PROTOCOL_ERROR) que dejaba la lista vacía a menudo.
-  let data = null, error = null;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    try {
-      const res = await _withTimeout(buildQuery(), 8000); // 8s por intento (anti-cuelgue)
-      data = res.data; error = res.error;
-    } catch (e) { error = e; data = null; } // timeout o excepción de red
-    if (!error) break;                       // éxito → salir
-    console.warn('explore fetch intento', attempt + 1, error.message || error);
-    // Tras el 1er fallo, refrescar la sesión por si el token de acceso ha expirado
-    // (síntoma típico: deja de cargar "tras un rato en la app"). No bloquea si falla.
-    if (attempt === 0 && supaClient.auth && supaClient.auth.refreshSession) {
-      try { await _withTimeout(supaClient.auth.refreshSession(), 5000); } catch (e) {}
-    }
-    if (attempt < 3) await new Promise(r => setTimeout(r, 400 * (attempt + 1))); // 0.4s, 0.8s, 1.2s
-  }
-
-  if (error) { console.error('explore fetch (tras reintentos):', error.message || error); return false; }
+  if (!data) { console.error('explore fetch: worker y fallback fallaron'); return false; }
   if (seq !== undefined && seq !== _exploreSeq) return false; // resultado obsoleto → no aplicar
-  // Usar el mayor entre DB y local (preserva incrementos optimistas si DB aún no los tiene)
-  exploreChars = (data || []).map(c => ({
+  exploreChars = data.map(c => ({
     ...c,
     message_count: Math.max(c.message_count || 0, _localCounts[c.id] || 0),
   }));
@@ -104,11 +104,15 @@ async function fetchExploreChars(seq) {
 async function fetchExploreTags() {
   let data = null;
   try {
-    const res = await _withTimeout(
-      supaClient.from('characters_library').select('tags, tag').eq('status', 'approved'),
-      8000);
-    data = res.data;
-  } catch (e) { return; } // timeout/red: no bloquear la carga de Explorar
+    const res = await _withTimeout(fetch(EXPLORE_WORKER + '?exploretags=1'), 8000);
+    if (res.ok) { const j = await res.json(); if (Array.isArray(j)) data = j; }
+  } catch (e) { /* probará fallback */ }
+  if (!data) { // fallback a Supabase directo
+    try {
+      const res = await _withTimeout(supaClient.from('characters_library').select('tags, tag').eq('status', 'approved'), 8000);
+      data = res.error ? null : res.data;
+    } catch (e) { return; }
+  }
   if (!data) return;
   const counts = {};
   data.forEach(r => {

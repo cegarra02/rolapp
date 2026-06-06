@@ -1,111 +1,172 @@
-// ── Cloudflare Worker — chat OpenRouter (Mistral Small) con gemas en servidor ─
+// ── Cloudflare Worker — chat (OpenRouter+gemas) + Explorar cacheado ──────────
 //
 // Worker: misty-heart-cd26.alex1234567890ct.workers.dev
-// Variable SECRETA a configurar en Cloudflare: OPENROUTER_KEY
+// Variable SECRETA en Cloudflare: OPENROUTER_KEY
 //
-// Seguridad: CADA mensaje exige un usuario con sesión (JWT de Supabase) y
-// descuenta gemas en el SERVIDOR (RPC deduct_gems) ANTES de llamar a OpenRouter.
-// Sin sesión → 401. Sin saldo → 402. Así nadie puede gastar tu crédito de
-// OpenRouter sin gemas legítimas, ni llamando al Worker directamente ni con un
-// cliente modificado. Si OpenRouter falla tras los reintentos, se reembolsan
-// las gemas.
-//
-// La app envía: { messages: [...OpenAI...], max_tokens? } + header
-//   Authorization: Bearer <supabase access_token>
-// Devuelve el JSON de OpenRouter (la app lee choices[0].message.content).
+// POST  → chat: exige JWT de Supabase, descuenta gemas (deduct_gems) ANTES de
+//          llamar a OpenRouter; reembolsa si OpenRouter falla. (Ver más abajo.)
+// GET ?explore     → lista pública de personajes (characters_library) CACHEADA
+//                    ~60s en el edge (reduce muchísimo la carga de Supabase:
+//                    miles de aperturas = ~1 consulta por filtro cada 60s).
+// GET ?exploretags → lista de etiquetas, también cacheada.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SUPA_URL  = 'https://pxtnjtkckfzsqistfjgn.supabase.co';
 const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4dG5qdGtja2Z6c3Fpc3RmamduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMDc1ODgsImV4cCI6MjA5NDg4MzU4OH0.toSgkHMYun1yM5UePDGRXYjhe4DRGtRQjsNUGjh5wJY';
-const GEM_COST  = 7; // debe coincidir con MESSAGE_GEM_COST en la app
+const GEM_COST  = 7;            // debe coincidir con MESSAGE_GEM_COST en la app
+const EXPLORE_TTL = 60;         // segundos de caché para Explorar
 
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') return corsResponse('', 204);
-    if (request.method !== 'POST')    return corsResponse(JSON.stringify({ error: { message: 'Method not allowed' } }), 405);
-    if (!env.OPENROUTER_KEY)          return corsResponse(JSON.stringify({ error: { message: 'OPENROUTER_KEY no configurada' } }), 500);
 
-    // ── 1. Sesión obligatoria ───────────────────────────────────────────────
-    const auth = request.headers.get('Authorization') || '';
-    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (!token) return corsResponse(JSON.stringify({ error: { code: 'no_auth', message: 'Inicia sesión para chatear' } }), 401);
-
-    let body;
-    try { body = await request.json(); } catch (e) { return corsResponse(JSON.stringify({ error: { message: 'JSON inválido' } }), 400); }
-    if (!Array.isArray(body.messages)) return corsResponse(JSON.stringify({ error: { message: 'Falta messages' } }), 400);
-
-    // ── 2. Descontar gemas en el SERVIDOR (autoridad real) ──────────────────
-    let newBalance;
-    try {
-      const dRes = await fetch(`${SUPA_URL}/rest/v1/rpc/deduct_gems`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ amount: GEM_COST }),
-      });
-      if (dRes.status === 401) return corsResponse(JSON.stringify({ error: { code: 'no_auth', message: 'Sesión caducada' } }), 401);
-      if (!dRes.ok) return corsResponse(JSON.stringify({ error: { message: 'Error al verificar gemas' } }), 502);
-      newBalance = await dRes.json(); // nuevo saldo, o -1 si insuficiente
-    } catch (e) {
-      return corsResponse(JSON.stringify({ error: { message: 'Error al verificar gemas: ' + e.message } }), 502);
-    }
-    if (typeof newBalance !== 'number' || newBalance < 0) {
-      return corsResponse(JSON.stringify({ error: { code: 'no_gems', message: 'Sin gemas suficientes' } }), 402);
+    // ── Explorar (público, cacheado) ────────────────────────────────────────
+    if (request.method === 'GET') {
+      const url = new URL(request.url);
+      if (url.searchParams.has('explore'))     return handleExplore(url);
+      if (url.searchParams.has('exploretags')) return handleExploreTags(url);
+      return corsResponse(JSON.stringify({ error: { message: 'Not found' } }), 404);
     }
 
-    // ── 3. Llamar a OpenRouter con reintentos ───────────────────────────────
-    const payload = {
-      model: 'mistralai/mistral-small-2603',
-      messages: body.messages,
-      max_tokens: body.max_tokens || 1000,
-    };
-    if (typeof body.temperature === 'number') payload.temperature = body.temperature;
-
-    const RETRY_STATUS = [429, 502, 503];
-    let lastErr = 'desconocido';
-
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 45000);
-      try {
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${env.OPENROUTER_KEY}`,
-            'X-Title': 'Storym',
-          },
-          body: JSON.stringify(payload),
-          signal: ctrl.signal,
-        });
-        clearTimeout(timer);
-
-        if (RETRY_STATUS.includes(response.status) && attempt < 3) {
-          lastErr = 'status ' + response.status;
-          await sleep(1000);
-          continue;
-        }
-
-        if (!response.ok) {            // error no reintentable → reembolsar gemas
-          await refund(token);
-          const errText = await response.text();
-          return corsResponse(errText, response.status);
-        }
-
-        const data = await response.text();
-        return corsResponse(data, 200); // éxito: gemas ya descontadas
-      } catch (e) {
-        clearTimeout(timer);
-        lastErr = (e && e.name === 'AbortError') ? 'timeout' : (e && e.message || 'error de red');
-        if (attempt < 3) { await sleep(1000); continue; }
-      }
-    }
-
-    // Agotados los reintentos → reembolsar gemas y devolver error
-    await refund(token);
-    return corsResponse(JSON.stringify({ error: { message: 'OpenRouter no disponible tras 3 intentos: ' + lastErr } }), 502);
+    if (request.method !== 'POST') return corsResponse(JSON.stringify({ error: { message: 'Method not allowed' } }), 405);
+    return handleChat(request, env);
   }
 };
 
+// ───────────────────────── CHAT (gemas en servidor) ──────────────────────────
+async function handleChat(request, env) {
+  if (!env.OPENROUTER_KEY) return corsResponse(JSON.stringify({ error: { message: 'OPENROUTER_KEY no configurada' } }), 500);
+
+  const auth = request.headers.get('Authorization') || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token) return corsResponse(JSON.stringify({ error: { code: 'no_auth', message: 'Inicia sesión para chatear' } }), 401);
+
+  let body;
+  try { body = await request.json(); } catch (e) { return corsResponse(JSON.stringify({ error: { message: 'JSON inválido' } }), 400); }
+  if (!Array.isArray(body.messages)) return corsResponse(JSON.stringify({ error: { message: 'Falta messages' } }), 400);
+
+  // Descuento atómico en servidor
+  let newBalance;
+  try {
+    const dRes = await fetch(`${SUPA_URL}/rest/v1/rpc/deduct_gems`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ amount: GEM_COST }),
+    });
+    if (dRes.status === 401) return corsResponse(JSON.stringify({ error: { code: 'no_auth', message: 'Sesión caducada' } }), 401);
+    if (!dRes.ok) return corsResponse(JSON.stringify({ error: { message: 'Error al verificar gemas' } }), 502);
+    newBalance = await dRes.json();
+  } catch (e) {
+    return corsResponse(JSON.stringify({ error: { message: 'Error al verificar gemas: ' + e.message } }), 502);
+  }
+  if (typeof newBalance !== 'number' || newBalance < 0) {
+    return corsResponse(JSON.stringify({ error: { code: 'no_gems', message: 'Sin gemas suficientes' } }), 402);
+  }
+
+  const payload = {
+    model: 'mistralai/mistral-small-2603',
+    messages: body.messages,
+    max_tokens: body.max_tokens || 1000,
+  };
+  if (typeof body.temperature === 'number') payload.temperature = body.temperature;
+
+  const RETRY_STATUS = [429, 502, 503];
+  let lastErr = 'desconocido';
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 45000);
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.OPENROUTER_KEY}`, 'X-Title': 'Storym' },
+        body: JSON.stringify(payload),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (RETRY_STATUS.includes(response.status) && attempt < 3) { lastErr = 'status ' + response.status; await sleep(1000); continue; }
+      if (!response.ok) { await refund(token); return corsResponse(await response.text(), response.status); }
+      return corsResponse(await response.text(), 200);
+    } catch (e) {
+      clearTimeout(timer);
+      lastErr = (e && e.name === 'AbortError') ? 'timeout' : (e && e.message || 'error de red');
+      if (attempt < 3) { await sleep(1000); continue; }
+    }
+  }
+  await refund(token);
+  return corsResponse(JSON.stringify({ error: { message: 'OpenRouter no disponible tras 3 intentos: ' + lastErr } }), 502);
+}
+
+// ───────────────────────── EXPLORAR (cacheado) ───────────────────────────────
+// Limpia valores que romperían la sintaxis de filtros de PostgREST.
+function clean(s) { return (s || '').replace(/[(),*]/g, '').trim().slice(0, 60); }
+
+async function handleExplore(url) {
+  const q      = clean(url.searchParams.get('q'));
+  const gender = url.searchParams.get('gender') === 'M' ? 'M' : url.searchParams.get('gender') === 'F' ? 'F' : '';
+  const tags   = (url.searchParams.get('tags') || '').split(',').map(clean).filter(Boolean).slice(0, 8);
+  const sort   = url.searchParams.get('sort') === 'popular' ? 'popular' : 'new';
+
+  // Clave de caché normalizada (compartida entre todos los usuarios con el mismo filtro)
+  const keyUrl = `https://storym.cache/explore?q=${encodeURIComponent(q)}&g=${gender}&t=${encodeURIComponent(tags.join(','))}&s=${sort}`;
+  const cache = caches.default;
+  const cacheKey = new Request(keyUrl, { method: 'GET' });
+  const hit = await cache.match(cacheKey);
+  if (hit) return hit;
+
+  // Construir la consulta PostgREST
+  const p = new URLSearchParams();
+  p.set('select', 'id,name,tag,tags,bg,chat_count,message_count,created_at');
+  p.append('status', 'eq.approved');
+  if (q) p.append('name', 'ilike.*' + q + '*');
+  if (gender) p.append('gender', 'eq.' + gender);
+  if (tags.length) {
+    const orParts = tags.map(t => `tag.eq.${t}`).concat(`tags.ov.{${tags.join(',')}}`).join(',');
+    p.append('or', `(${orParts})`);
+  }
+  p.set('order', sort === 'popular' ? 'message_count.desc' : 'created_at.desc');
+  p.set('limit', '50');
+
+  let resp;
+  try {
+    resp = await fetch(`${SUPA_URL}/rest/v1/characters_library?${p.toString()}`, {
+      headers: { 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + SUPA_ANON },
+    });
+  } catch (e) {
+    return corsResponse(JSON.stringify({ error: { message: 'Explore fetch: ' + e.message } }), 502);
+  }
+  const text = await resp.text();
+  const out = new Response(text, {
+    status: resp.status,
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${EXPLORE_TTL}` },
+  });
+  if (resp.ok) await cache.put(cacheKey, out.clone());
+  return out;
+}
+
+async function handleExploreTags() {
+  const cache = caches.default;
+  const cacheKey = new Request('https://storym.cache/exploretags', { method: 'GET' });
+  const hit = await cache.match(cacheKey);
+  if (hit) return hit;
+
+  let resp;
+  try {
+    resp = await fetch(`${SUPA_URL}/rest/v1/characters_library?select=tags,tag&status=eq.approved`, {
+      headers: { 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + SUPA_ANON },
+    });
+  } catch (e) {
+    return corsResponse(JSON.stringify({ error: { message: 'Tags fetch: ' + e.message } }), 502);
+  }
+  const text = await resp.text();
+  const out = new Response(text, {
+    status: resp.status,
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${EXPLORE_TTL}` },
+  });
+  if (resp.ok) await cache.put(cacheKey, out.clone());
+  return out;
+}
+
+// ───────────────────────── Utilidades ────────────────────────────────────────
 async function refund(token) {
   try {
     await fetch(`${SUPA_URL}/rest/v1/rpc/refund_gems`, {
@@ -113,19 +174,17 @@ async function refund(token) {
       headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ amount: GEM_COST }),
     });
-  } catch (e) { /* el reembolso es best-effort */ }
+  } catch (e) { /* best-effort */ }
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 function corsResponse(body, status) {
-  return new Response(body, {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  });
+  return new Response(body, { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
 }
