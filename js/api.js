@@ -210,7 +210,7 @@ async function callAPI(userText) {
   const doFetch = (tok) => fetch('https://misty-heart-cd26.alex1234567890ct.workers.dev', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
-    body: JSON.stringify({ messages, max_tokens: 1000, temperature: 0.8 })
+    body: JSON.stringify({ messages, max_tokens: 1000, temperature: 0.7 })
   });
 
   let res = await doFetch(token);

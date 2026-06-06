@@ -105,7 +105,12 @@ function formatMsg(txt) {
       const end = raw.indexOf(close, i + star);
       const nl  = raw.indexOf('\n', i + star);
       if (end > i && (nl === -1 || end < nl)) {
-        out += '<em>' + esc(raw.slice(i + star, end)) + '</em>';
+        const inner = raw.slice(i + star, end);
+        // Si el modelo metió un DIÁLOGO dentro de asteriscos (p. ej. *"Hola"*),
+        // las comillas mandan: trátalo como diálogo, no como acción.
+        const t = inner.trim();
+        if (/^["“«][\s\S]*["”»]$/.test(t)) out += '<strong>' + esc(inner) + '</strong>';
+        else                              out += '<em>' + esc(inner) + '</em>';
         i = end + star; continue;
       }
     }
