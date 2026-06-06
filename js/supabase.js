@@ -261,7 +261,11 @@ async function authSignIn(email, password) {
 // El redirect final vuelve a la app por deep link: com.storym.app://
 async function signInWithGoogleRedirect() {
   const isNative = !!(window.Capacitor?.isNativePlatform?.());
-  const redirectTo = isNative ? 'com.storym.app://' : window.location.origin + '/';
+  // Web: volver a la CARPETA de la app (p. ej. .../rolapp/), no a la raíz del
+  // dominio. Antes usaba origin + '/' → en GitHub Pages caía en la raíz y el
+  // token #access_token nunca llegaba a la app (bucle de onboarding).
+  const webBase = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+  const redirectTo = isNative ? 'com.storym.app://' : webBase;
   console.log('[Google] signInWithOAuth → redirectTo:', redirectTo);
   toast('🚀 Iniciando OAuth…');
 
