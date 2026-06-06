@@ -959,3 +959,5 @@ input[type=file]{display:none}
 .logout-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;margin-top:6px;padding:14px;border-radius:14px;
   border:1px solid rgba(248,113,113,.32);background:rgba(248,113,113,.08);color:#f87171;font-family:'Plus Jakarta Sans',sans-serif;font-size:14.5px;font-weight:700;cursor:pointer}
 .logout-btn:active{background:rgba(248,113,113,.16)}
+
+.onb-legal{margin-top:14px;font-size:12px;line-height:1.45;color:var(--muted);text-align:center;opacity:.85}
