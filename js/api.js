@@ -54,11 +54,15 @@ function buildPersonalityBlock(ch) {
 // bien las condiciones complejas). Se le pide una línea EXACTA al final.
 function _hitoInstruction(existing) {
   const list = (existing || []).map(h => `- ${h.text}`).join('\n');
-  return `\n\n### REGISTRO DE MOMENTOS CLAVE\n` +
-    `Si en TU respuesta ocurre por PRIMERA vez un momento clave (primer beso, primera vez íntima, "te quiero" o un rechazo, una traición, un secreto importante revelado, una ruptura o una reconciliación), termina el mensaje con una línea aparte escrita EXACTAMENTE así:\n` +
+  return `\n\n### REGISTRO DE MOMENTOS CLAVE (mecanismo interno, OBLIGATORIO)\n` +
+    `La etiqueta <hito> es un marcador interno del sistema: el jugador NO la ve, NO rompe la inmersión ni cuenta como "salir del personaje". Por eso DEBES usarla cuando toque.\n` +
+    `REGLA: si en TU respuesta ocurre por PRIMERA vez un momento clave —primer beso, primera vez íntima, un "te quiero" o un rechazo, una traición, un secreto importante revelado, una ruptura o una reconciliación— entonces, DESPUÉS de tu respuesta normal y en una línea aparte al final, escribe EXACTAMENTE:\n` +
     `<hito>resumen en pasado, una sola frase</hito>\n` +
-    `Si no ha pasado nada de eso, NO escribas esa línea. No repitas ninguno ya registrado.` +
-    (list ? `\nYa registrados:\n${list}` : '');
+    `Ejemplo de respuesta completa:\n` +
+    `*Se acerca y la besa por primera vez.* "Llevaba mucho esperando esto."\n` +
+    `<hito>Nos dimos nuestro primer beso.</hito>\n` +
+    `Si NADA de eso ha pasado en este mensaje, NO escribas la etiqueta. Nunca repitas un hito ya registrado.` +
+    (list ? `\nYa registrados (no los repitas):\n${list}` : '');
 }
 
 function getEffectiveProfile() {

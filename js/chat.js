@@ -220,8 +220,10 @@ async function sendMessage() {
     // Extraer y quitar la etiqueta <hito> antes de mostrar/guardar.
     // Tolerante: la quita junto a asteriscos/comillas/espacios que Mistral pueda
     // poner alrededor (p. ej. **<hito>…</hito>** o en su propia línea).
-    const hitoMatch = rawReply.match(/<hito>\s*([^<]*?)\s*<\/hito>/i);
-    const reply = rawReply.replace(/[*"\s]*<hito>[^<]*<\/hito>[*"\s]*/gi, '').trim();
+    // Acepta <hito>…</hito>, [hito]…[/hito], y la variante sin etiqueta de
+    // cierre (el modelo a veces solo abre): captura hasta fin de línea/mensaje.
+    const hitoMatch = rawReply.match(/[<\[]\s*hito\s*[>\]]\s*([^<\[\n]+?)\s*(?:[<\[]\s*\/?\s*hito\s*[>\]]|\n|$)/i);
+    const reply = rawReply.replace(/\s*[<\[]\s*hito\s*[>\]]\s*[^<\[\n]*\s*(?:[<\[]\s*\/?\s*hito\s*[>\]])?[*"\s]*/gi, '').trim();
     if (hitoMatch) {
       const t = currentScene || currentChar;
       if (t && t.hitosEnabled !== false) {
