@@ -62,7 +62,6 @@ async function initSupabase() {
   // renovación de token). INITIAL_SESSION se ignora porque ya lo manejó getSession().
   supaClient.auth.onAuthStateChange(async (event, session) => {
     if (event === 'INITIAL_SESSION') return; // ya gestionado arriba
-    toast('🔔 ' + event); // DEBUG
     try {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         await _applySession(session);
@@ -271,7 +270,6 @@ async function signInWithGoogleRedirect() {
   const webBase = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
   const redirectTo = isNative ? 'com.storym.app://' : webBase;
   console.log('[Google] signInWithOAuth → redirectTo:', redirectTo);
-  toast('🚀 Iniciando OAuth…');
 
   const { data, error } = await supaClient.auth.signInWithOAuth({
     provider: 'google',
@@ -283,17 +281,16 @@ async function signInWithGoogleRedirect() {
   });
   if (error) {
     console.error('[Google] signInWithOAuth error:', error);
-    toast('Error Google: ' + error.message);
+    toast('No se pudo iniciar sesión con Google');
     return;
   }
   // En nativo: abre Chrome Custom Tabs (no WebView → Google lo permite)
   if (isNative && data?.url) {
-    toast('🌐 Abriendo navegador…');
     try {
       await window.Capacitor.Plugins.Browser.open({ url: data.url });
     } catch (e) {
       console.error('[Google] Browser.open error:', e);
-      toast('Error abriendo navegador: ' + e.message);
+      toast('No se pudo abrir el navegador');
     }
   }
 }
@@ -314,13 +311,6 @@ async function handleDeepLink(url) {
   _lastDeepLinkUrl = url;
   console.log('[deepLink] URL recibida:', url.slice(0, 100));
 
-  // ── DIAGNÓSTICO: muestra qué contiene la URL ──────────────────────────
-  const _hasHash  = url.includes('#');
-  const _hasCode  = url.includes('code=');
-  const _hasToken = url.includes('access_token=');
-  toast('🔗 ' + (_hasToken ? 'tokens✓' : _hasCode ? 'code✓' : 'sin datos⚠') + ' | hash:' + _hasHash);
-  // ──────────────────────────────────────────────────────────────────────
-
   try { await window.Capacitor.Plugins.Browser.close(); } catch (_) {}
 
   // Parsear hash (#...) y query (?...) por separado
@@ -338,11 +328,11 @@ async function handleDeepLink(url) {
     // Limpiar estado local de Supabase antes de setSession para evitar
     // conflictos con sesiones previas (el signOut local no revoca en servidor).
     await supaClient.auth.signOut({ scope: 'local' }).catch(() => {});
-    toast('🔑 setSession…');
     try {
       const { data, error } = await supaClient.auth.setSession({ access_token, refresh_token });
       if (error) {
-        toast('❌ setSession: ' + error.message.slice(0, 40));
+        console.error('[handleDeepLink] setSession:', error.message);
+        toast('No se pudo iniciar sesión');
         _lastDeepLinkUrl = '';
         return;
       }
@@ -353,49 +343,44 @@ async function handleDeepLink(url) {
       if (!sess) {
         try { const g = await supaClient.auth.getSession(); sess = g && g.data && g.data.session; } catch (e) {}
       }
-      toast('🔑 session:' + (sess ? 'OK' : 'NULL'));
       if (sess) {
         await _applySession(sess);
         renderUserHeader();
         renderAuthSection(); // siempre actualizar perfil, no solo si está activo
         if (window.onbRefresh) window.onbRefresh();        // cierra el onboarding ya
         if (window.refreshVipStatus) window.refreshVipStatus();
-        toast('✅ Login OK · gems:' + supabaseGems);
       } else {
-        toast('⚠️ sesión no recuperable');
+        toast('No se pudo iniciar sesión');
         _lastDeepLinkUrl = '';
       }
     } catch (e) {
-      toast('❌ setSession throw: ' + String(e?.message || e).slice(0, 50));
       console.error('[handleDeepLink] setSession throw:', e);
+      toast('No se pudo iniciar sesión');
       _lastDeepLinkUrl = '';
       return;
     }
 
   } else if (code) {
     // ── Flujo PKCE (fallback por si el servidor envía code en lugar de tokens) ──
-    toast('🔑 PKCE exchange…');
     const { data, error } = await supaClient.auth.exchangeCodeForSession(url);
     if (error) {
-      toast('❌ PKCE: ' + error.message.slice(0, 40));
+      console.error('[handleDeepLink] PKCE:', error.message);
+      toast('No se pudo iniciar sesión');
       _lastDeepLinkUrl = '';
       return;
     }
     let psess = data && data.session;
     if (!psess) { try { const g = await supaClient.auth.getSession(); psess = g && g.data && g.data.session; } catch (e) {} }
-    toast('🔑 session:' + (psess ? 'OK' : 'NULL'));
     if (psess) {
       await _applySession(psess);
       renderUserHeader();
       if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
       if (window.onbRefresh) window.onbRefresh();
       if (window.refreshVipStatus) window.refreshVipStatus();
-      toast('✅ Login PKCE OK · gems:' + supabaseGems);
     }
 
   } else {
     console.warn('[deepLink] URL sin tokens ni code:', url.slice(0, 120));
-    toast('⚠️ URL sin datos de sesión');
     _lastDeepLinkUrl = '';
   }
 }
