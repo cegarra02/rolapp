@@ -43,11 +43,16 @@
     }
     return supaClient.from('users').select('reward_streak, last_reward_date').eq('id', supabaseUser.id).single()
       .then(function (res) {
+        if (res && res.error) {
+          if (window.toast) toast('🎁 read ERR: ' + (res.error.message || '').slice(0, 45));
+          _rw.loaded = true; return _rw; // no machacar con vacío si hubo error
+        }
         var d = res && res.data ? res.data : {};
         _rw = { streak: d.reward_streak || 0, lastDate: d.last_reward_date || null, loaded: true };
+        if (window.toast) toast('🎁 racha d' + _rw.streak + ' · ' + (_rw.lastDate || 'null') + ' · hoy ' + utcToday());
         return _rw;
       })
-      .catch(function () { _rw.loaded = true; return _rw; });
+      .catch(function (e) { if (window.toast) toast('🎁 catch: ' + (e && e.message || '').slice(0, 40)); _rw.loaded = true; return _rw; });
   }
 
   // Calcula la vista a partir del estado: qué día es hoy en la racha,
