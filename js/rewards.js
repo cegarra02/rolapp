@@ -37,7 +37,7 @@
 
   // Lee racha/última fecha del servidor (RLS: solo la fila propia).
   function refreshState() {
-    if (typeof supabaseUser === 'undefined' || !supabaseUser || !window.supaClient) {
+    if (typeof supabaseUser === 'undefined' || !supabaseUser || typeof supaClient === 'undefined' || !supaClient) {
       _rw = { streak: 0, lastDate: null, loaded: true };
       return Promise.resolve(_rw);
     }
