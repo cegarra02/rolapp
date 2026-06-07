@@ -1,0 +1,19 @@
+-- ════════════════════════════════════════════════════════════════════════════
+-- ADMOB SSV — gemas por anuncio verificadas en servidor
+--
+-- Antes: el cliente llamaba a add_gems_from_ad(amount) con el importe que quería
+-- → manipulable. Ahora Google llama (Server-Side Verification) al Worker con una
+-- FIRMA que el Worker verifica; solo entonces se acreditan las gemas. El importe
+-- lo decide el servidor desde gem_products('ad_reward').
+--
+-- Se reutiliza credit_purchase (idempotente por transaction_id del anuncio).
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- Gemas por anuncio (cámbialo aquí si quieres otro valor; NO en el cliente).
+INSERT INTO gem_products (product_id, gems) VALUES
+  ('ad_reward', 5)
+ON CONFLICT (product_id) DO UPDATE SET gems = EXCLUDED.gems;
+
+-- (Opcional) Ya no se usa add_gems_from_ad desde el cliente. Puedes dejarlo o,
+-- para cerrar el agujero del todo, revocar su ejecución a clientes:
+-- REVOKE EXECUTE ON FUNCTION add_gems_from_ad(INT) FROM authenticated, anon;

@@ -181,7 +181,7 @@ function _renderGemShop() {
     adBtn.textContent = `⏳ Disponible en ${cooldownLeft} min`;
     adBtn.disabled = true;
   } else {
-    adBtn.textContent = '📺 Ver anuncio · Ganar 4–9 💎 gratis';
+    adBtn.textContent = '📺 Ver anuncio · Ganar 5 💎 gratis';
     adBtn.disabled = false;
   }
   if (window.STORYM && STORYM.scanIcons) {
@@ -289,9 +289,13 @@ async function purchaseSpecialPackage(productId) {
   }
 }
 
-// ── Anuncio de recompensa vía AdMob ──────────────────────────────────────────
+// ── Anuncio de recompensa vía AdMob (con SSV verificado en servidor) ─────────
+// Las gemas las acredita el callback SSV de Google al Worker (firma verificada),
+// NO el cliente. Pasamos userId en las opciones SSV para que Google sepa a quién
+// acreditar; tras ver el anuncio, sondeamos el saldo hasta que llegue el crédito.
 async function watchRewardedAd() {
   if (_adInProgress || Date.now() < _adCooldownUntil) return;
+  if (!supabaseUser) { toast('Inicia sesión para ganar gemas'); return; }
   if (!window.Capacitor?.isNativePlatform?.()) return;
 
   _adInProgress = true;
@@ -302,17 +306,17 @@ async function watchRewardedAd() {
     if (!AdMob) throw new Error('AdMob no disponible');
 
     await AdMob.prepareRewardVideoAd({
-      // Ad Unit ID real de AdMob (recompensado)
       adId: 'ca-app-pub-2254796338985845/7497827581',
+      ssv: { userId: supabaseUser.id }, // → Google envía user_id en el callback SSV
     });
     const result = await AdMob.showRewardVideoAd();
 
-    if (result?.reward) {
-      const gems = Math.floor(Math.random() * 6) + 4; // 4–9 aleatorio
-      await _grantAdGems(gems);
+    if (result) {
+      // Cooldown y espera del crédito server-side (asíncrono).
       _adCooldownUntil = Date.now() + AD_COOLDOWN_MS;
       localStorage.setItem('rp_ad_cooldown', String(_adCooldownUntil));
-      toast(`💎 +${gems} gemas ganadas`);
+      toast('⏳ Procesando recompensa…');
+      await _awaitGemCredit();
     }
   } catch (e) {
     const msg = e?.message || '';
@@ -325,24 +329,3 @@ async function watchRewardedAd() {
     _renderGemShop();
   }
 }
-
-async function _grantAdGems(amount) {
-  if (supabaseUser) {
-    const { data: newBalance, error } = await supaClient.rpc('add_gems_from_ad', { amount });
-    if (error) {
-      console.error('[AdGems] RPC error:', error.message);
-      supabaseGems += amount;
-    } else {
-      supabaseGems = newBalance ?? (supabaseGems + amount);
-    }
-    localStorage.setItem('rp_gems_local', String(supabaseGems));
-  } else {
-    const cur = parseInt(localStorage.getItem('rp_gems_local') || '0');
-    localStorage.setItem('rp_gems_local', String(cur + amount));
-  }
-  renderUserHeader();
-}
-
-// Función pública para que otros módulos (rewards, etc.) acrediten gemas
-// sin depender de los detalles de Supabase o localStorage.
-async function grantGems(amount) { return _grantAdGems(amount); }

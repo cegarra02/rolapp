@@ -20,9 +20,10 @@ export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') return corsResponse('', 204);
 
-    // ── Explorar (público, cacheado) ────────────────────────────────────────
+    // ── Explorar (público, cacheado) + callback SSV de AdMob ─────────────────
     if (request.method === 'GET') {
       const url = new URL(request.url);
+      if (url.pathname.replace(/\/+$/, '').endsWith('/admob-ssv')) return handleAdmobSSV(request, env);
       if (url.searchParams.has('explore'))     return handleExplore(url);
       if (url.searchParams.has('exploretags')) return handleExploreTags(url);
       return corsResponse(JSON.stringify({ error: { message: 'Not found' } }), 404);
@@ -282,6 +283,101 @@ async function handleExploreTags() {
   });
   if (resp.ok) await cache.put(cacheKey, out.clone());
   return out;
+}
+
+// ──────────────── ADMOB SSV (gemas por anuncio verificadas) ──────────────────
+// Google llama a esta URL tras un anuncio recompensado, FIRMADO con ECDSA. Se
+// verifica la firma con las claves públicas de Google y solo entonces se
+// acreditan las gemas (importe en gem_products('ad_reward'), idempotente por
+// transaction_id). El cliente ya no acredita nada.
+let _ssvKeysCache = null;
+let _ssvKeysAt = 0;
+
+async function _getVerifierKeys() {
+  const now = Date.now();
+  if (_ssvKeysCache && (now - _ssvKeysAt) < 3600000) return _ssvKeysCache; // 1h
+  const r = await fetch('https://gstatic.com/admob/reward/verifier-keys.json');
+  const j = await r.json();
+  _ssvKeysCache = j.keys || [];
+  _ssvKeysAt = now;
+  return _ssvKeysCache;
+}
+
+function _b64ToBytes(b64) {
+  const s = b64.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = s.length % 4 ? '='.repeat(4 - (s.length % 4)) : '';
+  const bin = atob(s + pad);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// DER ECDSA (SEQUENCE{ INTEGER r, INTEGER s }) → raw r||s de 64 bytes (P-256).
+function _derToRaw(der) {
+  let i = 0;
+  if (der[i++] !== 0x30) throw new Error('DER seq');
+  if (der[i] & 0x80) i += 1 + (der[i] & 0x7f); else i++; // saltar longitud seq
+  function readInt() {
+    if (der[i++] !== 0x02) throw new Error('DER int');
+    let len = der[i++];
+    let v = der.slice(i, i + len); i += len;
+    while (v.length > 32 && v[0] === 0x00) v = v.slice(1); // quitar 0x00 de signo
+    const out = new Uint8Array(32);
+    out.set(v, 32 - v.length); // pad-left a 32
+    return out;
+  }
+  const r = readInt(), s = readInt();
+  const raw = new Uint8Array(64);
+  raw.set(r, 0); raw.set(s, 32);
+  return raw;
+}
+
+async function handleAdmobSSV(request, env) {
+  try {
+    const rawUrl = request.url;
+    const qIdx = rawUrl.indexOf('?');
+    if (qIdx === -1) return new Response('no query', { status: 400 });
+    const query = rawUrl.slice(qIdx + 1);
+    const marker = '&signature=';
+    const sIdx = query.indexOf(marker);
+    if (sIdx === -1) return new Response('no signature', { status: 400 });
+    const message = query.slice(0, sIdx);                 // contenido firmado (exacto)
+    const tail = query.slice(sIdx + marker.length);        // signature=...&key_id=...
+    const signatureB64 = tail.split('&key_id=')[0];
+    const keyId = tail.split('&key_id=')[1];
+
+    const params = new URLSearchParams(query);
+    const userId = params.get('user_id') || '';
+    const txnId  = params.get('transaction_id') || '';
+    if (!userId || userId.indexOf('$RCAnonymousID:') === 0) return new Response('no user', { status: 200 });
+    if (!txnId) return new Response('no txn', { status: 200 });
+
+    // Verificar la firma con la clave pública de Google correspondiente al key_id.
+    const keys = await _getVerifierKeys();
+    const k = keys.find(x => String(x.keyId) === String(keyId));
+    if (!k || !k.base64) return new Response('unknown key', { status: 400 });
+
+    const pubKey = await crypto.subtle.importKey(
+      'spki', _b64ToBytes(k.base64),
+      { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']
+    );
+    const rawSig = _derToRaw(_b64ToBytes(signatureB64));
+    const ok = await crypto.subtle.verify(
+      { name: 'ECDSA', hash: 'SHA-256' }, pubKey, rawSig, new TextEncoder().encode(message)
+    );
+    if (!ok) return new Response('bad signature', { status: 403 });
+
+    // Firma válida → acreditar gemas (importe en servidor, idempotente por txn).
+    const res = await fetch(`${SUPA_URL}/rest/v1/rpc/credit_purchase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + SUPA_ANON },
+      body: JSON.stringify({ p_secret: env.RC_SECRET, p_user_id: userId, p_product_id: 'ad_reward', p_event_id: 'ad_' + txnId }),
+    });
+    if (!res.ok) return new Response('db error', { status: 500 }); // AdMob reintentará
+    return new Response('ok', { status: 200 });
+  } catch (e) {
+    return new Response('ssv error: ' + (e && e.message), { status: 500 });
+  }
 }
 
 // ───────────────────────── Utilidades ────────────────────────────────────────
