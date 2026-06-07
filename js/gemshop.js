@@ -17,9 +17,28 @@ const SPECIAL_PACKAGES = [
 ];
 
 const WEEK_MS        = 7 * 24 * 60 * 60 * 1000;
-const AD_COOLDOWN_MS = 30 * 60 * 1000;
-let _adCooldownUntil = parseInt(localStorage.getItem('rp_ad_cooldown') || '0');
+// Anuncios: cupo de N en una ventana móvil (no cooldown fijo). Pone un techo de
+// gemas gratis para no canibalizar las compras, pero recompensa al casual.
+const AD_WINDOW_MS   = 6 * 60 * 60 * 1000; // ventana de 6 h
+const AD_MAX_PER_WIN = 3;                   // máx. anuncios por ventana
 let _adInProgress    = false;
+
+// Marcas de tiempo de los anuncios vistos dentro de la ventana actual.
+function _adViews() {
+  const raw = localStorage.getItem('rp_ad_views') || '';
+  return raw.split(',').map(Number).filter(t => t > 0 && (Date.now() - t) < AD_WINDOW_MS);
+}
+function _adRemaining() { return Math.max(0, AD_MAX_PER_WIN - _adViews().length); }
+function _markAdView() {
+  const arr = _adViews(); arr.push(Date.now());
+  localStorage.setItem('rp_ad_views', arr.join(','));
+}
+// Minutos hasta que se libere un hueco (cuando el más antiguo salga de la ventana).
+function _adMinsUntilSlot() {
+  const arr = _adViews(); if (arr.length < AD_MAX_PER_WIN) return 0;
+  const oldest = Math.min.apply(null, arr);
+  return Math.max(0, Math.ceil((AD_WINDOW_MS - (Date.now() - oldest)) / 60000));
+}
 
 // ── Límite semanal para packs especiales (VIP: 2/sem · normal: 1/sem) ─────────
 function _specialLimit() {
@@ -119,8 +138,6 @@ function _fmtGems(n) {
 
 function _renderGemShop() {
   const isNative     = !!(window.Capacitor?.isNativePlatform?.());
-  const now          = Date.now();
-  const cooldownLeft = _adCooldownUntil > now ? Math.ceil((_adCooldownUntil - now) / 60000) : 0;
 
   document.getElementById('gemShopBalance').textContent = getDisplayGems() + ' 💎';
 
@@ -169,19 +186,22 @@ function _renderGemShop() {
     </button>`;
   }).join('');
 
-  // ── Botón de anuncio ──────────────────────────────────────────────────────
+  // ── Botón de anuncio (cupo de 3 por ventana de 6 h) ───────────────────────
   const adBtn = document.getElementById('gemAdBtn');
+  const adRemaining = _adRemaining();
   if (!isNative) {
     adBtn.textContent = '📺 Ver anuncio · Solo en app Android';
     adBtn.disabled = true;
   } else if (_adInProgress) {
     adBtn.textContent = '⏳ Cargando anuncio…';
     adBtn.disabled = true;
-  } else if (cooldownLeft > 0) {
-    adBtn.textContent = `⏳ Disponible en ${cooldownLeft} min`;
+  } else if (adRemaining <= 0) {
+    const mins = _adMinsUntilSlot();
+    const h = Math.floor(mins / 60), m = mins % 60;
+    adBtn.textContent = `⏳ Disponible en ${h > 0 ? h + 'h ' : ''}${m}min`;
     adBtn.disabled = true;
   } else {
-    adBtn.textContent = '📺 Ver anuncio · Ganar 5 💎 gratis';
+    adBtn.textContent = `📺 Ver anuncio · Gana gemas (${adRemaining}/${AD_MAX_PER_WIN})`;
     adBtn.disabled = false;
   }
   if (window.STORYM && STORYM.scanIcons) {
@@ -294,7 +314,8 @@ async function purchaseSpecialPackage(productId) {
 // NO el cliente. Pasamos userId en las opciones SSV para que Google sepa a quién
 // acreditar; tras ver el anuncio, sondeamos el saldo hasta que llegue el crédito.
 async function watchRewardedAd() {
-  if (_adInProgress || Date.now() < _adCooldownUntil) return;
+  if (_adInProgress) return;
+  if (_adRemaining() <= 0) { toast('Has agotado los anuncios por ahora, vuelve más tarde'); return; }
   if (!supabaseUser) { toast('Inicia sesión para ganar gemas'); return; }
   if (!window.Capacitor?.isNativePlatform?.()) return;
 
@@ -312,9 +333,8 @@ async function watchRewardedAd() {
     const result = await AdMob.showRewardVideoAd();
 
     if (result) {
-      // Cooldown y espera del crédito server-side (asíncrono).
-      _adCooldownUntil = Date.now() + AD_COOLDOWN_MS;
-      localStorage.setItem('rp_ad_cooldown', String(_adCooldownUntil));
+      // Consumir un hueco del cupo y esperar el crédito server-side (asíncrono).
+      _markAdView();
       toast('⏳ Procesando recompensa…');
       await _awaitGemCredit();
     }
