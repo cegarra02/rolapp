@@ -19,8 +19,8 @@ const SPECIAL_PACKAGES = [
 const WEEK_MS        = 7 * 24 * 60 * 60 * 1000;
 // Anuncios: cupo de N en una ventana móvil (no cooldown fijo). Pone un techo de
 // gemas gratis para no canibalizar las compras, pero recompensa al casual.
-const AD_WINDOW_MS   = 6 * 60 * 60 * 1000; // ventana de 6 h
-const AD_MAX_PER_WIN = 3;                   // máx. anuncios por ventana
+const AD_WINDOW_MS   = 8 * 60 * 60 * 1000; // ventana de 8 h
+const AD_MAX_PER_WIN = 5;                   // máx. anuncios por ventana
 let _adInProgress    = false;
 
 // Marcas de tiempo de los anuncios vistos dentro de la ventana actual.

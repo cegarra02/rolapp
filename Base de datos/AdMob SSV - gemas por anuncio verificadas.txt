@@ -11,7 +11,7 @@
 
 -- Gemas por anuncio (cámbialo aquí si quieres otro valor; NO en el cliente).
 INSERT INTO gem_products (product_id, gems) VALUES
-  ('ad_reward', 5)
+  ('ad_reward', 6)
 ON CONFLICT (product_id) DO UPDATE SET gems = EXCLUDED.gems;
 
 -- (Opcional) Ya no se usa add_gems_from_ad desde el cliente. Puedes dejarlo o,
