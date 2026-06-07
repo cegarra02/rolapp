@@ -346,12 +346,24 @@ async function handleDeepLink(url) {
         _lastDeepLinkUrl = '';
         return;
       }
-      toast('🔑 session:' + (data?.session ? 'OK' : 'NULL'));
-      if (data?.session) {
-        await _applySession(data.session);
+      // Bug conocido en Capacitor WebView: setSession puede devolver session:null
+      // AUNQUE la haya guardado. Si pasa, la recuperamos con getSession para que
+      // el primer login complete SIN tener que reiniciar la app.
+      let sess = data && data.session;
+      if (!sess) {
+        try { const g = await supaClient.auth.getSession(); sess = g && g.data && g.data.session; } catch (e) {}
+      }
+      toast('🔑 session:' + (sess ? 'OK' : 'NULL'));
+      if (sess) {
+        await _applySession(sess);
         renderUserHeader();
         renderAuthSection(); // siempre actualizar perfil, no solo si está activo
+        if (window.onbRefresh) window.onbRefresh();        // cierra el onboarding ya
+        if (window.refreshVipStatus) window.refreshVipStatus();
         toast('✅ Login OK · gems:' + supabaseGems);
+      } else {
+        toast('⚠️ sesión no recuperable');
+        _lastDeepLinkUrl = '';
       }
     } catch (e) {
       toast('❌ setSession throw: ' + String(e?.message || e).slice(0, 50));
@@ -369,11 +381,15 @@ async function handleDeepLink(url) {
       _lastDeepLinkUrl = '';
       return;
     }
-    toast('🔑 session:' + (data?.session ? 'OK' : 'NULL'));
-    if (data?.session) {
-      await _applySession(data.session);
+    let psess = data && data.session;
+    if (!psess) { try { const g = await supaClient.auth.getSession(); psess = g && g.data && g.data.session; } catch (e) {} }
+    toast('🔑 session:' + (psess ? 'OK' : 'NULL'));
+    if (psess) {
+      await _applySession(psess);
       renderUserHeader();
       if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+      if (window.onbRefresh) window.onbRefresh();
+      if (window.refreshVipStatus) window.refreshVipStatus();
       toast('✅ Login PKCE OK · gems:' + supabaseGems);
     }
 
