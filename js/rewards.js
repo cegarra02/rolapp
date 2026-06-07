@@ -181,19 +181,21 @@
       _claiming = false;
       var r = res && res.data ? res.data : null;
       var err = res && res.error ? res.error : null;
-      if (err) { if (window.toast) toast('Error al reclamar: ' + (err.message || '').slice(0, 40)); return; }
+      // La función no existe / error de la RPC → el SQL no está desplegado.
+      if (err) {
+        if (window.toast) toast('Error al reclamar: ' + (err.message || '').slice(0, 50));
+        refreshState().then(function () { render(); refreshDot(); });
+        return;
+      }
       if (!r || r.ok === false) {
         if (r && r.reason === 'not_vip') { onUpsell(); }
         else if (r && r.reason === 'already') { if (window.toast) toast('Ya reclamaste hoy'); }
         else { if (window.toast) toast('No se pudo reclamar'); }
-        // Sincroniza el estado por si el servidor difería del cliente.
-        _rw.lastDate = utcToday();
-        if (r && typeof r.day === 'number') _rw.streak = r.day;
-        render(); refreshDot();
+        // NO marcamos nada localmente: re-sincronizamos desde el servidor (verdad).
+        refreshState().then(function () { render(); refreshDot(); });
         return;
       }
-      // Éxito: el servidor ya sumó las gemas. Reflejar saldo y racha.
-      _rw.streak = r.day; _rw.lastDate = utcToday();
+      // Éxito: el servidor sumó las gemas y guardó la racha. Reflejar saldo…
       if (typeof r.gems === 'number') {
         supabaseGems = r.gems;
         try { localStorage.setItem('rp_gems_local', String(supabaseGems)); } catch (e) {}
@@ -201,7 +203,9 @@
       }
       burst();
       if (window.toast) toast('+' + r.amount + ' gemas · Día ' + r.day);
-      render(); refreshDot();
+      // …y RECONCILIAR el estado leyéndolo del servidor (fuente de verdad), para
+      // que al cerrar y reabrir siga apareciendo como reclamado.
+      refreshState().then(function () { render(); refreshDot(); });
     }).catch(function (e) {
       _claiming = false;
       if (window.toast) toast('Error al reclamar');
