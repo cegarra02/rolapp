@@ -102,20 +102,21 @@ async function billingIdentify() {
   catch (e) { console.warn('[Billing] logIn:', e?.message); }
 }
 
-// Tras una compra, las gemas las acredita el WEBHOOK (server-side), de forma
-// asíncrona. Sondeamos el saldo del servidor hasta verlo subir (~12s máx). Si
-// tarda más, las gemas aparecerán igualmente al refrescar/reabrir la app.
-async function _awaitGemCredit() {
+// Tras una compra/anuncio, las gemas las acredita el SERVIDOR (webhook o SSV) de
+// forma asíncrona. Sondeamos el saldo hasta verlo subir (~18s máx). Si tarda más,
+// las gemas aparecerán igualmente al refrescar/reabrir la tienda (refreshGems).
+async function _awaitGemCredit(pendingMsg) {
   const before = supabaseGems;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 12; i++) {
     await new Promise(r => setTimeout(r, 1500));
     await refreshGems();
     if (supabaseGems > before) {
       toast(`💎 +${supabaseGems - before} gemas añadidas`);
+      _renderGemShop();
       return true;
     }
   }
-  toast('💎 Compra recibida. Tus gemas aparecerán en unos instantes.');
+  toast(pendingMsg || '💎 Recibido. Tus gemas aparecerán en unos instantes.');
   return false;
 }
 
@@ -124,6 +125,10 @@ function openGemShop() {
   _renderGemShop();
   document.getElementById('gemShopOverlay').classList.add('open');
   document.getElementById('gemShopSheet').classList.add('open');
+  // Refresca el saldo por si llegó un crédito tardío (SSV/webhook) mientras no mirabas.
+  if (supabaseUser && typeof refreshGems === 'function') {
+    refreshGems().then(() => _renderGemShop()).catch(() => {});
+  }
 }
 
 function closeGemShop() {
@@ -333,10 +338,13 @@ async function watchRewardedAd() {
     const result = await AdMob.showRewardVideoAd();
 
     if (result) {
-      // Consumir un hueco del cupo y esperar el crédito server-side (asíncrono).
+      // Consumir un hueco del cupo y LIBERAR el botón ya (no dejarlo "cargando"
+      // durante la espera del crédito, que es asíncrono vía SSV).
       _markAdView();
-      toast('⏳ Procesando recompensa…');
-      await _awaitGemCredit();
+      _adInProgress = false;
+      _renderGemShop();
+      toast('⏳ Recompensa en camino…');
+      await _awaitGemCredit('💎 Recompensa en camino, tus gemas llegarán en breve');
     }
   } catch (e) {
     const msg = e?.message || '';
