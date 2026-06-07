@@ -1,0 +1,36 @@
+-- ════════════════════════════════════════════════════════════════════════════
+-- SEGURIDAD CRÍTICA — el cliente NO debe poder escribir gems / vip_until / racha
+--
+-- Problema: si 'authenticated' tiene UPDATE sobre toda la tabla users, cualquiera
+-- puede hacer desde la consola del navegador:
+--     supaClient.from('users').update({ gems: 999999, vip_until: '2099-01-01' })
+-- …y saltarse TODO el sistema de pagos, VIP y recompensas.
+--
+-- Solución: permisos a NIVEL DE COLUMNA. El cliente solo puede actualizar las
+-- columnas que realmente sincroniza (profile, chars_data, scenes_data). Las
+-- columnas sensibles (gems, vip_until, reward_streak, last_reward_date) solo se
+-- modifican vía funciones SECURITY DEFINER (deduct_gems, credit_purchase,
+-- set_vip, claim_daily_reward, add_gems_from_ad, claim_special_pack), que se
+-- ejecutan como dueño de la tabla y por eso ignoran estos permisos de columna.
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- 1. Quitar el UPDATE amplio sobre toda la tabla.
+REVOKE UPDATE ON public.users FROM authenticated;
+
+-- 2. Conceder UPDATE SOLO en las columnas no sensibles que sincroniza el cliente.
+GRANT UPDATE (profile, chars_data, scenes_data) ON public.users TO authenticated;
+
+-- 3. (Defensa extra) Asegurar que la política RLS de UPDATE sigue limitando a la
+--    fila propia. Si ya existe una equivalente, este bloque la deja consistente.
+DROP POLICY IF EXISTS "Users update own row" ON public.users;
+CREATE POLICY "Users update own row"
+  ON public.users FOR UPDATE TO authenticated
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+
+-- ── Comprobación rápida (opcional) ──────────────────────────────────────────
+-- Tras ejecutar esto, desde la app (consola del navegador, con sesión) ESTO debe
+-- FALLAR con "permission denied for column gems":
+--   await supaClient.from('users').update({ gems: 999999 }).eq('id', (await supaClient.auth.getUser()).data.user.id)
+-- Y esto debe SEGUIR funcionando (lo usa syncProfile/syncChars/syncScenes):
+--   await supaClient.from('users').update({ profile: {test:1} }).eq('id', <tu id>)

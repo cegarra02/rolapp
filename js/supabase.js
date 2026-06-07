@@ -53,6 +53,10 @@ async function initSupabase() {
   }
   renderUserHeader();
   if (document.getElementById('profileScreen')?.classList.contains('active')) loadProfileFields();
+  // La sesión ya está resuelta: cerrar el onboarding si hay sesión y refrescar VIP.
+  // (getSession no dispara evento de auth, así que hay que avisar explícitamente.)
+  if (window.onbRefresh) window.onbRefresh();
+  if (window.refreshVipStatus) window.refreshVipStatus();
 
   // ── PASO 2: onAuthStateChange gestiona cambios futuros (nuevo login, logout,
   // renovación de token). INITIAL_SESSION se ignora porque ya lo manejó getSession().
