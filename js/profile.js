@@ -4,15 +4,9 @@ function pickProfileGender(g) {
 }
 
 function loadProfileFields() {
-  const p = profile;
-  document.getElementById('profileName').value    = p.name    || '';
-  document.getElementById('profileAge').value     = p.age     || '';
-  document.getElementById('profileHeight').value  = p.height  || '';
-  profile._tempGender = p.gender || null;
-  ['M','F'].forEach(x => document.getElementById('profileGender'+x)?.classList.toggle('active', profile._tempGender === x));
-  document.getElementById('profileDesc').value    = p.desc    || '';
-  document.getElementById('profileContext').value = p.context || '';
-  document.getElementById('profilePrefs').value   = p.prefs   || '';
+  // El perfil del jugador ahora son "personajes-jugador" (personas.js).
+  if (typeof _loadPersonas === 'function' && !playerPersonas.length) _loadPersonas();
+  if (typeof renderProfilePersonaCard === 'function') renderProfilePersonaCard();
   renderAuthSection();
 }
 

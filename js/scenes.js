@@ -75,12 +75,12 @@ function openSceneEdit(id) {
   const cp = document.getElementById('sceneUseCustomProfile');
   if (cp) {
     cp.checked = !!s.useCustomProfile;
-    toggleSceneCustomProfile(!!s.useCustomProfile);
     const p = s.customProfile || {};
     document.getElementById('sceneCpName').value    = p.name    || '';
     document.getElementById('sceneCpDesc').value    = p.desc    || '';
     document.getElementById('sceneCpContext').value = p.context || '';
     document.getElementById('sceneCpPrefs').value   = p.prefs   || '';
+    toggleSceneCustomProfile(!!s.useCustomProfile);
   }
   showScreen('sceneScreen', true);
 }
@@ -88,6 +88,9 @@ function openSceneEdit(id) {
 function toggleSceneCustomProfile(checked) {
   const fields = document.getElementById('sceneCustomProfileFields');
   if (fields) fields.style.display = checked ? 'block' : 'none';
+  if (checked && typeof renderPersonaPicker === 'function') {
+    renderPersonaPicker('scenePersonaPicker', 'scene', document.getElementById('sceneCpName')?.value || '');
+  }
 }
 
 function renderSceneCharsPicker() {
@@ -155,10 +158,8 @@ function openSceneChat(id) {
   document.getElementById('chatName').textContent = s.name;
   const sceneChars = s.charIds.map(id => chars.find(x => x.id === id)).filter(Boolean);
   document.getElementById('chatMeta').textContent = sceneChars.map(ch => ch.name).join(' · ');
-  const bg = document.getElementById('chatBg');
   const firstBg = sceneChars.find(ch => ch.bg);
-  if (firstBg) { bg.style.backgroundImage = `url(${firstBg.bg})`; bg.style.display = 'block'; }
-  else { bg.style.display = 'none'; }
+  setChatBg(firstBg ? firstBg.bg : null);
   renderMessages();
   updateChatMissionsBtn();
   isSwiped = false; document.getElementById('chatContentWrap').classList.remove('swiped');

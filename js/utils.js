@@ -85,6 +85,23 @@ function save() { return _saveCharsArray('rp_chars', chars); }
 function saveLibChars() { return _saveCharsArray('rp_lib_chars', libChars); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function esc(s) { return String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+// ── Media (imagen o vídeo) ───────────────────────────────────────────────────
+// Detecta si una fuente es vídeo (data:video o extensión de vídeo).
+function isVideoMedia(src) {
+  if (!src) return false;
+  if (src.startsWith('data:video')) return true;
+  return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(src);
+}
+// Capa de fondo a pantalla/tarjeta completa: <video> si es vídeo, si no un div con bg.
+// cls = clase CSS de la capa (p.ej. 'char-card-bg', 'persona-card-bg', 'chat-bg').
+function mediaLayerHtml(src, cls) {
+  if (!src) return '';
+  if (isVideoMedia(src)) {
+    return `<video class="${cls} media-video" autoplay loop muted playsinline preload="auto" src="${src}"></video>`;
+  }
+  return `<div class="${cls}" style="background-image:url('${src}')"></div>`;
+}
 // Tokenizador: recorre el texto y separa en bloques que NO se anidan entre sí
 // → *acción* (cursiva/em) y "diálogo" (fuerte/strong). El problema anterior era
 // que con regex encadenados un *…* podía englobar unas comillas (o al revés) y

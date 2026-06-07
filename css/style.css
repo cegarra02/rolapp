@@ -961,3 +961,47 @@ input[type=file]{display:none}
 .logout-btn:active{background:rgba(248,113,113,.16)}
 
 .onb-legal{margin-top:14px;font-size:12px;line-height:1.45;color:var(--muted);text-align:center;opacity:.85}
+
+/* ── Personas (personajes-jugador) + media vídeo + VIP en auth — paquete diseño ── */
+.hdr-main{padding-top:max(14px,calc(var(--safe-top) + 6px))}
+.hdr-main .hdr-title{font-size:26px;font-weight:800;letter-spacing:-.7px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* media video layers (gif uses image bg; mp4/webm use <video>) */
+.media-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.chat-bg-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.personas-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.persona-card{position:relative;border-radius:20px;overflow:hidden;cursor:pointer;height:calc((min(100vw,var(--appw,440px)) - 45px) / 2 * 16 / 9);background:var(--surface2);border:1px solid var(--border);transition:transform .15s,border-color .15s}
+.persona-card:active{transform:scale(.97)}
+.persona-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.persona-card-bg{position:absolute;inset:0;background-size:cover;background-position:center}
+.persona-card-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;font-size:54px;font-weight:800;color:var(--accent);opacity:.5;background:linear-gradient(150deg,rgba(255,126,157,.18),rgba(124,92,255,.12))}
+.persona-card-grad{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.78) 0%,rgba(0,0,0,.18) 42%,transparent 70%)}
+.persona-card-body{position:absolute;left:0;right:0;bottom:0;padding:12px}
+.persona-card-name{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px;color:#fff;line-height:1.15}
+.persona-card-meta{font-size:11.5px;color:rgba(255,255,255,.82);margin-top:2px}
+.persona-card-active{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:4px;background:var(--grad);color:var(--on-grad,#2A142A);font-size:10px;font-weight:800;padding:4px 9px;border-radius:20px;z-index:2}
+.persona-card-active .ic{color:var(--on-grad,#2A142A)}
+.persona-card-edit{position:absolute;top:9px;right:9px;width:32px;height:32px;border-radius:10px;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);color:#fff;display:flex;align-items:center;justify-content:center;z-index:2}
+.persona-card-check{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:var(--grad);color:var(--on-grad,#2A142A);display:none;align-items:center;justify-content:center;z-index:2}
+.persona-card.selected .persona-card-check{display:flex}
+.persona-card.selected .persona-card-check .ic{color:var(--on-grad,#2A142A)}
+.persona-card-new{border:2px dashed var(--border);background:transparent;box-shadow:none}
+.persona-card-new-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:13px;font-weight:700}
+.persona-card-new-ic{width:50px;height:50px;border-radius:16px;background:rgba(255,126,157,.13);color:var(--accent);display:flex;align-items:center;justify-content:center}
+/* persona media slot 9:16 in edit screen */
+.persona-media-wrap{display:flex;justify-content:center;margin-bottom:8px}
+.persona-media-slot{width:58%;aspect-ratio:9/16;height:auto;border-radius:18px}
+.persona-media-hint{text-align:center;font-size:11.5px;color:var(--muted);margin-bottom:18px}
+.btn-danger{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:16px;border:1px solid rgba(248,113,113,.32);background:rgba(248,113,113,.08);color:#f87171;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
+.btn-danger:active{background:rgba(248,113,113,.16)}
+/* persona picker inside chat/scene custom-profile toggle */
+.persona-picker-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:4px}
+.persona-picker-grid .persona-card{height:170px}
+/* ── VIP highlight in profile account card ── */
+.auth-section.auth-vip{border-color:rgba(245,194,74,.6);background:linear-gradient(150deg,rgba(245,194,74,.10),rgba(201,145,42,.05));box-shadow:0 0 0 1px rgba(245,194,74,.35),0 8px 26px rgba(201,145,42,.14)}
+.auth-vip-banner{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.4px;color:#E7B84B;margin-bottom:12px;text-transform:uppercase}
+.auth-vip-banner .ic{color:#F5C24A}
+.auth-user-avatar.vip{background:linear-gradient(135deg,#FFF1C4,#F5C24A 50%,#C9912A);color:#3A2A05;box-shadow:0 0 0 2px rgba(245,194,74,.5)}
+.auth-vip-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:800;letter-spacing:.4px;color:#3A2A05;background:linear-gradient(135deg,#FFE08A,#F5C24A);padding:2px 7px;border-radius:9px;vertical-align:middle}
+.auth-vip-badge .ic{color:#3A2A05}
+.auth-go-vip{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:12px;background:linear-gradient(135deg,#FFF1C4,#F5C24A 45%,#C9912A);color:#3A2A05;border:none;font-weight:800}
+.auth-go-vip .ic{color:#3A2A05}

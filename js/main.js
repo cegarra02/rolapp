@@ -8,6 +8,7 @@
   if (changed) save();
 })();
 
+if (typeof _loadPersonas === 'function') _loadPersonas(); // perfil-jugador → profile activo
 renderChars();
 loadProfileFields();
 initChatSwipe();

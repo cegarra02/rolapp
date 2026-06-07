@@ -391,15 +391,33 @@ function resetChatStyle() {
   toast('Estilo restablecido');
 }
 
+// Fondo del chat: imagen o VÍDEO (mp4/webm). Limpia el vídeo previo si lo había.
+function setChatBg(src) {
+  const bg = document.getElementById('chatBg');
+  if (!bg) return;
+  const oldVid = bg.querySelector('video.chat-bg-video');
+  if (oldVid) oldVid.remove();
+  if (!src) { bg.style.backgroundImage = ''; bg.style.display = 'none'; return; }
+  bg.style.display = 'block';
+  if (isVideoMedia(src)) {
+    bg.style.backgroundImage = '';
+    const v = document.createElement('video');
+    v.className = 'chat-bg-video';
+    v.src = src; v.autoplay = true; v.loop = true; v.muted = true;
+    v.playsInline = true; v.setAttribute('playsinline', '');
+    bg.appendChild(v);
+  } else {
+    bg.style.backgroundImage = 'url(' + src + ')';
+  }
+}
+
 function openChat(id) {
   const c = chars.find(x => x.id === id); if (!c) return;
   currentScene = null; currentChar = c;
   history = c.history || [];
   document.getElementById('chatName').textContent = c.name;
   document.getElementById('chatMeta').textContent = c.age ? c.age + ' años' : '';
-  const bg = document.getElementById('chatBg');
-  if (c.bg) { bg.style.backgroundImage = `url(${c.bg})`; bg.style.display = 'block'; }
-  else { bg.style.display = 'none'; }
+  setChatBg(c.bg);
   renderMessages();
   updateChatMissionsBtn();
   isSwiped = false; document.getElementById('chatContentWrap').classList.remove('swiped');

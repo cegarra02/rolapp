@@ -18,7 +18,7 @@ function renderChars() {
     return `
     <div class="char-card" onclick="openChat('${x.id}')">
       ${x.bg
-        ? `<div class="char-card-bg" style="background-image:url('${x.bg}')"></div>`
+        ? mediaLayerHtml(x.bg, 'char-card-bg')
         : `<div class="char-card-bg-placeholder">${x.name[0]}</div>`
       }
       <div class="char-card-body">
@@ -109,12 +109,13 @@ function openEdit(id) {
   const cp = document.getElementById('charUseCustomProfile');
   if (cp) {
     cp.checked = !!c.useCustomProfile;
-    toggleCustomProfile(!!c.useCustomProfile);
     const p = c.customProfile || {};
     document.getElementById('charCpName').value    = p.name    || '';
     document.getElementById('charCpDesc').value    = p.desc    || '';
     document.getElementById('charCpContext').value = p.context || '';
     document.getElementById('charCpPrefs').value   = p.prefs   || '';
+    // Renderiza el picker DESPUÉS de fijar los valores → resalta la persona correcta.
+    toggleCustomProfile(!!c.useCustomProfile);
   }
   const charIsPublic = document.getElementById('charIsPublic');
   if (charIsPublic) charIsPublic.checked = !!c.isPublic; // recupera el estado guardado
@@ -126,6 +127,9 @@ function openEdit(id) {
 function toggleCustomProfile(checked) {
   const fields = document.getElementById('charCustomProfileFields');
   if (fields) fields.style.display = checked ? 'block' : 'none';
+  if (checked && typeof renderPersonaPicker === 'function') {
+    renderPersonaPicker('charPersonaPicker', 'char', document.getElementById('charCpName')?.value || '');
+  }
 }
 
 function resetSlot(slotId, icon) {
@@ -135,7 +139,12 @@ function resetSlot(slotId, icon) {
 
 function setSlotImg(slotId, src, fallback) {
   const s = document.getElementById(slotId);
-  if (src) { s.innerHTML = `<img src="${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="overlay">✎</div>`; }
+  if (src) {
+    const inner = isVideoMedia(src)
+      ? `<video src="${src}" autoplay loop muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video>`
+      : `<img src="${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`;
+    s.innerHTML = inner + '<div class="overlay">✎</div>';
+  }
   else resetSlot(slotId, fallback);
 }
 
@@ -145,11 +154,17 @@ function triggerFile(id) {
 
 function loadPhoto(inp, type) {
   const file = inp.files[0]; if (!file) return;
+  const isVid = file.type.startsWith('video');
   const reader = new FileReader();
   reader.onload = e => {
-    openCropper(e.target.result, 'free', 'Ajustar fondo de chat', result => {
-      tempBg = result; setSlotImg('bgSlot', result, '🖼️');
-    });
+    if (isVid) {
+      // El vídeo no se recorta: se ajusta con object-fit:cover en su contenedor.
+      tempBg = e.target.result; setSlotImg('bgSlot', e.target.result, '🖼️');
+    } else {
+      openCropper(e.target.result, '9:16', 'Ajustar fondo de chat', result => {
+        tempBg = result; setSlotImg('bgSlot', result, '🖼️');
+      });
+    }
   };
   reader.readAsDataURL(file);
   inp.value = '';
