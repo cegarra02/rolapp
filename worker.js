@@ -367,13 +367,15 @@ async function handleAdmobSSV(request, env) {
     );
     if (!ok) return new Response('bad signature', { status: 403 });
 
-    // Firma válida → acreditar gemas (importe en servidor, idempotente por txn).
-    const res = await fetch(`${SUPA_URL}/rest/v1/rpc/credit_purchase`, {
+    // Firma válida → acreditar (importe en servidor, idempotente por txn, y CUPO
+    // en servidor: rechaza si el usuario supera el máximo de anuncios por ventana).
+    const res = await fetch(`${SUPA_URL}/rest/v1/rpc/credit_ad_reward`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON, 'Authorization': 'Bearer ' + SUPA_ANON },
-      body: JSON.stringify({ p_secret: env.RC_SECRET, p_user_id: userId, p_product_id: 'ad_reward', p_event_id: 'ad_' + txnId }),
+      body: JSON.stringify({ p_secret: env.RC_SECRET, p_user_id: userId, p_event_id: 'ad_' + txnId }),
     });
     if (!res.ok) return new Response('db error', { status: 500 }); // AdMob reintentará
+    // ok / duplicate / cap / unknown_product → 200 (no reintentar).
     return new Response('ok', { status: 200 });
   } catch (e) {
     return new Response('ssv error: ' + (e && e.message), { status: 500 });

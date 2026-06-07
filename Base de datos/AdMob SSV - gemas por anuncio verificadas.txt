@@ -17,3 +17,56 @@ ON CONFLICT (product_id) DO UPDATE SET gems = EXCLUDED.gems;
 -- (Opcional) Ya no se usa add_gems_from_ad desde el cliente. Puedes dejarlo o,
 -- para cerrar el agujero del todo, revocar su ejecución a clientes:
 -- REVOKE EXECUTE ON FUNCTION add_gems_from_ad(INT) FROM authenticated, anon;
+
+-- ── Cupo de anuncios EN SERVIDOR (anti-abuso) ───────────────────────────────
+-- El cupo del cliente (localStorage) es solo para la UI; podría saltarse borrando
+-- datos. Esta función es la verdad: cuenta los anuncios acreditados al usuario en
+-- la ventana y rechaza si supera el máximo. La llama el Worker tras verificar la
+-- firma SSV. Mantén estos valores en sintonía con el cliente (AD_MAX_PER_WIN / AD_WINDOW_MS).
+CREATE OR REPLACE FUNCTION credit_ad_reward(
+  p_secret   TEXT,
+  p_user_id  UUID,
+  p_event_id TEXT
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_secret  TEXT;
+  v_gems    INT;
+  v_new     INT;
+  v_count   INT;
+  AD_MAX    CONSTANT INT      := 5;                 -- máx. anuncios por ventana
+  AD_WINDOW CONSTANT INTERVAL := INTERVAL '8 hours'; -- tamaño de la ventana
+BEGIN
+  SELECT value INTO v_secret FROM app_secrets WHERE key = 'rc_webhook';
+  IF v_secret IS NULL OR p_secret IS NULL OR p_secret <> v_secret THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'unauthorized');
+  END IF;
+
+  -- Idempotencia: el mismo anuncio (transaction_id) no acredita dos veces.
+  IF EXISTS (SELECT 1 FROM purchase_events WHERE event_id = p_event_id) THEN
+    RETURN jsonb_build_object('ok', true, 'duplicate', true);
+  END IF;
+
+  -- Cupo real: cuántos anuncios se han acreditado en la ventana.
+  SELECT count(*) INTO v_count FROM purchase_events
+    WHERE user_id = p_user_id AND product_id = 'ad_reward'
+      AND created_at > now() - AD_WINDOW;
+  IF v_count >= AD_MAX THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'cap');  -- no acreditar
+  END IF;
+
+  SELECT gems INTO v_gems FROM gem_products WHERE product_id = 'ad_reward';
+  IF v_gems IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'unknown_product');
+  END IF;
+
+  INSERT INTO purchase_events (event_id, user_id, product_id, gems)
+    VALUES (p_event_id, p_user_id, 'ad_reward', v_gems);
+  UPDATE users SET gems = COALESCE(gems, 0) + v_gems
+    WHERE id = p_user_id RETURNING gems INTO v_new;
+  IF v_new IS NULL THEN RAISE EXCEPTION 'user_not_found'; END IF;
+
+  RETURN jsonb_build_object('ok', true, 'gems', v_new, 'added', v_gems);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION credit_ad_reward(TEXT, UUID, TEXT) TO anon;
