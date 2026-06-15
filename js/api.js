@@ -211,20 +211,37 @@ function buildMessages(newText) {
 
 async function callAPI(userText) {
   const sysPrompt = buildSystemPrompt();
-  // Formato OpenAI: system como primer mensaje + historial (user/assistant).
-  // El Worker fija modelo/clave (OpenRouter · Mistral Small), descuenta gemas en
+  // Formato Anthropic (Claude): system aparte (con prompt-caching) + historial
+  // user/assistant. El Worker fija modelo/clave (Claude), descuenta gemas en
   // servidor y reintenta. Se envía el JWT de Supabase para que el Worker
   // identifique al usuario y descuente gemas legítimas.
-  const messages = [{ role: 'system', content: sysPrompt }, ...buildMessages(userText)];
+  let messages = buildMessages(userText); // solo user/assistant
+  // Anthropic exige primer mensaje 'user' y roles alternos: quitamos cualquier
+  // mensaje inicial que no sea de usuario (p.ej. el saludo del personaje) y
+  // fusionamos mensajes consecutivos del mismo rol.
+  while (messages.length && messages[0].role !== 'user') messages.shift();
+  const _clean = [];
+  for (const m of messages) {
+    if (_clean.length && _clean[_clean.length - 1].role === m.role) _clean[_clean.length - 1].content += '\n' + m.content;
+    else _clean.push({ role: m.role, content: m.content });
+  }
+  messages = _clean;
 
   let token = '';
   try { const { data } = await supaClient.auth.getSession(); token = data?.session?.access_token || ''; } catch (e) {}
   if (!token) { const e = new Error('Inicia sesión para chatear'); e.code = 'NO_AUTH'; throw e; }
 
+  const body = {
+    system: [{ type: 'text', text: sysPrompt, cache_control: { type: 'ephemeral' } }],
+    messages,
+    max_tokens: 1000,
+    temperature: 0.7
+  };
+
   const doFetch = (tok) => fetch('https://misty-heart-cd26.alex1234567890ct.workers.dev', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
-    body: JSON.stringify({ messages, max_tokens: 1000, temperature: 0.7 })
+    body: JSON.stringify(body)
   });
 
   let res = await doFetch(token);
@@ -240,7 +257,10 @@ async function callAPI(userText) {
     throw new Error('API error ' + res.status + ' ' + errMsg);
   }
   const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (content == null) throw new Error('Respuesta vacía del modelo');
+  // Respuesta Anthropic: { content: [{ type:'text', text:'…' }] }
+  const content = Array.isArray(data?.content)
+    ? data.content.filter(b => b && b.type === 'text').map(b => b.text).join('')
+    : null;
+  if (!content) throw new Error('Respuesta vacía del modelo');
   return content;
 }

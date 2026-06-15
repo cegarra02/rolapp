@@ -152,9 +152,11 @@ async function handleVipEvent(ev, userId, env) {
   return new Response(JSON.stringify(result || {}), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
-// ───────────────────────── CHAT (gemas en servidor) ──────────────────────────
+// ───────────────────────── CHAT (Claude · gemas en servidor) ─────────────────
+const CHAT_MODEL = 'claude-sonnet-4-6';   // único punto para cambiar el modelo
+
 async function handleChat(request, env) {
-  if (!env.OPENROUTER_KEY) return corsResponse(JSON.stringify({ error: { message: 'OPENROUTER_KEY no configurada' } }), 500);
+  if (!env.ANTHROPIC_KEY) return corsResponse(JSON.stringify({ error: { message: 'ANTHROPIC_KEY no configurada' } }), 500);
 
   const auth = request.headers.get('Authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
@@ -182,22 +184,29 @@ async function handleChat(request, env) {
     return corsResponse(JSON.stringify({ error: { code: 'no_gems', message: 'Sin gemas suficientes' } }), 402);
   }
 
+  // Payload formato Anthropic. El cliente envía system (con cache_control) + messages.
   const payload = {
-    model: 'mistralai/mistral-small-2603',
-    messages: body.messages,
+    model: CHAT_MODEL,
     max_tokens: body.max_tokens || 1000,
+    messages: body.messages,
   };
+  if (body.system) payload.system = body.system;
   if (typeof body.temperature === 'number') payload.temperature = body.temperature;
 
-  const RETRY_STATUS = [429, 502, 503];
+  const RETRY_STATUS = [429, 500, 502, 503, 529]; // 529 = Anthropic sobrecargado
   let lastErr = 'desconocido';
   for (let attempt = 1; attempt <= 3; attempt++) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 45000);
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.OPENROUTER_KEY}`, 'X-Title': 'Storym' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': env.ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-beta': 'prompt-caching-2024-07-31',
+        },
         body: JSON.stringify(payload),
         signal: ctrl.signal,
       });
@@ -212,7 +221,7 @@ async function handleChat(request, env) {
     }
   }
   await refund(token);
-  return corsResponse(JSON.stringify({ error: { message: 'OpenRouter no disponible tras 3 intentos: ' + lastErr } }), 502);
+  return corsResponse(JSON.stringify({ error: { message: 'Claude no disponible tras 3 intentos: ' + lastErr } }), 502);
 }
 
 // ───────────────────────── EXPLORAR (cacheado) ───────────────────────────────
